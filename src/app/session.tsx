@@ -7,7 +7,6 @@ import { useTranslation } from "react-i18next";
 import { BreathingCircle } from "@/components/features/session/BreathingCircle";
 import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
 import { Icon } from "@/components/common/Icon";
-import { PulseTicker } from "@/components/features/session/PulseTicker";
 import { SceneBackground } from "@/components/features/session/SceneBackground";
 import { VoiceLine } from "@/components/features/session/VoiceLine";
 import { useSessionStore } from "@/lib/storage/session-store";
@@ -635,9 +634,10 @@ export default function Session() {
             </View>
           )}
 
-          {/* Bottom row */}
-          <View className="flex-row justify-between items-center pt-4 pb-6">
-            <PulseTicker value={pulseBpm} />
+          {/* Bottom row — pulse metric removed per UI QA. Pulse is still
+              read internally to drive auto-attenuate behavior, but no
+              longer displayed to the user. */}
+          <View className="flex-row justify-end items-center pt-4 pb-6">
             <Pressable
               hitSlop={12}
               onPress={() => {

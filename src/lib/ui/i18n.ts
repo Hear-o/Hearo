@@ -65,8 +65,6 @@ const resources = {
         touchPrompt: "Notice {{count}} thing\nyou can touch.",
       },
       session: {
-        pulse: "Pulse",
-        pulseRehearsal: "rehearsal",
         end: "End session",
         pause: "Pause",
         breatheIn: "Breathe in",
@@ -181,8 +179,6 @@ const resources = {
         touchPrompt: "שים לב ל-{{count}} מרקם\nשאתה יכול לגעת בו.",
       },
       session: {
-        pulse: "דופק",
-        pulseRehearsal: "חזרה",
         end: "סיים סשן",
         pause: "השהה",
         breatheIn: "שאיפה",

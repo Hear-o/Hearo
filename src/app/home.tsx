@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
@@ -11,6 +12,10 @@ import { useSessionStore } from "@/lib/storage/session-store";
 import { getPsychoEducationSeen } from "@/lib/storage/storage";
 import { getTimeOfDay } from "@/lib/ui/timeOfDay";
 import { fonts, tokens } from "@/lib/ui/tokens";
+
+/** Distance (px) a horizontal pan must cover to count as a swipe-to-begin
+ *  rather than a stray drag. Tuned so tap targets in the screen still fire. */
+const SWIPE_THRESHOLD_PX = 60;
 
 export default function Home() {
   const router = useRouter();
@@ -27,9 +32,35 @@ export default function Home() {
       })
     : null;
 
+  /** Same logic for tap and swipe: first-time users see /psychoed first,
+   *  returning users go straight to /session. */
+  async function handleBegin() {
+    const seen = await getPsychoEducationSeen();
+    if (seen) {
+      router.push({ pathname: "/session", params: { scene } });
+    } else {
+      router.push({ pathname: "/psychoed", params: { scene } });
+    }
+  }
+
+  /** Swipe-to-begin: a horizontal pan past SWIPE_THRESHOLD_PX triggers the
+   *  same begin action as the button tap. Direction-agnostic so it feels
+   *  natural in both LTR and RTL layouts. */
+  const swipeGesture = Gesture.Pan()
+    .minDistance(SWIPE_THRESHOLD_PX)
+    .onEnd((event) => {
+      if (Math.abs(event.translationX) >= SWIPE_THRESHOLD_PX) {
+        // runOnJS-equivalent: handleBegin reads storage + navigates; the
+        // gesture's worklet returns before we touch JS.
+        handleBegin();
+      }
+    })
+    .runOnJS(true);
+
   return (
     <SafeAreaView className="flex-1 bg-bg">
-      <View className="flex-1 px-8">
+      <GestureDetector gesture={swipeGesture}>
+        <View className="flex-1 px-8">
         {/* Layout: nav element first in JSX so flex-row puts it on the
             leading edge — LEFT in LTR English, RIGHT in RTL Hebrew (auto-
             flipped by I18nManager.forceRTL). Crisis takes the trailing edge. */}
@@ -110,14 +141,9 @@ export default function Home() {
 
         <View className="pb-2">
           <Pressable
-            onPress={async () => {
-              const seen = await getPsychoEducationSeen();
-              if (seen) {
-                router.push({ pathname: "/session", params: { scene } });
-              } else {
-                router.push({ pathname: "/psychoed", params: { scene } });
-              }
-            }}
+            onPress={handleBegin}
+            accessibilityRole="button"
+            accessibilityHint="Tap or swipe to begin today's session"
             hitSlop={8}
             style={{
               borderWidth: 1,
@@ -170,7 +196,8 @@ export default function Home() {
             {t("home.change")}
           </Text>
         </Pressable>
-      </View>
+        </View>
+      </GestureDetector>
     </SafeAreaView>
   );
 }

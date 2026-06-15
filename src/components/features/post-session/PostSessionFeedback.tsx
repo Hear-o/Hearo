@@ -4,7 +4,7 @@
 // TODO(supabase): persist answers to sessions feedback table when schema lands.
 
 import { useState, useCallback } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { fonts, tokens } from "@/lib/ui/tokens";
@@ -13,7 +13,6 @@ export interface FeedbackAnswers {
   difficulty: 1 | 2 | 3 | 4 | 5 | null;
   triggerImpact: "yes" | "a-little" | "no" | null;
   moodChange: "better" | "same" | "harder" | null;
-  openText: string;
 }
 
 interface Props {
@@ -25,7 +24,6 @@ const INITIAL: FeedbackAnswers = {
   difficulty: null,
   triggerImpact: null,
   moodChange: null,
-  openText: "",
 };
 
 // ── Sub-components ────────────────────────────────────────────────────────
@@ -163,7 +161,9 @@ export function PostSessionFeedback({ onSubmit, onSkip }: Props) {
       />
     </View>,
 
-    // Step 2 — mood change
+    // Step 2 — mood change (final step; the previous "anything else?"
+    // open-text question was removed per UI QA — it added friction without
+    // surfacing actionable signal).
     <View key="mood">
       <Question label={t("postSession.moodQuestion")} />
       <OptionRow
@@ -176,35 +176,13 @@ export function PostSessionFeedback({ onSubmit, onSkip }: Props) {
         ]}
       />
     </View>,
-
-    // Step 3 — open text
-    <View key="open">
-      <Question label={t("postSession.openQuestion")} />
-      <TextInput
-        value={answers.openText}
-        onChangeText={(v) => setAnswers((a) => ({ ...a, openText: v }))}
-        multiline
-        placeholder={t("postSession.openPlaceholder")}
-        placeholderTextColor={tokens.text + "55"}
-        style={{
-          color: tokens.text,
-          fontFamily: fonts.body,
-          fontSize: 16,
-          borderBottomWidth: 1,
-          borderBottomColor: tokens.text + "44",
-          paddingVertical: 8,
-          minHeight: 80,
-        }}
-      />
-    </View>,
   ];
 
   const isLast = step === stepContent.length - 1;
   const canAdvance =
     (step === 0 && answers.difficulty !== null) ||
     (step === 1 && answers.triggerImpact !== null) ||
-    (step === 2 && answers.moodChange !== null) ||
-    step === 3;
+    (step === 2 && answers.moodChange !== null);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: tokens.bg }}>

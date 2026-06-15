@@ -1,7 +1,8 @@
-import { Pressable, Text } from "react-native";
+import { Pressable, View } from "react-native";
 
+import { Icon } from "@/components/common/Icon";
 import { useCrisisStore } from "@/lib/storage/crisis-store";
-import { fonts, tokens } from "@/lib/ui/tokens";
+import { tokens } from "@/lib/ui/tokens";
 
 type Props = {
   /**
@@ -24,16 +25,9 @@ export function CrisisAffordance({ tone = "on-bg" }: Props) {
       accessibilityLabel="open crisis support"
       accessibilityRole="button"
     >
-      <Text
-        style={{
-          color,
-          opacity,
-          fontFamily: fonts.body,
-          fontSize: 18,
-        }}
-      >
-        i
-      </Text>
+      <View style={{ opacity }}>
+        <Icon name="info" size={22} color={color} />
+      </View>
     </Pressable>
   );
 }

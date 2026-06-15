@@ -44,11 +44,13 @@ export default function Setup() {
         contentContainerStyle={{ paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
       >
+        {/* Nav element on the leading edge — LEFT in LTR, RIGHT in RTL.
+            Crisis on the trailing edge. flex-row auto-flips via I18nManager. */}
         <View className="px-8 pt-4 flex-row justify-between items-center">
-          <CrisisAffordance />
           <Pressable onPress={() => router.back()} hitSlop={12}>
             <Icon name="arrow-left" size={22} color={tokens.text} />
           </Pressable>
+          <CrisisAffordance />
         </View>
 
         <View className="px-8 pt-6">

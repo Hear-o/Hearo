@@ -420,15 +420,15 @@ const PSYCHO_EDUCATION: PsychoEducationContent = {
   },
   body: [
     {
-      en: "To understand why triggers overwhelm us, it helps to know the amygdala — a region in the brain that works as the body's smoke detector. In a moment of danger, it activates the body's emergency system instantly: heart races, breath gets shallow, tunnel vision, muscles tense, the body prepares to fight or flee.",
+      en: "To understand why triggers overwhelm us, it helps to know the amygdala, a region in the brain that works as the body's smoke detector. In a moment of danger, it activates the body's emergency system instantly: heart races, breath gets shallow, tunnel vision, muscles tense, the body prepares to fight or flee.",
       he: "כדי להבין למה טריגרים מציפים אותנו, חשוב להכיר את האמיגדלה, אזור במוח שמתפקד כ'גלאי העשן' של הגוף. במצב סכנה, האמיגדלה מפעילה מיד את מערכת החירום הפיזיולוגית. הדופק נהיה מהיר, הנשימה נהיית שטחית, לפעמים נחווה מין 'ראיית מנהרה', מתח השרירים עולה והגוף מכין אותנו לתגובת הישרדות של הילחם או ברח.",
     },
     {
-      en: "When we live inside danger — or under continuous threat — the nervous system makes a vital adjustment. It turns the detector's sensitivity all the way up. That's what keeps us alive.",
+      en: "When we live inside danger, or under continuous threat, the nervous system makes a vital adjustment. It turns the detector's sensitivity all the way up. That's what keeps us alive.",
       he: "כשאנו נמצאים באזור סכנה או תחת איום מתמשך, מערכת העצבים מבצעת התאמה חיונית. היא מכוונת את רגישות הגלאי למקסימום כדי לשמור עלינו ערניים.",
     },
     {
-      en: "The problem is that even after the threat passes and the world is safe again, the detector usually stays at maximum sensitivity. So any small reminder of the original event — a sound, a smell, a place — instantly fires the alarm. The brain signals an immediate life-threat, while the actual present is calm and safe. A false alarm.",
+      en: "The problem is that even after the threat passes and the world is safe again, the detector usually stays at maximum sensitivity. So any small reminder of the original event (a sound, a smell, a place) instantly fires the alarm. The brain signals an immediate life-threat, while the actual present is calm and safe. A false alarm.",
       he: "הבעיה היא שגם כשהאיום חולף והסביבה חוזרת להיות בטוחה, הגלאי לרוב נשאר ברגישות שיא. במצב זה, כל גירוי קטן שמזכיר את האירוע המקורי, צליל, ריח או מקום מסוים, מקפיץ מיד את האזעקה, רק שהפעם זוהי אזעקת שווא. המוח מאותת על סכנת חיים מיידית, למרות שבמציאות הנוכחית הכל רגוע ובטוח.",
     },
     {
@@ -436,7 +436,7 @@ const PSYCHO_EDUCATION: PsychoEducationContent = {
       he: "המצוקה והתגובה הגופנית שאתה חווה אינן מעידות על קלקול, אלא דווקא על מערכת הגנה יעילה שהתאימה את עצמה לפעול על 'הגדרות חירום' בשביל לעזור לך לשרוד בתוך מציאות כאוטית ומסוכנת.",
     },
     {
-      en: "In the practice that follows, gradually and in a protected space, we'll teach the system that the danger has passed — and that the sensitivity can come down.",
+      en: "In the practice that follows, gradually and in a protected space, we'll teach the system that the danger has passed, and that the sensitivity can come down.",
       he: "בתרגיל הקרוב אנחנו נלמד את המערכת, בצורה הדרגתית ובסביבה מוגנת, שהסכנה חלפה ושניתן להוריד את הרגישות.",
     },
   ],
@@ -504,7 +504,7 @@ const CALMING_PROTOCOL: CalmingProtocolStep[] = [
   {
     kind: "validation",
     text: {
-      en: "It's okay. You're safe now.\n\nWhat you're feeling is anxiety, and anxiety is a wave. It rises now — it feels overwhelming — but the wave will peak, and it will fall. Your body can't hold this much tension for long. It will settle on its own.\n\nI'm here with you, inside this wave. It will pass.",
+      en: "It's okay. You're safe now.\n\nWhat you're feeling is anxiety, and anxiety is a wave. It rises now. It feels overwhelming, but the wave will peak, and it will fall. Your body can't hold this much tension for long. It will settle on its own.\n\nI'm here with you, inside this wave. It will pass.",
       he: "הכל בסדר, אתה בטוח עכשיו.\n\nמה שאתה מרגיש זה התקף חרדה. חרדה היא כמו גל, היא עולה עכשיו, זה מרגיש מציף ונורא אבל הגל הזה יגיע לשיא וייחלש. הגוף שלך לא יכול להישאר במתח הזה לאורך זמן והוא יירגע מעצמו.\n\nאני איתך בתוך הגל הזה, הוא יעבור.",
     },
     durationMs: 18_000,
@@ -512,7 +512,7 @@ const CALMING_PROTOCOL: CalmingProtocolStep[] = [
   {
     kind: "body-grounding",
     text: {
-      en: "Let's come back to your body for a moment.\n\nIf you're standing, sit down. Feel your feet on the floor — feel them touching, steadily. Try to press them a little more into the floor.\n\nFeel the weight of your body in the chair.",
+      en: "Let's come back to your body for a moment.\n\nIf you're standing, sit down. Feel your feet on the floor, feel them touching, steadily. Try to press them a little more into the floor.\n\nFeel the weight of your body in the chair.",
       he: "בוא נחזור לרגע לגוף שלך.\n\nאם אתה עומד, שב. תרגיש את כפות הרגליים שלך נוגעות ברצפה בצורה יציבה, תנסה לדחוף אותם עוד יותר לכיוון הרצפה.\n\nתרגיש את המשקל של הגוף שלך על הכיסא.",
     },
     durationMs: 14_000,
@@ -549,8 +549,8 @@ const CALMING_PROTOCOL: CalmingProtocolStep[] = [
       {
         count: 1,
         prompt: {
-          en: "Notice 1 texture\nyou can touch —\nyour clothing,\nthe surface near you.",
-          he: "שים לב למרקם אחד\nשאתה יכול לגעת בו —\nהבגד שלך,\nהמשטח שלידך.",
+          en: "Notice 1 texture\nyou can touch:\nyour clothing,\nthe surface near you.",
+          he: "שים לב למרקם אחד\nשאתה יכול לגעת בו:\nהבגד שלך,\nהמשטח שלידך.",
         },
         durationMs: 9_000,
       },

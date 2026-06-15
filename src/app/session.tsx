@@ -7,8 +7,6 @@ import { useTranslation } from "react-i18next";
 import { BreathingCircle } from "@/components/features/session/BreathingCircle";
 import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
 import { Icon } from "@/components/common/Icon";
-import { IntensitySlider } from "@/components/features/session/IntensitySlider";
-import { PulseTicker } from "@/components/features/session/PulseTicker";
 import { SceneBackground } from "@/components/features/session/SceneBackground";
 import { VoiceLine } from "@/components/features/session/VoiceLine";
 import { useSessionStore } from "@/lib/storage/session-store";
@@ -31,6 +29,12 @@ const AMBIENT_FADE_IN_MS = 2 * 60 * 1000; // 2 minutes
 
 // Total ADAPTIVE_LOOP duration.
 const ADAPTIVE_LOOP_MS = 8 * 60 * 1000; // 8 minutes
+
+// Used by the in-session progress bar (elapsed / TOTAL_SESSION_MS).
+// WIND_DOWN is a few seconds and not user-facing, so we don't include it
+// in the progress bar — by the time the bar would visually fill the last
+// 1%, the session has already routed to /after.
+const TOTAL_SESSION_MS = AMBIENT_FADE_IN_MS + ADAPTIVE_LOOP_MS;
 
 // dB gain ceiling per trigger sound type (applied at slider=1.0).
 // 0 dB = gain 1.0 = play at recorded level. Negative values attenuate.
@@ -99,12 +103,6 @@ function sessionReducer(state: MachineState, action: Action): MachineState {
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
-function formatElapsed(ms: number) {
-  const total = Math.floor(ms / 1000);
-  const minutes = Math.floor(total / 60);
-  const seconds = total % 60;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-}
 
 // ── Component ─────────────────────────────────────────────────────────────
 
@@ -129,7 +127,6 @@ export default function Session() {
   // ── UI state ───────────────────────────────────────────────────────────
 
   const [elapsed, setElapsed] = useState(0);
-  const [ceiling, setCeiling] = useState(0.65);
   // POST_SESSION: show feedback form before routing to After.
   const [showingFeedback, setShowingFeedback] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
@@ -142,8 +139,9 @@ export default function Session() {
   const pausedSince = useRef<number | null>(null);
   const manualReturnTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const manualCountdownInterval = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Stores the dB ceiling for the active trigger sound so the intensity slider
-  // can compute the correct peak gain without re-running the ADAPTIVE_LOOP effect.
+  // Stores the dB ceiling for the active trigger sound. The slider used to
+  // multiply this; now that the slider is gone, the ceiling is the literal
+  // playback gain and no per-frame adjustment is needed.
   const triggerCeilingDbRef = useRef<number>(DEFAULT_CEILING_DB);
   // Picked once at mount so LOADING (manifest) and DISCLAIMER (buffer load) use the same variation.
   const selectedAmbientTrack = useRef(getAmbientTrack(scene));
@@ -319,7 +317,7 @@ export default function Session() {
           burstDurationMs: TRIGGER_BURST_DURATION_MS,
           fadeInMs: TRIGGER_FADE_IN_MS,
           fadeOutMs: TRIGGER_FADE_OUT_MS,
-          peakGain: dBToGain(ceilingDb) * ceiling,
+          peakGain: dBToGain(ceilingDb),
         });
         timerId = setTimeout(() => {
           if (machineStateRef.current === "ADAPTIVE_LOOP") {
@@ -344,9 +342,6 @@ export default function Session() {
       cancelled = true;
       clearTimeout(timerId);
     };
-  // ceiling intentionally excluded — setTriggerPeakGain effect handles live updates.
-  // Including it would restart the scheduler (and reload the source node) on every slider move.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [machineState, consentedSounds, engine]);
 
   // MID_SESSION voice clip at 50% elapsed.
@@ -407,12 +402,6 @@ export default function Session() {
     setShowingFeedback(false);
     router.push("/after");
   }, [router]);
-
-  // ── Intensity slider → engine peak gain ───────────────────────────────
-
-  useEffect(() => {
-    engine.setTriggerPeakGain(dBToGain(triggerCeilingDbRef.current) * ceiling);
-  }, [ceiling, engine]);
 
   // ── Crisis sheet pause/resume ─────────────────────────────────────────
 
@@ -541,9 +530,10 @@ export default function Session() {
       <SafeAreaView className="flex-1">
         <View className="flex-1 px-7">
 
-          {/* Header */}
+          {/* Header — nav element (close) on the leading edge so it reads
+              correctly across both reading directions: LEFT in LTR English,
+              RIGHT in RTL Hebrew (auto-flipped via I18nManager). */}
           <View className="flex-row justify-between items-center pt-2">
-            <CrisisAffordance tone="on-scene" />
             <Pressable
               hitSlop={16}
               onPress={() => {
@@ -553,6 +543,7 @@ export default function Session() {
             >
               <Icon name="close" size={20} color={tokens.sceneText} />
             </Pressable>
+            <CrisisAffordance tone="on-scene" />
           </View>
 
           {/* Watch status banner */}
@@ -616,17 +607,30 @@ export default function Session() {
             </View>
           )}
 
-          {/* Intensity slider */}
-          <View className="pb-2">
-            <IntensitySlider value={ceiling} effective={ceiling} onChange={setCeiling} />
-          </View>
-
-          {/* Elapsed time */}
+          {/* Session progress — thin horizontal bar across the bottom,
+              fills left-to-right as session elapses. Replaces the previous
+              `m:ss` text + hairline. Per UI QA: no numeric countdown, no
+              percentage label — just a visual position along the arc. */}
           <View className="pt-6">
-            <View style={{ height: 1, backgroundColor: tokens.sceneText, opacity: 0.25, width: "70%" }} />
-            <Text style={{ color: tokens.sceneText, fontFamily: fonts.body, fontSize: 13, marginTop: 8, opacity: 0.6 }}>
-              {formatElapsed(elapsed)}
-            </Text>
+            <View
+              style={{
+                height: 2,
+                backgroundColor: tokens.sceneText,
+                opacity: 0.2,
+                width: "100%",
+                borderRadius: 1,
+                overflow: "hidden",
+              }}
+            >
+              <View
+                style={{
+                  height: "100%",
+                  width: `${Math.min(100, (elapsed / TOTAL_SESSION_MS) * 100)}%`,
+                  backgroundColor: tokens.sceneText,
+                  opacity: 1,
+                }}
+              />
+            </View>
           </View>
 
           {/* "I need a moment" — calming-protocol entry. Visible only after
@@ -648,9 +652,10 @@ export default function Session() {
             </View>
           )}
 
-          {/* Bottom row */}
-          <View className="flex-row justify-between items-center pt-4 pb-6">
-            <PulseTicker value={pulseBpm} />
+          {/* Bottom row — pulse metric removed per UI QA. Pulse is still
+              read internally to drive auto-attenuate behavior, but no
+              longer displayed to the user. */}
+          <View className="flex-row justify-end items-center pt-4 pb-6">
             <Pressable
               hitSlop={12}
               onPress={() => {

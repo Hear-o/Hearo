@@ -1,5 +1,4 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
-import { TextInput } from "react-native";
 
 import { PostSessionFeedback } from "@/components/features/post-session";
 
@@ -26,7 +25,7 @@ describe("PostSessionFeedback", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it("submits selected answers after the final optional text step", () => {
+  it("submits selected answers after the final required step", () => {
     const onSubmit = jest.fn();
 
     render(<PostSessionFeedback onSubmit={onSubmit} onSkip={() => {}} />);
@@ -38,19 +37,12 @@ describe("PostSessionFeedback", () => {
     fireEvent.press(screen.getByText("Next"));
 
     fireEvent.press(screen.getByText("About the same"));
-    fireEvent.press(screen.getByText("Next"));
-
-    fireEvent.changeText(
-      screen.UNSAFE_getByType(TextInput),
-      "Keep the next one softer",
-    );
     fireEvent.press(screen.getByText("Done"));
 
     expect(onSubmit).toHaveBeenCalledWith({
       difficulty: 3,
       triggerImpact: "a-little",
       moodChange: "same",
-      openText: "Keep the next one softer",
     });
   });
 });

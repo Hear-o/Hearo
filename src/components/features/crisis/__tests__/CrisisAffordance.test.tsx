@@ -1,5 +1,14 @@
 import { render, screen, fireEvent } from "@testing-library/react-native";
 
+// The asset mapper maps every *.svg to assetMock.js (which exports the number 1
+// for image-asset use). The SVG path goes through the Icon component now, which
+// renders the imported module as a React component — so for this test we need
+// assetMock to be a prop-forwarding View instead. Mirrors Icon.test.tsx.
+jest.mock("../../../../../test/assetMock.js", () => {
+  const { View } = require("react-native");
+  return (props: object) => <View testID="icon-svg" {...props} />;
+});
+
 import { CrisisAffordance } from "../CrisisAffordance";
 import { useCrisisStore } from "@/lib/storage/crisis-store";
 
@@ -20,12 +29,14 @@ describe("CrisisAffordance", () => {
 
   it("renders the default on-bg tone without throwing", () => {
     expect(() => render(<CrisisAffordance />)).not.toThrow();
-    expect(screen.getByText("i")).toBeTruthy();
+    // The labelled button is the safety contract; the visual is an SVG icon
+    // now, not a Text glyph, so we assert role + label instead of inner text.
+    expect(screen.getByRole("button")).toBeTruthy();
   });
 
   it("renders the on-scene tone without throwing", () => {
     expect(() => render(<CrisisAffordance tone="on-scene" />)).not.toThrow();
-    expect(screen.getByText("i")).toBeTruthy();
+    expect(screen.getByRole("button")).toBeTruthy();
   });
 
   it("exposes a labelled button to assistive tech", () => {

@@ -31,10 +31,16 @@ The protocol SHALL run five steps in this exact order, with no skip-step afforda
 - **THEN** the five steps render in order, each advancing automatically when its duration elapses
 - **AND** the total elapsed time is approximately 80–100 seconds
 
-#### Scenario: No mid-flow exit
-- **WHEN** the user is mid-protocol
-- **THEN** there is no `×` button or skip affordance to leave the protocol mid-flow
-- **AND** the only escape hatch is the always-present crisis affordance, which overlays the protocol without canceling it
+#### Scenario: User-controlled exit
+- **WHEN** the user is mid-protocol and taps the close affordance
+- **THEN** the app navigates to `/home` via `replace`
+- **AND** no session-end is recorded (the user did not finish the protocol)
+- **AND** the always-present crisis affordance remains available as an overlay that does not cancel the protocol
+
+#### Scenario: Swipe-to-advance
+- **WHEN** the user is on any step and performs a horizontal pan of at least 60px
+- **THEN** the protocol advances to the next step immediately, regardless of remaining timer
+- **AND** if the swipe occurs on the final step, the protocol completes via the same path as natural completion
 
 ### Requirement: Box-breathing animation
 The box-breathing step SHALL animate a circle that visually pulls the breath cycle: expand on inhale, hold at full, shrink on exhale, hold at empty.

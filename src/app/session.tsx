@@ -30,6 +30,12 @@ const AMBIENT_FADE_IN_MS = 2 * 60 * 1000; // 2 minutes
 // Total ADAPTIVE_LOOP duration.
 const ADAPTIVE_LOOP_MS = 8 * 60 * 1000; // 8 minutes
 
+// Used by the in-session progress bar (elapsed / TOTAL_SESSION_MS).
+// WIND_DOWN is a few seconds and not user-facing, so we don't include it
+// in the progress bar — by the time the bar would visually fill the last
+// 1%, the session has already routed to /after.
+const TOTAL_SESSION_MS = AMBIENT_FADE_IN_MS + ADAPTIVE_LOOP_MS;
+
 // dB gain ceiling per trigger sound type (applied at slider=1.0).
 // 0 dB = gain 1.0 = play at recorded level. Negative values attenuate.
 // TODO(supabase): calibrate per sound key once clinical review is complete.
@@ -97,12 +103,6 @@ function sessionReducer(state: MachineState, action: Action): MachineState {
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
-function formatElapsed(ms: number) {
-  const total = Math.floor(ms / 1000);
-  const minutes = Math.floor(total / 60);
-  const seconds = total % 60;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-}
 
 // ── Component ─────────────────────────────────────────────────────────────
 
@@ -607,12 +607,30 @@ export default function Session() {
             </View>
           )}
 
-          {/* Elapsed time */}
+          {/* Session progress — thin horizontal bar across the bottom,
+              fills left-to-right as session elapses. Replaces the previous
+              `m:ss` text + hairline. Per UI QA: no numeric countdown, no
+              percentage label — just a visual position along the arc. */}
           <View className="pt-6">
-            <View style={{ height: 1, backgroundColor: tokens.sceneText, opacity: 0.25, width: "70%" }} />
-            <Text style={{ color: tokens.sceneText, fontFamily: fonts.body, fontSize: 13, marginTop: 8, opacity: 0.6 }}>
-              {formatElapsed(elapsed)}
-            </Text>
+            <View
+              style={{
+                height: 2,
+                backgroundColor: tokens.sceneText,
+                opacity: 0.2,
+                width: "100%",
+                borderRadius: 1,
+                overflow: "hidden",
+              }}
+            >
+              <View
+                style={{
+                  height: "100%",
+                  width: `${Math.min(100, (elapsed / TOTAL_SESSION_MS) * 100)}%`,
+                  backgroundColor: tokens.sceneText,
+                  opacity: 1,
+                }}
+              />
+            </View>
           </View>
 
           {/* "I need a moment" — calming-protocol entry. Visible only after

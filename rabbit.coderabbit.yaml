@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit Configuration File - Chill & Concise
+
+reviews:
+  profile: "chill"  # Gentle review style that focuses on major issues and avoids nitpicking
+  high_level_summary: true
+  auto_review:
+    enabled: true
+    drafts: false       # Skip reviewing draft PRs by default
+
+  # Instructions ensuring comments are clean, straight to the point, and non-intrusive
+  instructions: |
+    Provide concise, clean, and constructive feedback. 
+    Focus only on high-value findings such as critical bugs, security vulnerabilities, or major performance bottlenecks.
+    Avoid minor style nitpicks or over-commenting. Keep all review comments short, clear, and actionable.
+
+  # Filters to prevent noise from generated files and lockfiles
+  path_filters:
+    - "!node_modules/**"
+    - "!dist/**"
+    - "!.expo/**"
+    - "!ios/build/**"
+    - "!android/build/**"
+    - "!web-build/**"
+    - "!yarn.lock"
+    - "!package-lock.json"
+    - "!pnpm-lock.yaml"
+
+chat:
+  auto_reply: true  # Interactive chat remains enabled for when you want to ask questions

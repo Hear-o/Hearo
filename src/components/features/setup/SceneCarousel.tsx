@@ -27,13 +27,28 @@ export function SceneCarousel({ value, onChange, lang }: Props) {
   return (
     <View>
       <Carousel
-        width={CARD_WIDTH + 24}
-        height={CARD_HEIGHT + 8}
+        // Item width matches the viewport. The visual "peek" of neighboring
+        // cards comes from the parallax modeConfig below, not from sizing.
+        // Carousel viewport = full screen, so the snapped item is dead-center.
+        width={SCREEN_WIDTH}
+        height={CARD_HEIGHT + 16}
         data={SCENES}
-        loop={false}
+        // #3: infinite loop — swiping past the last scene wraps to the first
+        // (and vice versa). react-native-reanimated-carousel handles the
+        // wrap natively; just opting in.
+        loop={true}
         defaultIndex={initialIndex}
         onSnapToItem={(index) => onChange(SCENES[index].key)}
         style={{ width: SCREEN_WIDTH, alignSelf: "center" }}
+        // #4: parallax mode scales adjacent items down and offsets them so
+        // the active card reads as the focal point, with neighbors visibly
+        // peeking on both sides. Fixes the "not well centered" feel from
+        // the previous straight-snap layout.
+        mode="parallax"
+        modeConfig={{
+          parallaxScrollingScale: 0.86,
+          parallaxScrollingOffset: SCREEN_WIDTH - CARD_WIDTH - 28,
+        }}
         renderItem={({ item }) => <SceneCard scene={item} lang={lang} />}
       />
       <Dots count={SCENES.length} currentKey={value} />

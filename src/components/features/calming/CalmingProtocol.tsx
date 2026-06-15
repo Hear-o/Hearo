@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Text, View } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useTranslation } from "react-i18next";
 
 import { BoxBreathingTimer } from "./BoxBreathingTimer";
@@ -10,6 +11,10 @@ import {
   localize,
 } from "@/lib/content/content";
 import { fonts, tokens } from "@/lib/ui/tokens";
+
+/** Horizontal pan distance that counts as a swipe-to-advance. Same
+ *  threshold as the Home swipe-to-begin so the gesture feels consistent. */
+const SWIPE_THRESHOLD_PX = 60;
 
 type Props = {
   /** Called when the protocol's final step completes. */
@@ -22,8 +27,8 @@ type Props = {
 /** Orchestrates the 5-step calming protocol. Each step renders to its own
  *  component (BoxBreathingTimer, SensoryGroundingStep) or to a plain text
  *  fade for the prose-only steps (validation/body/close). When the current
- *  step's onComplete fires, advance to the next; when there's no next, call
- *  `onProtocolEnd`. */
+ *  step's onComplete fires (timer OR swipe), advance to the next; when
+ *  there's no next, call `onProtocolEnd`. */
 export function CalmingProtocol({ onProtocolEnd, steps }: Props) {
   const protocol = steps ?? getCalmingProtocol();
   const [index, setIndex] = useState(0);
@@ -38,19 +43,33 @@ export function CalmingProtocol({ onProtocolEnd, steps }: Props) {
     }
   }
 
+  // Swipe-to-advance: a horizontal pan past SWIPE_THRESHOLD_PX skips ahead
+  // to the next step, same effect as the per-step timer firing. Direction-
+  // agnostic for LTR/RTL parity.
+  const swipeGesture = Gesture.Pan()
+    .minDistance(SWIPE_THRESHOLD_PX)
+    .onEnd((event) => {
+      if (Math.abs(event.translationX) >= SWIPE_THRESHOLD_PX) {
+        advance();
+      }
+    })
+    .runOnJS(true);
+
   const step = protocol[index];
   if (!step) return null;
 
   return (
-    <View className="flex-1">
-      <ProgressDots total={protocol.length} index={index} />
-      <View className="flex-1 px-8 pb-8">
-        {/* `key` forces unmount + remount when the step changes — without
-            it, two consecutive prose steps with identical `durationMs`
-            would reuse the same React instance and not reset the timer. */}
-        <StepBody key={index} step={step} onComplete={advance} />
+    <GestureDetector gesture={swipeGesture}>
+      <View className="flex-1">
+        <ProgressDots total={protocol.length} index={index} />
+        <View className="flex-1 px-8 pb-8">
+          {/* `key` forces unmount + remount when the step changes — without
+              it, two consecutive prose steps with identical `durationMs`
+              would reuse the same React instance and not reset the timer. */}
+          <StepBody key={index} step={step} onComplete={advance} />
+        </View>
       </View>
-    </View>
+    </GestureDetector>
   );
 }
 

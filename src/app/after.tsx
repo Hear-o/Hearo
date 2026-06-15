@@ -21,7 +21,7 @@ export default function After() {
   const router = useRouter();
   const { t } = useTranslation();
 
-  return (
+  return ( 
     <SafeAreaView className="flex-1 bg-bg">
       <View className="flex-1 px-8">
         <View className="pt-2 flex-row justify-end">

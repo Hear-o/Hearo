@@ -22,14 +22,10 @@ workflows:
     triggering:
       events:
         - push
-        - tag
       branch_patterns:
         - pattern: main
           include: true
           source: true
-      tag_patterns:
-        - pattern: "ios-v*"
-          include: true
       cancel_previous_builds: true
 
     cache:

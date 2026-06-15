@@ -541,9 +541,10 @@ export default function Session() {
       <SafeAreaView className="flex-1">
         <View className="flex-1 px-7">
 
-          {/* Header */}
+          {/* Header — nav element (close) on the leading edge so it reads
+              correctly across both reading directions: LEFT in LTR English,
+              RIGHT in RTL Hebrew (auto-flipped via I18nManager). */}
           <View className="flex-row justify-between items-center pt-2">
-            <CrisisAffordance tone="on-scene" />
             <Pressable
               hitSlop={16}
               onPress={() => {
@@ -553,6 +554,7 @@ export default function Session() {
             >
               <Icon name="close" size={20} color={tokens.sceneText} />
             </Pressable>
+            <CrisisAffordance tone="on-scene" />
           </View>
 
           {/* Watch status banner */}

@@ -30,11 +30,14 @@ export default function Home() {
   return (
     <SafeAreaView className="flex-1 bg-bg">
       <View className="flex-1 px-8">
+        {/* Layout: nav element first in JSX so flex-row puts it on the
+            leading edge — LEFT in LTR English, RIGHT in RTL Hebrew (auto-
+            flipped by I18nManager.forceRTL). Crisis takes the trailing edge. */}
         <View className="flex-row justify-between items-center pt-2">
-          <CrisisAffordance />
           <Pressable hitSlop={16} onPress={() => router.push("/setup")}>
             <Icon name="menu" size={22} color={tokens.text} />
           </Pressable>
+          <CrisisAffordance />
         </View>
 
         <View className="pt-10">

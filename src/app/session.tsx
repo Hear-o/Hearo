@@ -7,7 +7,6 @@ import { useTranslation } from "react-i18next";
 import { BreathingCircle } from "@/components/features/session/BreathingCircle";
 import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
 import { Icon } from "@/components/common/Icon";
-import { IntensitySlider } from "@/components/features/session/IntensitySlider";
 import { PulseTicker } from "@/components/features/session/PulseTicker";
 import { SceneBackground } from "@/components/features/session/SceneBackground";
 import { VoiceLine } from "@/components/features/session/VoiceLine";
@@ -129,7 +128,6 @@ export default function Session() {
   // ── UI state ───────────────────────────────────────────────────────────
 
   const [elapsed, setElapsed] = useState(0);
-  const [ceiling, setCeiling] = useState(0.65);
   // POST_SESSION: show feedback form before routing to After.
   const [showingFeedback, setShowingFeedback] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
@@ -142,8 +140,9 @@ export default function Session() {
   const pausedSince = useRef<number | null>(null);
   const manualReturnTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const manualCountdownInterval = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Stores the dB ceiling for the active trigger sound so the intensity slider
-  // can compute the correct peak gain without re-running the ADAPTIVE_LOOP effect.
+  // Stores the dB ceiling for the active trigger sound. The slider used to
+  // multiply this; now that the slider is gone, the ceiling is the literal
+  // playback gain and no per-frame adjustment is needed.
   const triggerCeilingDbRef = useRef<number>(DEFAULT_CEILING_DB);
   // Picked once at mount so LOADING (manifest) and DISCLAIMER (buffer load) use the same variation.
   const selectedAmbientTrack = useRef(getAmbientTrack(scene));
@@ -319,7 +318,7 @@ export default function Session() {
           burstDurationMs: TRIGGER_BURST_DURATION_MS,
           fadeInMs: TRIGGER_FADE_IN_MS,
           fadeOutMs: TRIGGER_FADE_OUT_MS,
-          peakGain: dBToGain(ceilingDb) * ceiling,
+          peakGain: dBToGain(ceilingDb),
         });
         timerId = setTimeout(() => {
           if (machineStateRef.current === "ADAPTIVE_LOOP") {
@@ -344,9 +343,6 @@ export default function Session() {
       cancelled = true;
       clearTimeout(timerId);
     };
-  // ceiling intentionally excluded — setTriggerPeakGain effect handles live updates.
-  // Including it would restart the scheduler (and reload the source node) on every slider move.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [machineState, consentedSounds, engine]);
 
   // MID_SESSION voice clip at 50% elapsed.
@@ -407,12 +403,6 @@ export default function Session() {
     setShowingFeedback(false);
     router.push("/after");
   }, [router]);
-
-  // ── Intensity slider → engine peak gain ───────────────────────────────
-
-  useEffect(() => {
-    engine.setTriggerPeakGain(dBToGain(triggerCeilingDbRef.current) * ceiling);
-  }, [ceiling, engine]);
 
   // ── Crisis sheet pause/resume ─────────────────────────────────────────
 
@@ -617,11 +607,6 @@ export default function Session() {
               </Pressable>
             </View>
           )}
-
-          {/* Intensity slider */}
-          <View className="pb-2">
-            <IntensitySlider value={ceiling} effective={ceiling} onChange={setCeiling} />
-          </View>
 
           {/* Elapsed time */}
           <View className="pt-6">

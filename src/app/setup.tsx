@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { GestureDetector } from "react-native-gesture-handler";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -9,7 +8,6 @@ import { useTranslation } from "react-i18next";
 import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
 import { Icon } from "@/components/common/Icon";
 import { SceneCarousel } from "@/components/features/setup/SceneCarousel";
-import { useSwipeForward } from "@/hooks/useSwipeForward";
 import { getSounds, localize } from "@/lib/content/content";
 import { useSessionStore } from "@/lib/storage/session-store";
 import {
@@ -74,19 +72,50 @@ export default function Setup() {
   // saves or the user turns it off.
   const [reminder, setReminder] = useState<ReminderSchedule | null>(null);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  // iOS spinner emits onChange continuously while the wheel moves. Stage
+  // the value here and commit on an explicit Done press, so editing the
+  // time is multi-step. Android's default picker emits once on Set, so
+  // the staging step short-circuits and we commit immediately.
+  const [pendingTime, setPendingTime] = useState<Date | null>(null);
   useEffect(() => {
     void getSchedule().then(setReminder);
   }, []);
 
-  async function handleReminderChange(_event: DateTimePickerEvent, date?: Date) {
-    // Close the picker first regardless of platform or whether the user
-    // actually picked a time — on iOS a cancelled picker (date===undefined)
-    // would otherwise stay mounted and block the screen.
-    setShowTimePicker(false);
-    if (!date) return;
+  async function commitTime(date: Date) {
     const next: ReminderSchedule = { hour: date.getHours(), minute: date.getMinutes() };
     await setSchedule(next);
     setReminder(next);
+  }
+
+  async function handleReminderChange(event: DateTimePickerEvent, date?: Date) {
+    if (Platform.OS === "android") {
+      // The Android modal closes itself; if the user cancelled, date is
+      // undefined and we just drop the picker. Otherwise commit + close.
+      setShowTimePicker(false);
+      if (event.type === "dismissed" || !date) return;
+      await commitTime(date);
+      return;
+    }
+    // iOS spinner: keep the picker open while the wheel turns; just stage
+    // the value. Cancelled events on iOS arrive as type="dismissed".
+    if (event.type === "dismissed") {
+      setShowTimePicker(false);
+      setPendingTime(null);
+      return;
+    }
+    if (date) setPendingTime(date);
+  }
+
+  async function handleReminderDone() {
+    const date = pendingTime ?? defaultPickerValue();
+    setShowTimePicker(false);
+    setPendingTime(null);
+    await commitTime(date);
+  }
+
+  function handleReminderCancel() {
+    setShowTimePicker(false);
+    setPendingTime(null);
   }
 
   async function handleReminderTurnOff() {
@@ -94,15 +123,27 @@ export default function Setup() {
     setReminder(null);
   }
 
+  function defaultPickerValue() {
+    if (reminder) {
+      const d = new Date();
+      d.setHours(reminder.hour, reminder.minute, 0, 0);
+      return d;
+    }
+    return new Date();
+  }
+
   const handleReady = () => {
     if (sounds.length === 0) return;
     router.push("/home");
   };
-  const swipeGesture = useSwipeForward(handleReady);
 
   return (
     <SafeAreaView className="flex-1 bg-bg">
-      <GestureDetector gesture={swipeGesture}>
+      {/* Setup is a form with a horizontal scene carousel, scrollable
+          checkboxes, a text input, and a time picker. A screen-level
+          swipe-forward GestureDetector here would collide with the
+          carousel's pan recognizer — see #58 review. Users tap "Ready"
+          (or swipe forward from /home once they reach it) instead. */}
       <ScrollView
         contentContainerStyle={{ paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
@@ -294,20 +335,32 @@ export default function Setup() {
           </View>
 
           {showTimePicker ? (
-            <DateTimePicker
-              value={
-                reminder
-                  ? (() => {
-                      const d = new Date();
-                      d.setHours(reminder.hour, reminder.minute, 0, 0);
-                      return d;
-                    })()
-                  : new Date()
-              }
-              mode="time"
-              display={Platform.OS === "ios" ? "spinner" : "default"}
-              onChange={handleReminderChange}
-            />
+            <View style={{ marginTop: 12 }}>
+              <DateTimePicker
+                value={pendingTime ?? defaultPickerValue()}
+                mode="time"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                onChange={handleReminderChange}
+              />
+              {/* iOS spinner has no built-in confirm button. We stage the
+                  pending value in state and commit on Done; Cancel discards
+                  whatever the wheel is currently showing. Android renders
+                  a modal that confirms itself, so we hide these buttons. */}
+              {Platform.OS === "ios" ? (
+                <View style={{ flexDirection: "row", gap: 24, marginTop: 8 }}>
+                  <Pressable onPress={handleReminderDone} hitSlop={8}>
+                    <Text style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 15 }}>
+                      {t("reminders.done")}
+                    </Text>
+                  </Pressable>
+                  <Pressable onPress={handleReminderCancel} hitSlop={8}>
+                    <Text style={{ color: tokens.textMute, fontFamily: fonts.body, fontSize: 15 }}>
+                      {t("reminders.cancel")}
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : null}
+            </View>
           ) : null}
         </View>
 
@@ -348,7 +401,6 @@ export default function Setup() {
           </Pressable>
         </View>
       </ScrollView>
-      </GestureDetector>
     </SafeAreaView>
   );
 }

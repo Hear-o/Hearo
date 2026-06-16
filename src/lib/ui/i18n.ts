@@ -32,6 +32,8 @@ const resources = {
         notSet: "Off",
         change: "Change time",
         turnOff: "Turn off",
+        done: "Done",
+        cancel: "Cancel",
       },
       setup: {
         nameQuestion: "What should\nwe call you?",
@@ -149,6 +151,8 @@ const resources = {
         notSet: "כבויה",
         change: "שנה שעה",
         turnOff: "כבה",
+        done: "סיום",
+        cancel: "ביטול",
       },
       setup: {
         nameQuestion: "איך תרצה\nשנקרא לך?",

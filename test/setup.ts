@@ -26,6 +26,18 @@ jest.mock("expo-localization", () => ({
   getLocales: jest.fn(() => [{ languageCode: "en" }]),
 }));
 
+// useFocusEffect needs a navigation context to subscribe to focus events.
+// Logic-layer hooks (e.g. useDisplayName) that call it would fail in
+// renderHook tests otherwise. No-op the focus callback in tests — the
+// primary useEffect still runs and that's what the assertions assert.
+jest.mock("expo-router", () => {
+  const actual = jest.requireActual("expo-router");
+  return {
+    ...actual,
+    useFocusEffect: (_cb: unknown) => {},
+  };
+});
+
 // Initialize i18n once so useTranslation() resolves real keys. The mocked
 // device locale starts in English; keep it pinned there for copy assertions.
 import i18n from "@/lib/ui/i18n";

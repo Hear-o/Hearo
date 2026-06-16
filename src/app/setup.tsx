@@ -1,4 +1,5 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -8,6 +9,7 @@ import { Icon } from "@/components/common/Icon";
 import { SceneCarousel } from "@/components/features/setup/SceneCarousel";
 import { getSounds, localize } from "@/lib/content/content";
 import { useSessionStore } from "@/lib/storage/session-store";
+import { persistDisplayName, useDisplayName } from "@/lib/ui/displayName";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 const SOUNDS = getSounds();
@@ -38,6 +40,21 @@ export default function Setup() {
   const { t, i18n } = useTranslation();
   const { scene, sounds, setScene, toggleSound } = useSessionStore();
 
+  // Name input — stored to displayName storage; Home reads it via
+  // useDisplayName() and refreshes on focus when the user returns.
+  const { name: storedName } = useDisplayName();
+  const [nameDraft, setNameDraft] = useState<string>(storedName ?? "");
+  useEffect(() => {
+    if (storedName !== null && storedName !== undefined && nameDraft === "") {
+      setNameDraft(storedName);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storedName]);
+
+  function handleNameBlur() {
+    void persistDisplayName(nameDraft);
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-bg">
       <ScrollView
@@ -55,6 +72,58 @@ export default function Setup() {
 
         <View className="px-8 pt-6">
           <View style={{ width: 28, height: 1, backgroundColor: tokens.accent }} />
+        </View>
+
+        {/* Name input — persisted on blur. Empty / whitespace clears the
+            stored name so the no-name greeting fallback kicks in. */}
+        <Text
+          style={{
+            color: tokens.text,
+            fontFamily: fonts.display,
+            fontSize: 28,
+            lineHeight: 38,
+            marginTop: 24,
+            marginBottom: 16,
+            paddingHorizontal: 32,
+          }}
+        >
+          {t("setup.nameQuestion")}
+        </Text>
+        <View style={{ paddingHorizontal: 32, marginBottom: 8 }}>
+          <TextInput
+            value={nameDraft}
+            onChangeText={setNameDraft}
+            onBlur={handleNameBlur}
+            placeholder={t("setup.namePlaceholder")}
+            placeholderTextColor={tokens.textMute + "88"}
+            autoCapitalize="words"
+            autoCorrect={false}
+            returnKeyType="done"
+            onSubmitEditing={handleNameBlur}
+            style={{
+              color: tokens.text,
+              fontFamily: fonts.body,
+              fontSize: 18,
+              borderBottomWidth: 1,
+              borderBottomColor: tokens.textMute + "55",
+              paddingVertical: 8,
+            }}
+          />
+          <Text
+            style={{
+              color: tokens.textMute,
+              fontFamily: fonts.body,
+              fontSize: 13,
+              lineHeight: 18,
+              marginTop: 6,
+            }}
+          >
+            {t("setup.nameHint")}
+          </Text>
+        </View>
+
+        <View className="px-8 pt-8">
+          <View style={{ width: 28, height: 1, backgroundColor: tokens.textMute, opacity: 0.5 }} />
         </View>
 
         <Text

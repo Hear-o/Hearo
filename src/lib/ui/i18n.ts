@@ -29,6 +29,9 @@ const resources = {
         enableInSettings: "Enable in Settings",
       },
       setup: {
+        nameQuestion: "What should\nwe call you?",
+        namePlaceholder: "Your name",
+        nameHint: "Used in the greeting on the home screen. Optional.",
         sceneQuestion: "Where would you\nlike to be?",
         soundsQuestion: "Which sounds are\nyou ready to hear?",
         soundsHint: "Pick what feels true. You can change this anytime.",
@@ -138,6 +141,9 @@ const resources = {
         enableInSettings: "הפעל בהגדרות",
       },
       setup: {
+        nameQuestion: "איך תרצה\nשנקרא לך?",
+        namePlaceholder: "השם שלך",
+        nameHint: "מופיע בברכה במסך הבית. אופציונלי.",
         sceneQuestion: "איפה תרצה\nלהיות?",
         soundsQuestion: "אילו צלילים אתה\nמוכן לשמוע?",
         soundsHint: "בחר את מה שמרגיש נכון. תוכל לשנות זאת בכל עת.",

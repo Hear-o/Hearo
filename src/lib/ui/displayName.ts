@@ -9,8 +9,9 @@
 // AsyncStorage so we don't retry every render. The cached value survives
 // even if the OS later restricts access to the device name.
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import * as Device from "expo-device";
+import { useFocusEffect } from "expo-router";
 
 import { getDisplayName, setDisplayName } from "../storage/storage";
 
@@ -67,11 +68,14 @@ export async function resolveDisplayName(): Promise<string | null> {
   return parsed;
 }
 
-/** React hook. Returns null while loading; then string-or-null once resolved. */
+/** React hook. Returns null while loading; then string-or-null once resolved.
+ *  Re-reads on screen focus so a name typed in Setup shows up immediately
+ *  on Home when the user navigates back. */
 export function useDisplayName(): { name: string | null; loading: boolean } {
   const [name, setName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Initial load on mount.
   useEffect(() => {
     let active = true;
     resolveDisplayName().then((resolved) => {
@@ -84,5 +88,30 @@ export function useDisplayName(): { name: string | null; loading: boolean } {
     };
   }, []);
 
+  // Re-read on focus. After the user types a name in Setup and navigates
+  // back to Home, this callback fires and we pick up the new stored value.
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      // Bypass the device-name parse on refresh — only the stored value can
+      // have changed between renders (the OS device name doesn't mutate).
+      getDisplayName().then((stored) => {
+        if (!active) return;
+        if (stored !== undefined) setName(stored);
+      });
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
+
   return { name, loading };
+}
+
+/** Async setter exposed for Setup's name input. Persists the typed value
+ *  and overrides any device-name parse result. Pass an empty string or
+ *  null to clear the stored name (greeting falls back to the no-name form). */
+export async function persistDisplayName(name: string | null): Promise<void> {
+  const trimmed = name?.trim() ?? null;
+  await setDisplayName(trimmed && trimmed.length > 0 ? trimmed : null);
 }

@@ -110,19 +110,37 @@ describe("content / session audio sources", () => {
     }
   });
 
-  it("keeps voice clip order stable and marks missing recordings as placeholders", () => {
-    const clips = getVoiceClips();
-    expect(clips.map((clip) => clip.key)).toEqual([
-      "disclaimer",
-      "mid-session",
-      "wind-down",
-    ]);
-
-    for (const clip of clips) {
-      expect(clip.label.en.length).toBeGreaterThan(0);
-      expect(clip.label.he.length).toBeGreaterThan(0);
-      expect(isPlaceholderSource(clip.source)).toBe(true);
+  it("returns bundled clips for every scene + language combination in disclaimer/mid/wind-down order", () => {
+    // Both langs across every scene must resolve to a real bundled mp3 —
+    // no placeholders remain after the v1.0.6 narration drop. The order
+    // matches AudioEngine's playVoiceClip(index) contract.
+    for (const scene of SCENE_ORDER) {
+      for (const lang of ["en", "he"] as const) {
+        const clips = getVoiceClips(scene, lang);
+        expect(clips.map((clip) => clip.key)).toEqual([
+          "disclaimer",
+          "mid-session",
+          "wind-down",
+        ]);
+        for (const clip of clips) {
+          expect(clip.label.en.length).toBeGreaterThan(0);
+          expect(clip.label.he.length).toBeGreaterThan(0);
+          expect(isPlaceholderSource(clip.source)).toBe(false);
+          expect(typeof clip.source).toBe("number");
+        }
+      }
     }
+  });
+
+  it("falls back to Hebrew when the i18n locale is a regional / unknown variant", () => {
+    // i18next may hand us "en-US" or some non-en/he tag. We only recorded en
+    // and he, so anything else picks he (the i18n.init fallback).
+    const enUs = getVoiceClips("beach", "en-US");
+    const ru = getVoiceClips("beach", "ru");
+    const heIl = getVoiceClips("beach", "he-IL");
+    expect(enUs[0].source).toBe(getVoiceClips("beach", "en")[0].source);
+    expect(ru[0].source).toBe(getVoiceClips("beach", "he")[0].source);
+    expect(heIl[0].source).toBe(getVoiceClips("beach", "he")[0].source);
   });
 });
 

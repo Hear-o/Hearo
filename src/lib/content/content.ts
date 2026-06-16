@@ -361,8 +361,7 @@ export function getAmbientTrack(scene: SceneKey): AmbientTrack {
 export type VoiceClip = {
   key: "disclaimer" | "mid-session" | "wind-down";
   label: LocalizedText;
-  // TODO(supabase): `voice_clips` table — key, lang, cdn_url, sha256, duration_ms.
-  // Source can be a bundled AudioModule or a CDN URI string (MP3/MP4).
+  // TODO(supabase): `voice_clips` table — key, scene, lang, cdn_url, sha256, duration_ms.
   source: AudioModule | string;
   sha256?: string;
   durationMs?: number;
@@ -370,43 +369,87 @@ export type VoiceClip = {
 
 export type VoiceClipKey = VoiceClip["key"];
 
-// Voice clip order matches the playVoiceClip(index) contract in AudioEngine:
-//   index 0 = DISCLAIMER, index 1 = MID_SESSION, index 2 = WIND_DOWN
-// TODO(asset): replace placeholder sources with actual recordings once
-// approved by the clinical team (Dudi Efrati).
-const VOICE_CLIPS: VoiceClip[] = [
-  {
-    key: "disclaimer",
-    label: {
-      en: "Session intro",
-      he: "פתיח הסשן",
+type VoiceLang = "en" | "he";
+
+// Bundled narration: one (scene, moment, lang) triple → one bundled mp3.
+// File naming convention: assets/sounds/voice/{scene}/{moment}-{lang}.mp3.
+// Index order in the returned array matches AudioEngine's playVoiceClip(index)
+// contract — 0=DISCLAIMER, 1=MID_SESSION, 2=WIND_DOWN — so callers don't have
+// to map keys to indices.
+// TODO(supabase): `voice_clips` table replaces this require() lattice.
+const VOICE_TRACKS: Record<SceneKey, Record<VoiceLang, { intro: AudioModule; mid: AudioModule; end: AudioModule }>> = {
+  beach: {
+    he: {
+      intro: require("@/assets/sounds/voice/beach/intro-he.mp3"),
+      mid: require("@/assets/sounds/voice/beach/mid-he.mp3"),
+      end: require("@/assets/sounds/voice/beach/end-he.mp3"),
     },
-    // TODO(asset): require("@/assets/sounds/voice/disclaimer.mp3") or CDN URI
-    source: "TODO_REPLACE_WITH_DISCLAIMER_ASSET",
-  },
-  {
-    key: "mid-session",
-    label: {
-      en: "Halfway check-in",
-      he: "מחצית הסשן",
+    en: {
+      intro: require("@/assets/sounds/voice/beach/intro-en.mp3"),
+      mid: require("@/assets/sounds/voice/beach/mid-en.mp3"),
+      end: require("@/assets/sounds/voice/beach/end-en.mp3"),
     },
-    // TODO(asset): require("@/assets/sounds/voice/mid-session.mp3") or CDN URI
-    source: "TODO_REPLACE_WITH_MID_SESSION_ASSET",
   },
-  {
-    key: "wind-down",
-    label: {
-      en: "Session close",
-      he: "סיום הסשן",
+  park: {
+    he: {
+      intro: require("@/assets/sounds/voice/park/intro-he.mp3"),
+      mid: require("@/assets/sounds/voice/park/mid-he.mp3"),
+      end: require("@/assets/sounds/voice/park/end-he.mp3"),
     },
-    // TODO(asset): require("@/assets/sounds/voice/wind-down.mp3") or CDN URI
-    source: "TODO_REPLACE_WITH_WIND_DOWN_ASSET",
+    en: {
+      intro: require("@/assets/sounds/voice/park/intro-en.mp3"),
+      mid: require("@/assets/sounds/voice/park/mid-en.mp3"),
+      end: require("@/assets/sounds/voice/park/end-en.mp3"),
+    },
   },
+  cafe: {
+    he: {
+      intro: require("@/assets/sounds/voice/cafe/intro-he.mp3"),
+      mid: require("@/assets/sounds/voice/cafe/mid-he.mp3"),
+      end: require("@/assets/sounds/voice/cafe/end-he.mp3"),
+    },
+    en: {
+      intro: require("@/assets/sounds/voice/cafe/intro-en.mp3"),
+      mid: require("@/assets/sounds/voice/cafe/mid-en.mp3"),
+      end: require("@/assets/sounds/voice/cafe/end-en.mp3"),
+    },
+  },
+  road: {
+    he: {
+      intro: require("@/assets/sounds/voice/road/intro-he.mp3"),
+      mid: require("@/assets/sounds/voice/road/mid-he.mp3"),
+      end: require("@/assets/sounds/voice/road/end-he.mp3"),
+    },
+    en: {
+      intro: require("@/assets/sounds/voice/road/intro-en.mp3"),
+      mid: require("@/assets/sounds/voice/road/mid-en.mp3"),
+      end: require("@/assets/sounds/voice/road/end-en.mp3"),
+    },
+  },
+};
+
+const VOICE_LABELS: { key: VoiceClipKey; label: LocalizedText }[] = [
+  { key: "disclaimer", label: { en: "Session intro", he: "פתיח הסשן" } },
+  { key: "mid-session", label: { en: "Halfway check-in", he: "מחצית הסשן" } },
+  { key: "wind-down", label: { en: "Session close", he: "סיום הסשן" } },
 ];
 
-// TODO(supabase): `supabase.from('voice_clips').select('*').order('sort_order')`
-export function getVoiceClips(): VoiceClip[] {
-  return VOICE_CLIPS;
+// Resolve the lang. i18next gives us either "en" / "he" exactly or a regional
+// variant like "en-US" / "he-IL". We only have two recordings, so anything
+// that's not en/he falls back to he (matches the i18n init default).
+function resolveVoiceLang(lang: string): VoiceLang {
+  return lang.startsWith("en") ? "en" : "he";
+}
+
+// TODO(supabase): `supabase.from('voice_clips').select('*').eq('scene', scene).eq('lang', lang)`
+export function getVoiceClips(scene: SceneKey, lang: string): VoiceClip[] {
+  const voiceLang = resolveVoiceLang(lang);
+  const tracks = VOICE_TRACKS[scene][voiceLang];
+  return [
+    { ...VOICE_LABELS[0], source: tracks.intro },
+    { ...VOICE_LABELS[1], source: tracks.mid },
+    { ...VOICE_LABELS[2], source: tracks.end },
+  ];
 }
 
 // ── Psycho-education ────────────────────────────────────────────────────────

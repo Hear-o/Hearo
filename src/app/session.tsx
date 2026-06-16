@@ -224,7 +224,7 @@ export default function Session() {
     if (machineState !== "LOADING") return;
 
     const ambientTrack = selectedAmbientTrack.current;
-    const voiceClips = getVoiceClips();
+    const voiceClips = getVoiceClips(scene, i18n.language);
 
     // Only include CDN assets (skip placeholders — no network call possible).
     const manifest: AssetManifest = [
@@ -256,7 +256,7 @@ export default function Session() {
     if (machineState !== "DISCLAIMER") return;
 
     const ambientTrack = selectedAmbientTrack.current;
-    const voiceClips = getVoiceClips();
+    const voiceClips = getVoiceClips(scene, i18n.language);
     const disclaimerClip = voiceClips[0];
 
     if (isPlaceholderSource(ambientTrack.source) && isPlaceholderSource(disclaimerClip.source)) {
@@ -358,7 +358,7 @@ export default function Session() {
     const halfMs = ADAPTIVE_LOOP_MS / 2;
     const id = setTimeout(() => {
       midSessionFiredRef.current = true;
-      const voiceClips = getVoiceClips();
+      const voiceClips = getVoiceClips(scene, i18n.language);
       if (!isPlaceholderSource(voiceClips[1].source)) {
         engine.playVoiceClip(1).catch(() => {});
       }
@@ -373,7 +373,7 @@ export default function Session() {
 
     engine.fadeOutAll(3);
 
-    const voiceClips = getVoiceClips();
+    const voiceClips = getVoiceClips(scene, i18n.language);
     const windDownClip = voiceClips[2];
 
     setTimeout(() => {

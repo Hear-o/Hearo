@@ -633,24 +633,26 @@ export default function Session() {
             </View>
           </View>
 
-          {/* "I need a moment" — calming-protocol entry. Visible only after
-              the trigger has played at least once (ADAPTIVE_LOOP / WIND_DOWN),
-              never during AMBIENT_FADE_IN — see calming-protocol spec. */}
-          {(machineState === "ADAPTIVE_LOOP" || machineState === "WIND_DOWN") && (
-            <View style={{ alignItems: "center", paddingBottom: 4 }}>
-              <Pressable
-                hitSlop={12}
-                onPress={() => {
-                  engine.fadeOutAll(0.6);
-                  router.replace("/calming");
-                }}
-              >
-                <Text style={{ color: tokens.sceneText, fontFamily: fonts.body, fontSize: 14, opacity: 0.75 }}>
-                  {t("home.needAMoment")}
-                </Text>
-              </Pressable>
-            </View>
-          )}
+          {/* "I need a moment" — calming-protocol entry, always visible
+              during a session. Per UI QA pass 2: shown throughout, not
+              just after the trigger has played. The original gating was
+              based on an exposure-first clinical claim; the product
+              direction now prioritizes user control + visible escape
+              hatch from the start. LOADING/DISCLAIMER already return
+              their own screens earlier so we don't render here in those. */}
+          <View style={{ alignItems: "center", paddingBottom: 4 }}>
+            <Pressable
+              hitSlop={12}
+              onPress={() => {
+                engine.fadeOutAll(0.6);
+                router.replace("/calming");
+              }}
+            >
+              <Text style={{ color: tokens.sceneText, fontFamily: fonts.body, fontSize: 14, opacity: 0.75 }}>
+                {t("home.needAMoment")}
+              </Text>
+            </Pressable>
+          </View>
 
           {/* Bottom row — pulse metric removed per UI QA. Pulse is still
               read internally to drive auto-attenuate behavior, but no

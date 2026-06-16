@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
@@ -9,8 +10,20 @@ import { Icon } from "@/components/common/Icon";
 import { SceneCarousel } from "@/components/features/setup/SceneCarousel";
 import { getSounds, localize } from "@/lib/content/content";
 import { useSessionStore } from "@/lib/storage/session-store";
+import {
+  clearSchedule,
+  getSchedule,
+  setSchedule,
+} from "@/lib/integrations/reminders";
+import { ReminderSchedule } from "@/lib/storage/storage";
 import { persistDisplayName, useDisplayName } from "@/lib/ui/displayName";
 import { fonts, tokens } from "@/lib/ui/tokens";
+
+function formatTime(schedule: ReminderSchedule): string {
+  const h = schedule.hour.toString().padStart(2, "0");
+  const m = schedule.minute.toString().padStart(2, "0");
+  return `${h}:${m}`;
+}
 
 const SOUNDS = getSounds();
 
@@ -53,6 +66,30 @@ export default function Setup() {
 
   function handleNameBlur() {
     void persistDisplayName(nameDraft);
+  }
+
+  // Reminder schedule state — read on mount, refreshed when the picker
+  // saves or the user turns it off.
+  const [reminder, setReminder] = useState<ReminderSchedule | null>(null);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  useEffect(() => {
+    void getSchedule().then(setReminder);
+  }, []);
+
+  async function handleReminderChange(_event: DateTimePickerEvent, date?: Date) {
+    // Android closes the dialog itself on dismiss; iOS modal stays open until
+    // we set state. Either way: if no date came through, drop the picker.
+    if (Platform.OS === "android") setShowTimePicker(false);
+    if (!date) return;
+    const next: ReminderSchedule = { hour: date.getHours(), minute: date.getMinutes() };
+    await setSchedule(next);
+    setReminder(next);
+    if (Platform.OS === "ios") setShowTimePicker(false);
+  }
+
+  async function handleReminderTurnOff() {
+    await clearSchedule();
+    setReminder(null);
   }
 
   return (
@@ -197,6 +234,72 @@ export default function Setup() {
               </Pressable>
             );
           })}
+        </View>
+
+        <View className="px-8 pt-12">
+          <View style={{ width: 28, height: 1, backgroundColor: tokens.textMute, opacity: 0.5 }} />
+        </View>
+
+        <Text
+          style={{
+            color: tokens.textMute,
+            fontFamily: fonts.body,
+            fontSize: 13,
+            letterSpacing: 1.4,
+            textTransform: "uppercase",
+            marginTop: 24,
+            marginBottom: 10,
+            paddingHorizontal: 32,
+          }}
+        >
+          {t("reminders.sectionLabel")}
+        </Text>
+
+        <View style={{ paddingHorizontal: 32 }}>
+          <Text
+            style={{
+              color: tokens.text,
+              fontFamily: fonts.body,
+              fontSize: 18,
+              marginBottom: 12,
+            }}
+          >
+            {reminder
+              ? t("reminders.currentlySet", { time: formatTime(reminder) })
+              : t("reminders.notSet")}
+          </Text>
+
+          <View style={{ flexDirection: "row", gap: 24 }}>
+            <Pressable onPress={() => setShowTimePicker(true)} hitSlop={8}>
+              <Text style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 15 }}>
+                {t("reminders.change")}
+              </Text>
+            </Pressable>
+            {reminder ? (
+              <Pressable onPress={handleReminderTurnOff} hitSlop={8}>
+                <Text style={{ color: tokens.textMute, fontFamily: fonts.body, fontSize: 15 }}>
+                  {t("reminders.turnOff")}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+
+          {showTimePicker ? (
+            <DateTimePicker
+              value={
+                reminder
+                  ? (() => {
+                      const d = new Date();
+                      d.setHours(reminder.hour, reminder.minute, 0, 0);
+                      return d;
+                    })()
+                  : new Date()
+              }
+              mode="time"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              onChange={handleReminderChange}
+            />
+          ) : null}
         </View>
 
         <View className="px-8 pt-12 pb-6">

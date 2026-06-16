@@ -27,6 +27,11 @@ const resources = {
         notificationTitle: "HearO",
         notificationBody: "A quiet moment is ready when you are.",
         enableInSettings: "Enable in Settings",
+        sectionLabel: "Daily reminder",
+        currentlySet: "Set for {{time}}",
+        notSet: "Off",
+        change: "Change time",
+        turnOff: "Turn off",
       },
       setup: {
         nameQuestion: "What should\nwe call you?",
@@ -139,6 +144,11 @@ const resources = {
         notificationTitle: "HearO",
         notificationBody: "רגע שקט מחכה לך כשתהיה מוכן.",
         enableInSettings: "הפעל בהגדרות",
+        sectionLabel: "תזכורת יומית",
+        currentlySet: "נקבעה לשעה {{time}}",
+        notSet: "כבויה",
+        change: "שנה שעה",
+        turnOff: "כבה",
       },
       setup: {
         nameQuestion: "איך תרצה\nשנקרא לך?",

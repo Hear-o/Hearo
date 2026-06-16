@@ -57,12 +57,13 @@ export function useAudioEngine(): UseAudioEngineResult {
     };
   }, []);
 
-  // Gate the first I/O against the iOS audio-session activation. The
+  // Gate the first I/O against the audio-session activation. The
   // AudioContext is constructed in the engine ctor (cheap, doesn't play
-  // anything yet), but actually starting playback before AVAudioSession
-  // setActive resolves leads to silent audio on TestFlight. Both load
-  // entry points are always called before startAmbient / playVoiceClip
-  // / scheduler ticks, so awaiting here covers every playback path.
+  // anything yet), but on iOS, starting playback before AVAudioSession
+  // setActive resolves leads to silent audio. On Android the call is a
+  // no-op so this just resolves immediately. Both load entry points are
+  // always called before startAmbient / playVoiceClip / scheduler ticks,
+  // so awaiting here covers every playback path.
   const loadAmbientAndVoice = useCallback(
     async (ambientSource: number | string, voiceClipSources: (number | string)[]) => {
       await audioSessionReady;

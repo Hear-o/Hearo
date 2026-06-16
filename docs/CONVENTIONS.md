@@ -210,21 +210,24 @@ Rules:
 
 All on-device work runs against a native build — no sandboxed runner. The relevant native modules are:
 
-- **`react-native-audio-api`** (audio engine) — Software Mansion native module; the entire session screen depends on it.
-- **`@kingstinct/react-native-healthkit`** (HealthKit) — needs the HealthKit entitlement + a paired Apple Watch to read real samples.
-- Anything else that adds a config-plugin which mutates `Info.plist`, the entitlements file, or the Podfile.
+- **`react-native-audio-api`** (audio engine) — Software Mansion native module; the entire session screen depends on it. Cross-platform.
+- **`@kingstinct/react-native-healthkit`** (iOS HealthKit) — needs the HealthKit entitlement + a paired Apple Watch to read real samples. iOS-only; the pulse hook falls through to the mock generator on Android.
+- Anything else that adds a config-plugin which mutates `Info.plist`, `AndroidManifest.xml`, the entitlements file, or the Podfile / `build.gradle`.
 
 Cut a dev build with:
 
 ```bash
-# local
-npx expo run:ios            # or run:android
+# iOS
+npx expo run:ios
 
-# cloud (EAS)
-eas build --profile development --platform ios
+# Android
+npx expo run:android
+
+# Cloud (EAS, either platform)
+eas build --profile development --platform ios     # or --platform android
 ```
 
-Install the resulting `.ipa` via TestFlight or the Expo orbit "install on device" flow. Re-cut whenever native config (plist keys, entitlements, native deps) changes — JS-only changes don't need a rebuild.
+iOS installs land in TestFlight or via the Expo orbit "install on device" flow. Android installs as an `.apk` on a connected device; the Play Console internal-testing track is the production-equivalent path (not wired in Codemagic yet — see backlog). Re-cut whenever native config (plist/manifest keys, entitlements, native deps) changes — JS-only changes don't need a rebuild.
 
 ## 14. Current state vs. aspiration
 

@@ -128,17 +128,24 @@ export default function Permissions() {
     })();
   }, []);
 
-  const canContinue = pulseStatus === "granted" && notifsStatus === "granted";
+  // Both pulse and notifications are optional. Pulse falls through to the
+  // mock generator when HealthKit / Health Connect isn't granted; notifications
+  // are a nice-to-have for daily reminders, not load-bearing.
+  //
+  // v1.0.4 regression: a `if (!canContinue) return;` here blocked Android
+  // entirely (HealthKit is iOS-only — pulseStatus is always "denied" on
+  // Android, so canContinue was forever false). Continue is now always
+  // enabled; users who skip either prompt land on the next screen and the
+  // app degrades gracefully.
 
   const handleContinue = useCallback(async () => {
-    if (!canContinue) return;
     const prior = await getClinicalScreeningResult();
     if (prior === undefined) {
       router.push("/screening");
     } else {
       router.push("/setup");
     }
-  }, [canContinue, router]);
+  }, [router]);
 
   const swipeGesture = useSwipeForward(handleContinue);
 
@@ -267,7 +274,7 @@ export default function Permissions() {
         <Pressable
           onPress={handleContinue}
           hitSlop={8}
-          style={{ paddingBottom: 16, opacity: canContinue ? 1 : 0.4 }}
+          style={{ paddingBottom: 16 }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
             <Text

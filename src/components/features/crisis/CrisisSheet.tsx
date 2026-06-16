@@ -88,10 +88,11 @@ export function CrisisSheet() {
     }
     if (perm !== "granted") return;
 
-    // Open the native iOS contact picker. Returns the chosen contact's
-    // resolved record, or null if the user cancels or the chosen contact
-    // has no phone number. Way better UX than a custom in-sheet list, and
-    // it's what iOS users expect from "pick from contacts".
+    // Open the OS-native contact picker (iOS + Android via expo-contacts).
+    // Returns the chosen contact's resolved record, or null if the user
+    // cancels or the chosen contact has no phone number. Way better UX
+    // than a custom in-sheet list, and it's what users expect from
+    // "pick from contacts" on either platform.
     const picked = await presentContactPicker();
     if (!picked) return;
 

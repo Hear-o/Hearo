@@ -140,9 +140,13 @@ describe("content / psycho-education", () => {
     expect(p.continueLabel.he.length).toBeGreaterThan(0);
   });
 
-  it("has at least four body paragraphs (the Hirschman source has five)", () => {
+  it("has between two and five body paragraphs, all populated in both languages", () => {
     const p = getPsychoEducation();
-    expect(p.body.length).toBeGreaterThanOrEqual(4);
+    // Range is intentional: the copy was condensed from Hirschman's five
+    // paragraphs to three in the UI QA pass for phone-screen density.
+    // Tightening further or restoring depth is a copy decision.
+    expect(p.body.length).toBeGreaterThanOrEqual(2);
+    expect(p.body.length).toBeLessThanOrEqual(5);
     for (const para of p.body) {
       expect(para.en.length).toBeGreaterThan(0);
       expect(para.he.length).toBeGreaterThan(0);

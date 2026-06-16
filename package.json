@@ -11,7 +11,6 @@
     "babel-preset-expo": "~56.0.14",
     "expo": "~56.0.8",
     "expo-asset": "~56.0.15",
-    "expo-audio": "~56.0.11",
     "expo-constants": "~56.0.16",
     "expo-contacts": "~56.0.7",
     "expo-dev-client": "~56.0.20",

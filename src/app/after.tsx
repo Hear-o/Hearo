@@ -1,9 +1,11 @@
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { GestureDetector } from "react-native-gesture-handler";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
+import { useSwipeForward } from "@/hooks/useSwipeForward";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 /** Post-session affirmation screen. Per the UI QA pass, the previous
@@ -20,9 +22,12 @@ import { fonts, tokens } from "@/lib/ui/tokens";
 export default function After() {
   const router = useRouter();
   const { t } = useTranslation();
+  const handleDone = () => router.replace("/home");
+  const swipeGesture = useSwipeForward(handleDone);
 
-  return ( 
+  return (
     <SafeAreaView className="flex-1 bg-bg">
+      <GestureDetector gesture={swipeGesture}>
       <View className="flex-1 px-8">
         <View className="pt-2 flex-row justify-end">
           <CrisisAffordance />
@@ -58,7 +63,7 @@ export default function After() {
         </View>
 
         <Pressable
-          onPress={() => router.replace("/home")}
+          onPress={handleDone}
           hitSlop={8}
           accessibilityRole="button"
           style={{
@@ -81,6 +86,7 @@ export default function After() {
           </Text>
         </Pressable>
       </View>
+      </GestureDetector>
     </SafeAreaView>
   );
 }

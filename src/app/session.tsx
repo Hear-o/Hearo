@@ -36,6 +36,13 @@ const ADAPTIVE_LOOP_MS = 8 * 60 * 1000; // 8 minutes
 // 1%, the session has already routed to /after.
 const TOTAL_SESSION_MS = AMBIENT_FADE_IN_MS + ADAPTIVE_LOOP_MS;
 
+function formatElapsed(ms: number) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
 // dB gain ceiling per trigger sound type (applied at slider=1.0).
 // 0 dB = gain 1.0 = play at recorded level. Negative values attenuate.
 // TODO(supabase): calibrate per sound key once clinical review is complete.
@@ -607,54 +614,76 @@ export default function Session() {
             </View>
           )}
 
-          {/* Session progress — thin horizontal bar across the bottom,
-              fills left-to-right as session elapses. Replaces the previous
-              `m:ss` text + hairline. Per UI QA: no numeric countdown, no
-              percentage label — just a visual position along the arc. */}
-          <View className="pt-6">
+          {/* Session progress — horizontal bar across the bottom, fills
+              left-to-right as session elapses. Track and fill are SIBLINGS
+              with their own opacities so the fill renders at full opacity
+              over a faded track. Previous version nested fill inside track,
+              which multiplied the opacities and made the fill invisible. */}
+          <View className="pt-6" style={{ position: "relative", height: 4 }}>
             <View
               style={{
-                height: 2,
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 4,
                 backgroundColor: tokens.sceneText,
-                opacity: 0.2,
-                width: "100%",
-                borderRadius: 1,
-                overflow: "hidden",
+                opacity: 0.25,
+                borderRadius: 2,
+              }}
+            />
+            <View
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: `${Math.min(100, (elapsed / TOTAL_SESSION_MS) * 100)}%`,
+                height: 4,
+                backgroundColor: tokens.sceneText,
+                opacity: 0.85,
+                borderRadius: 2,
+              }}
+            />
+          </View>
+          <Text
+            style={{
+              color: tokens.sceneText,
+              fontFamily: fonts.body,
+              fontSize: 12,
+              opacity: 0.65,
+              marginTop: 6,
+            }}
+          >
+            {formatElapsed(elapsed)}
+          </Text>
+
+          {/* "I need a moment" — calming-protocol entry, always visible
+              during a session. Per UI QA pass 2: shown throughout, not
+              just after the trigger has played. The original gating was
+              based on an exposure-first clinical claim; the product
+              direction now prioritizes user control + visible escape
+              hatch from the start. LOADING/DISCLAIMER already return
+              their own screens earlier so we don't render here in those. */}
+          <View style={{ alignItems: "center", paddingBottom: 4 }}>
+            <Pressable
+              hitSlop={12}
+              onPress={() => {
+                engine.fadeOutAll(0.6);
+                router.replace("/calming");
               }}
             >
-              <View
-                style={{
-                  height: "100%",
-                  width: `${Math.min(100, (elapsed / TOTAL_SESSION_MS) * 100)}%`,
-                  backgroundColor: tokens.sceneText,
-                  opacity: 1,
-                }}
-              />
-            </View>
+              <Text style={{ color: tokens.sceneText, fontFamily: fonts.body, fontSize: 14, opacity: 0.75 }}>
+                {t("home.needAMoment")}
+              </Text>
+            </Pressable>
           </View>
-
-          {/* "I need a moment" — calming-protocol entry. Visible only after
-              the trigger has played at least once (ADAPTIVE_LOOP / WIND_DOWN),
-              never during AMBIENT_FADE_IN — see calming-protocol spec. */}
-          {(machineState === "ADAPTIVE_LOOP" || machineState === "WIND_DOWN") && (
-            <View style={{ alignItems: "center", paddingBottom: 4 }}>
-              <Pressable
-                hitSlop={12}
-                onPress={() => {
-                  engine.fadeOutAll(0.6);
-                  router.replace("/calming");
-                }}
-              >
-                <Text style={{ color: tokens.sceneText, fontFamily: fonts.body, fontSize: 14, opacity: 0.75 }}>
-                  {t("home.needAMoment")}
-                </Text>
-              </Pressable>
-            </View>
-          )}
 
           {/* Bottom row — pulse metric removed per UI QA. Pulse is still
               read internally to drive auto-attenuate behavior, but no
               longer displayed to the user. */}
+          {/* End session — was a barely-visible bracketed text. Now a
+              bordered pill on sceneText color so it reads cleanly on
+              both light and dark scene overlays. */}
           <View className="flex-row justify-end items-center pt-4 pb-6">
             <Pressable
               hitSlop={12}
@@ -662,9 +691,22 @@ export default function Session() {
                 setLastEndedBy("manual-exit");
                 dispatch({ type: "SESSION_END" });
               }}
+              style={{
+                borderWidth: 1,
+                borderColor: tokens.sceneText,
+                borderRadius: 999,
+                paddingHorizontal: 18,
+                paddingVertical: 8,
+              }}
             >
-              <Text style={{ color: tokens.text, fontFamily: fonts.body, fontSize: 16, opacity: 0.85 }}>
-                [ {t("session.end")} ]
+              <Text
+                style={{
+                  color: tokens.sceneText,
+                  fontFamily: fonts.body,
+                  fontSize: 15,
+                }}
+              >
+                {t("session.end")}
               </Text>
             </Pressable>
           </View>

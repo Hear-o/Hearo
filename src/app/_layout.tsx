@@ -3,7 +3,6 @@ import "@/global.css";
 import { useEffect } from "react";
 import { I18nManager, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { AudioManager } from "react-native-audio-api";
 import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
@@ -16,31 +15,15 @@ import { Heebo_400Regular, Heebo_500Medium } from "@expo-google-fonts/heebo";
 import { CrisisSheet } from "@/components/features/crisis/CrisisSheet";
 import { isRTL } from "@/lib/ui/i18n";
 import { configureNotificationHandler, reassertSchedule } from "@/lib/integrations/reminders";
+// Import for its side effect: kicks off iOS audio-session configure+activate
+// at app launch. Consumers that start playback await `audioSessionReady`.
+import "@/lib/audio/audio-session";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // One-time, module-level: tells expo-notifications how to render notifications
 // that arrive while the app is in the foreground. Safe to call at import time.
 configureNotificationHandler();
-
-// Configure the iOS audio session BEFORE any AudioContext is created.
-// Without this, react-native-audio-api defaults to a category that the iOS
-// mute switch silences (soloAmbient) — sessions appear to "not have audio"
-// when the device is in silent mode, even with headphones. `playback`
-// category continues through the mute switch (the right behavior for an
-// exposure session) and routes to Bluetooth/AirPlay. Android ignores these
-// options; safe to call cross-platform.
-try {
-  AudioManager.setAudioSessionOptions({
-    iosCategory: "playback",
-    iosMode: "default",
-    iosOptions: ["allowBluetoothA2DP", "allowAirPlay"],
-  });
-} catch {
-  // Bridge not available (web platform, jest, or pre-link) — silently skip.
-  // The session will fall back to the library's default category; sessions
-  // running outside an iOS dev/TestFlight build don't need this anyway.
-}
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({

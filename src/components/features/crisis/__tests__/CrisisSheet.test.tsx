@@ -3,6 +3,9 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react-nativ
 // expo-contacts is an ES-class native module that doesn't transpile under
 // jest-expo. Use the shared manual mock so the Tier-1 tests get a stub and the
 // picker-flow tests can drive granted permission + candidate lists per-test.
+// Mock the new v56 Contact-class API. See trustedContacts.ts comment for the
+// migration rationale (legacy stubs throw at runtime, so we use the new
+// surface: Contact.presentPicker + new Contact(id).getDetails).
 jest.mock("expo-contacts", () =>
   require("../../../../../test/mocks/expo-contacts"),
 );
@@ -77,43 +80,54 @@ describe("CrisisSheet", () => {
   });
 
   // ── Trusted-contact picker flow ──────────────────────────────────────────
+  // The picker is now the native iOS contact picker (Contact.presentPicker),
+  // so there's no in-sheet candidate list to assert on. Tests drive the mock's
+  // presentPicker return value + getDetails to simulate the user choosing a
+  // contact in the native sheet.
 
-  it("opens the picker, lists candidates, and adds one to the trusted list", async () => {
+  it("adds a contact to the trusted list when the native picker returns one", async () => {
     contactsMock.getPermissionsAsync.mockResolvedValue({ status: "granted" });
-    contactsMock.getContactsAsync.mockResolvedValue({
-      data: [{ id: "c1", name: "Dana", phoneNumbers: [{ label: "mobile", number: "0501112222" }] }],
-    });
-    // resolveTrustedContacts() re-reads the picked contact from the OS after add.
-    contactsMock.getContactByIdAsync.mockResolvedValue({
-      name: "Dana",
-      phoneNumbers: [{ label: "mobile", number: "0501112222" }],
+    contactsMock.presentPicker.mockResolvedValue({ id: "c1" });
+    contactsMock.getDetails.mockResolvedValue({
+      fullName: "Dana",
+      phones: [{ label: "mobile", number: "0501112222" }],
     });
 
     await renderOpenSheet();
     fireEvent.press(screen.getByText("Add someone  +"));
 
-    // Picker view shows the candidate with its phone number.
-    await waitFor(() => expect(screen.getByText("0501112222")).toBeTruthy());
-    fireEvent.press(screen.getByText("Dana"));
-
-    // Back on the main view: Dana is now trusted (name only — the phone-bearing
-    // picker row is gone).
-    await waitFor(() => expect(screen.queryByText("0501112222")).toBeNull());
-    expect(screen.getByText("Dana")).toBeTruthy();
+    // Native picker returned, contact resolved via getDetails, name appears
+    // in the trusted-contacts section back on the main view.
+    await waitFor(() => expect(screen.getByText("Dana")).toBeTruthy());
   });
 
-  it("requests contacts permission before opening the picker when undetermined", async () => {
+  it("requests permission before opening the picker when undetermined", async () => {
     contactsMock.getPermissionsAsync.mockResolvedValue({ status: "undetermined" });
     contactsMock.requestPermissionsAsync.mockResolvedValue({ status: "granted" });
-    contactsMock.getContactsAsync.mockResolvedValue({
-      data: [{ id: "c2", name: "Eli", phoneNumbers: [{ number: "0539998888" }] }],
+    contactsMock.presentPicker.mockResolvedValue({ id: "c2" });
+    contactsMock.getDetails.mockResolvedValue({
+      fullName: "Eli",
+      phones: [{ number: "0539998888" }],
     });
 
     await renderOpenSheet();
     fireEvent.press(screen.getByText("Add someone  +"));
 
     expect(contactsMock.requestPermissionsAsync).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(screen.getByText("0539998888")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Eli")).toBeTruthy());
+  });
+
+  it("does nothing when the user cancels the native picker", async () => {
+    contactsMock.getPermissionsAsync.mockResolvedValue({ status: "granted" });
+    contactsMock.presentPicker.mockResolvedValue(null);
+
+    await renderOpenSheet();
+    fireEvent.press(screen.getByText("Add someone  +"));
+
+    // Wait for the picker promise to resolve, then confirm no Dana / Eli /
+    // any new name appeared, and the add affordance is still there.
+    await waitFor(() => expect(contactsMock.presentPicker).toHaveBeenCalled());
+    expect(screen.getByText("Add someone  +")).toBeTruthy();
   });
 
   it("shows no trusted section or add button when permission is denied", async () => {

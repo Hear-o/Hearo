@@ -26,6 +26,28 @@ jest.mock("expo-localization", () => ({
   getLocales: jest.fn(() => [{ languageCode: "en" }]),
 }));
 
+// react-native-audio-api is now imported at module load by audio-session.ts
+// (which runs at app start to activate the iOS audio session). Wire the same
+// in-house mock here so every test that transitively imports it — not just
+// the audio-engine suite — resolves without the native module shim.
+// Per-test jest.mock() calls (e.g. in audio-engine.test.ts) still override
+// this with the same module; matching exports keep both paths consistent.
+jest.mock("react-native-audio-api", () =>
+  require("./mocks/react-native-audio-api"),
+);
+
+// useFocusEffect needs a navigation context to subscribe to focus events.
+// Logic-layer hooks (e.g. useDisplayName) that call it would fail in
+// renderHook tests otherwise. No-op the focus callback in tests — the
+// primary useEffect still runs and that's what the assertions assert.
+jest.mock("expo-router", () => {
+  const actual = jest.requireActual("expo-router");
+  return {
+    ...actual,
+    useFocusEffect: (_cb: unknown) => {},
+  };
+});
+
 // Initialize i18n once so useTranslation() resolves real keys. The mocked
 // device locale starts in English; keep it pinned there for copy assertions.
 import i18n from "@/lib/ui/i18n";

@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Linking, Platform, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { GestureDetector } from "react-native-gesture-handler";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
 import { Icon } from "@/components/common/Icon";
+import { useSwipeForward } from "@/hooks/useSwipeForward";
 import * as healthKit from "@/lib/integrations/healthKit";
 import * as reminders from "@/lib/integrations/reminders";
 import { getClinicalScreeningResult } from "@/lib/storage/storage";
@@ -128,6 +130,18 @@ export default function Permissions() {
 
   const canContinue = pulseStatus === "granted" && notifsStatus === "granted";
 
+  const handleContinue = useCallback(async () => {
+    if (!canContinue) return;
+    const prior = await getClinicalScreeningResult();
+    if (prior === undefined) {
+      router.push("/screening");
+    } else {
+      router.push("/setup");
+    }
+  }, [canContinue, router]);
+
+  const swipeGesture = useSwipeForward(handleContinue);
+
   const onPulsePress = async () => {
     const status = await healthKit.requestAuthorization();
     // "requested" means the dialog was shown; we can't confirm the outcome.
@@ -168,6 +182,7 @@ export default function Permissions() {
 
   return (
     <SafeAreaView className="flex-1 bg-bg">
+      <GestureDetector gesture={swipeGesture}>
       <View className="flex-1 px-8">
         <View className="pt-2 flex-row">
           <CrisisAffordance />
@@ -250,14 +265,7 @@ export default function Permissions() {
             clinician-recommendation card first, but it's advisory, not a
             block. See openspec/changes/add-clinical-screening/. */}
         <Pressable
-          onPress={async () => {
-            const prior = await getClinicalScreeningResult();
-            if (prior === undefined) {
-              router.push("/screening");
-            } else {
-              router.push("/setup");
-            }
-          }}
+          onPress={handleContinue}
           hitSlop={8}
           style={{ paddingBottom: 16, opacity: canContinue ? 1 : 0.4 }}
         >
@@ -275,6 +283,7 @@ export default function Permissions() {
           </View>
         </Pressable>
       </View>
+      </GestureDetector>
     </SafeAreaView>
   );
 }

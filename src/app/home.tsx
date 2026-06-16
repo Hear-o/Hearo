@@ -1,21 +1,18 @@
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { GestureDetector } from "react-native-gesture-handler";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
 import { Icon } from "@/components/common/Icon";
+import { useSwipeForward } from "@/hooks/useSwipeForward";
 import { getScene, getSound, localize } from "@/lib/content/content";
 import { useDisplayName } from "@/lib/ui/displayName";
 import { useSessionStore } from "@/lib/storage/session-store";
 import { getPsychoEducationSeen } from "@/lib/storage/storage";
 import { getTimeOfDay } from "@/lib/ui/timeOfDay";
 import { fonts, tokens } from "@/lib/ui/tokens";
-
-/** Distance (px) a horizontal pan must cover to count as a swipe-to-begin
- *  rather than a stray drag. Tuned so tap targets in the screen still fire. */
-const SWIPE_THRESHOLD_PX = 60;
 
 export default function Home() {
   const router = useRouter();
@@ -47,19 +44,7 @@ export default function Home() {
     }
   }
 
-  /** Swipe-to-begin: a horizontal pan past SWIPE_THRESHOLD_PX triggers the
-   *  same begin action as the button tap. Direction-agnostic so it feels
-   *  natural in both LTR and RTL layouts. */
-  const swipeGesture = Gesture.Pan()
-    .minDistance(SWIPE_THRESHOLD_PX)
-    .onEnd((event) => {
-      if (Math.abs(event.translationX) >= SWIPE_THRESHOLD_PX) {
-        // runOnJS-equivalent: handleBegin reads storage + navigates; the
-        // gesture's worklet returns before we touch JS.
-        handleBegin();
-      }
-    })
-    .runOnJS(true);
+  const swipeGesture = useSwipeForward(handleBegin);
 
   return (
     <SafeAreaView className="flex-1 bg-bg">

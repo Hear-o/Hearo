@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { GestureDetector } from "react-native-gesture-handler";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -8,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
 import { Icon } from "@/components/common/Icon";
 import { SceneCarousel } from "@/components/features/setup/SceneCarousel";
+import { useSwipeForward } from "@/hooks/useSwipeForward";
 import { getSounds, localize } from "@/lib/content/content";
 import { useSessionStore } from "@/lib/storage/session-store";
 import {
@@ -92,8 +94,15 @@ export default function Setup() {
     setReminder(null);
   }
 
+  const handleReady = () => {
+    if (sounds.length === 0) return;
+    router.push("/home");
+  };
+  const swipeGesture = useSwipeForward(handleReady);
+
   return (
     <SafeAreaView className="flex-1 bg-bg">
+      <GestureDetector gesture={swipeGesture}>
       <ScrollView
         contentContainerStyle={{ paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
@@ -304,7 +313,7 @@ export default function Setup() {
 
         <View className="px-8 pt-12 pb-6">
           <Pressable
-            onPress={() => router.push("/home")}
+            onPress={handleReady}
             hitSlop={8}
             style={{ opacity: sounds.length === 0 ? 0.4 : 1 }}
           >
@@ -339,6 +348,7 @@ export default function Setup() {
           </Pressable>
         </View>
       </ScrollView>
+      </GestureDetector>
     </SafeAreaView>
   );
 }

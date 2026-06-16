@@ -2,7 +2,7 @@
   "expo": {
     "name": "Hearo",
     "slug": "Hearo",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "platforms": [
       "ios",
       "android"
@@ -27,6 +27,7 @@
         "NSContactsUsageDescription": "We use this so you can quickly call someone you trust during a crisis moment. Your contacts stay on your device — we don't upload them.",
         "NSHealthShareUsageDescription": "We read your heart rate from Apple Health so the app can soften the soundscape when your body needs it. Nothing about your heart rate leaves your device.",
         "NSHealthUpdateUsageDescription": "Hearo reads heart rate data from Apple Health but does not write or update any health data.",
+        "NSMicrophoneUsageDescription": "Hearo never records or accesses your microphone. This message is required by Apple because the audio library bundled with the app includes recording APIs that we don't use — playback only.",
         "UIBackgroundModes": ["audio"]
       },
       "entitlements": {

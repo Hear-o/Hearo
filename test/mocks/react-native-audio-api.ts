@@ -91,6 +91,15 @@ export const AudioBuffer = FakeAudioBuffer;
 export const AudioBufferSourceNode = FakeAudioBufferSourceNode;
 export const GainNode = FakeGainNode;
 
+// audio-session.ts (imported transitively by useAudioEngine + _layout) calls
+// these at module load. They have to exist on the mock or the entire engine
+// test suite fails at import time.
+export const AudioManager = {
+  setAudioSessionOptions: jest.fn(),
+  observeAudioInterruptions: jest.fn(),
+  setAudioSessionActivity: jest.fn(async () => {}),
+};
+
 /** The most recently constructed AudioContext (i.e. the one inside the engine
  *  under test). Throws if no engine has been created yet. */
 export function __lastContext(): FakeAudioContext {

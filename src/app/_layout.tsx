@@ -3,7 +3,6 @@ import "@/global.css";
 import { useEffect } from "react";
 import { I18nManager, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { AudioManager } from "react-native-audio-api";
 import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
@@ -16,47 +15,15 @@ import { Heebo_400Regular, Heebo_500Medium } from "@expo-google-fonts/heebo";
 import { CrisisSheet } from "@/components/features/crisis/CrisisSheet";
 import { isRTL } from "@/lib/ui/i18n";
 import { configureNotificationHandler, reassertSchedule } from "@/lib/integrations/reminders";
+// Import for its side effect: kicks off iOS audio-session configure+activate
+// at app launch. Consumers that start playback await `audioSessionReady`.
+import "@/lib/audio/audio-session";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // One-time, module-level: tells expo-notifications how to render notifications
 // that arrive while the app is in the foreground. Safe to call at import time.
 configureNotificationHandler();
-
-// Configure AND activate the iOS audio session before any AudioContext is
-// created. setAudioSessionOptions alone is not enough — it sets the
-// category (playback continues through mute switch, soloAmbient doesn't)
-// but until setAudioSessionActivity(true) calls [AVAudioSession setActive:
-// YES] natively, the session is configured but not actually routing audio.
-// The first iOS audio fix (ios-v1.0.3) only did the configure step; this
-// adds the activate step that was missing.
-//
-// observeAudioInterruptions handles phone calls / Siri / other apps
-// grabbing audio focus — without it, the session can be left inactive
-// after an interruption and silence persists until app restart.
-//
-// Android ignores these options; safe to call cross-platform.
-async function configureAudioSession(): Promise<void> {
-  try {
-    AudioManager.setAudioSessionOptions({
-      iosCategory: "playback",
-      iosMode: "default",
-      iosOptions: ["allowBluetoothA2DP", "allowAirPlay"],
-    });
-    AudioManager.observeAudioInterruptions(true);
-    await AudioManager.setAudioSessionActivity(true);
-  } catch {
-    // Bridge not available (web platform, jest, or pre-link) — silently skip.
-    // The session will fall back to the library's default category; sessions
-    // running outside an iOS dev/TestFlight build don't need this anyway.
-  }
-}
-
-// Fire-and-forget at module init. The promise resolves before any
-// AudioContext is constructed inside a session screen because sessions
-// require user navigation, which always lags app launch by several
-// hundred ms.
-void configureAudioSession();
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { AudioEngine, TriggerSchedulerConfig } from '@/lib/audio/audio-engine';
+import { audioSessionReady } from '@/lib/audio/audio-session';
 
 export type { TriggerSchedulerConfig };
 
@@ -56,15 +57,25 @@ export function useAudioEngine(): UseAudioEngineResult {
     };
   }, []);
 
+  // Gate the first I/O against the iOS audio-session activation. The
+  // AudioContext is constructed in the engine ctor (cheap, doesn't play
+  // anything yet), but actually starting playback before AVAudioSession
+  // setActive resolves leads to silent audio on TestFlight. Both load
+  // entry points are always called before startAmbient / playVoiceClip
+  // / scheduler ticks, so awaiting here covers every playback path.
   const loadAmbientAndVoice = useCallback(
-    (ambientSource: number | string, voiceClipSources: (number | string)[]) =>
-      engineRef.current!.loadAmbientAndVoice(ambientSource, voiceClipSources),
+    async (ambientSource: number | string, voiceClipSources: (number | string)[]) => {
+      await audioSessionReady;
+      return engineRef.current!.loadAmbientAndVoice(ambientSource, voiceClipSources);
+    },
     []
   );
 
   const loadTrigger = useCallback(
-    (triggerSource: number | string) =>
-      engineRef.current!.loadTrigger(triggerSource),
+    async (triggerSource: number | string) => {
+      await audioSessionReady;
+      return engineRef.current!.loadTrigger(triggerSource);
+    },
     []
   );
 

@@ -24,11 +24,15 @@ export default function Home() {
   const { name } = useDisplayName();
   const band = getTimeOfDay();
 
-  const sceneShort = localize(getScene(scene).short, i18n.language);
+  // Use the scene's activity verb ("Walking through the park") + the first
+  // consented sound's inAction phrase ("with a motorcycle passing by") for
+  // the today's-experience block, instead of the bare scene/sound labels.
+  // Gives the user a concrete picture of what the session will be.
+  const sceneActivity = localize(getScene(scene).activity, i18n.language);
   const primarySound = sounds[0];
   const withLine = primarySound
     ? t("home.withSound", {
-        sound: localize(getSound(primarySound).label, i18n.language).toLowerCase(),
+        sound: localize(getSound(primarySound).inAction, i18n.language),
       })
     : null;
 
@@ -111,7 +115,7 @@ export default function Home() {
               lineHeight: 40,
             }}
           >
-            {sceneShort}
+            {sceneActivity}
           </Text>
 
           {withLine ? (

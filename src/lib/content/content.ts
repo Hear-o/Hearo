@@ -42,6 +42,11 @@ export type Scene = {
   key: SceneKey;
   label: LocalizedText;
   short: LocalizedText;
+  /** Activity-verb phrase used on Home's "today's experience" block.
+   *  e.g. "Sitting at the cafe", "Walking through the park". Includes the
+   *  preposition + scene noun so each scene can use whatever phrasing
+   *  reads naturally — no template substitution needed at the call site. */
+  activity: LocalizedText;
   media: SceneMedia;
   tint: { top: string };
   voice: Record<Phase, LocalizedText>;
@@ -50,6 +55,10 @@ export type Scene = {
 export type Sound = {
   key: SoundKey;
   label: LocalizedText;
+  /** Trigger-as-action phrase used on Home below the scene's activity.
+   *  e.g. "a motorcycle passing by", "a helicopter flying overhead". The
+   *  Home composes it as "with {inAction}", so the noun goes here. */
+  inAction: LocalizedText;
   // TODO(supabase): `sound_variations` table — each row a (sound_id, audio_url, duration_ms).
   // Variations exist so the user can't anticipate the exact clip — a small but
   // therapeutically meaningful unpredictability.
@@ -71,6 +80,7 @@ const SCENES: Record<SceneKey, Scene> = {
     key: "beach",
     label: { en: "Beach, evening", he: "חוף, ערב" },
     short: { en: "Beach", he: "חוף" },
+    activity: { en: "Walking on the beach", he: "מהלך על שפת הים" },
     media: {
       still: require("@/assets/scenes/beach.png"),
     },
@@ -94,6 +104,7 @@ const SCENES: Record<SceneKey, Scene> = {
     key: "park",
     label: { en: "Park, evening", he: "פארק, ערב" },
     short: { en: "Park", he: "פארק" },
+    activity: { en: "Walking through the park", he: "מהלך בפארק" },
     media: {
       still: require("@/assets/scenes/park.png"),
     },
@@ -117,6 +128,7 @@ const SCENES: Record<SceneKey, Scene> = {
     key: "cafe",
     label: { en: "Cafe, morning", he: "בית קפה, בוקר" },
     short: { en: "Cafe", he: "בית קפה" },
+    activity: { en: "Sitting at the cafe", he: "יושב בבית הקפה" },
     media: {
       still: require("@/assets/scenes/cafe.jpg"),
     },
@@ -140,6 +152,7 @@ const SCENES: Record<SceneKey, Scene> = {
     key: "road",
     label: { en: "Quiet road", he: "כביש שקט" },
     short: { en: "Quiet road", he: "כביש שקט" },
+    activity: { en: "Walking down a quiet road", he: "מהלך בכביש שקט" },
     media: {
       still: require("@/assets/scenes/road.jpg"),
     },
@@ -167,6 +180,7 @@ const SOUNDS: Record<SoundKey, Sound> = {
   motorcycle: {
     key: "motorcycle",
     label: { en: "Motorcycle", he: "אופנוע" },
+    inAction: { en: "a motorcycle passing by", he: "אופנוע חולף" },
     audioVariations: [
       require("@/assets/sounds/triggers/motorcycle/1.mp3"),
       require("@/assets/sounds/triggers/motorcycle/2.mp3"),
@@ -177,6 +191,7 @@ const SOUNDS: Record<SoundKey, Sound> = {
   helicopter: {
     key: "helicopter",
     label: { en: "Helicopter", he: "מסוק" },
+    inAction: { en: "a helicopter overhead", he: "מסוק מעל הראש" },
     audioVariations: [
       require("@/assets/sounds/triggers/helicopter/1.mp3"),
       require("@/assets/sounds/triggers/helicopter/2.mp3"),
@@ -185,6 +200,7 @@ const SOUNDS: Record<SoundKey, Sound> = {
   fireworks: {
     key: "fireworks",
     label: { en: "Fireworks", he: "זיקוקים" },
+    inAction: { en: "fireworks going off", he: "זיקוקים מתפוצצים" },
     audioVariations: [
       require("@/assets/sounds/triggers/fireworks/1.mp3"),
       require("@/assets/sounds/triggers/fireworks/2.mp3"),
@@ -195,6 +211,7 @@ const SOUNDS: Record<SoundKey, Sound> = {
   siren: {
     key: "siren",
     label: { en: "Siren", he: "סירנה" },
+    inAction: { en: "a siren in the distance", he: "סירנה במרחק" },
     audioVariations: [
       require("@/assets/sounds/triggers/siren/1.mp3"),
       require("@/assets/sounds/triggers/siren/2.mp3"),
@@ -204,6 +221,7 @@ const SOUNDS: Record<SoundKey, Sound> = {
   "car-horn": {
     key: "car-horn",
     label: { en: "Car horn", he: "צפירת מכונית" },
+    inAction: { en: "a car horn nearby", he: "צפירת מכונית בקרבת מקום" },
     audioVariations: [
       require("@/assets/sounds/triggers/car-horn/1.mp3"),
       require("@/assets/sounds/triggers/car-horn/2.mp3"),
@@ -212,6 +230,7 @@ const SOUNDS: Record<SoundKey, Sound> = {
   "door-slam": {
     key: "door-slam",
     label: { en: "Door slam", he: "דלת נטרקת" },
+    inAction: { en: "a door slamming", he: "דלת נטרקת" },
     audioVariations: [
       require("@/assets/sounds/triggers/door-slam/1.mp3"),
       require("@/assets/sounds/triggers/door-slam/2.mp3"),

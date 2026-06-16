@@ -19,15 +19,17 @@ export const SWIPE_FORWARD_THRESHOLD_PX = 60;
  *  Usage:
  *    const swipe = useSwipeForward(handleContinue);
  *    return <GestureDetector gesture={swipe}>{...screen}</GestureDetector>; */
-export function useSwipeForward(onForward: () => void) {
+export function useSwipeForward(onForward: () => void | Promise<void>) {
   return useMemo(
     () =>
       Gesture.Pan()
         .minDistance(SWIPE_FORWARD_THRESHOLD_PX)
         .onEnd((event) => {
-          if (Math.abs(event.translationX) >= SWIPE_FORWARD_THRESHOLD_PX) {
-            onForward();
-          }
+          if (Math.abs(event.translationX) < SWIPE_FORWARD_THRESHOLD_PX) return;
+          // Several call sites pass async handlers (await getPsychoEducationSeen,
+          // await getClinicalScreeningResult). Catch here so a rejection
+          // doesn't escape the gesture callback as an unhandled promise.
+          Promise.resolve(onForward()).catch(() => {});
         })
         .runOnJS(true),
     [onForward],

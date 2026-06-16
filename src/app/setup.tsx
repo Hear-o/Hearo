@@ -79,14 +79,14 @@ export default function Setup() {
   }, []);
 
   async function handleReminderChange(_event: DateTimePickerEvent, date?: Date) {
-    // Android closes the dialog itself on dismiss; iOS modal stays open until
-    // we set state. Either way: if no date came through, drop the picker.
-    if (Platform.OS === "android") setShowTimePicker(false);
+    // Close the picker first regardless of platform or whether the user
+    // actually picked a time — on iOS a cancelled picker (date===undefined)
+    // would otherwise stay mounted and block the screen.
+    setShowTimePicker(false);
     if (!date) return;
     const next: ReminderSchedule = { hour: date.getHours(), minute: date.getMinutes() };
     await setSchedule(next);
     setReminder(next);
-    if (Platform.OS === "ios") setShowTimePicker(false);
   }
 
   async function handleReminderTurnOff() {

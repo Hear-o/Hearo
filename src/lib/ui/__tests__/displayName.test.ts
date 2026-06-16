@@ -13,10 +13,21 @@ jest.mock("@/lib/storage/storage", () => ({
   setDisplayName: jest.fn(),
 }));
 
+// Override the global no-op useFocusEffect mock from test/setup.ts so we can
+// drive the focus-refresh branch (lines 95-103 of displayName.ts) under test.
+// React's effect machinery runs the callback synchronously in renderHook.
+jest.mock("expo-router", () => ({
+  useFocusEffect: (cb: () => void | (() => void)) => {
+    const React = jest.requireActual("react");
+    React.useEffect(() => cb(), [cb]);
+  },
+}));
+
 import { renderHook, waitFor } from "@testing-library/react-native";
 
 import {
   parseDisplayNameFromDevice,
+  persistDisplayName,
   resolveDisplayName,
   useDisplayName,
 } from "@/lib/ui/displayName";
@@ -120,5 +131,48 @@ describe("useDisplayName", () => {
     const { result } = renderHook(() => useDisplayName());
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.name).toBeNull();
+  });
+
+  it("refreshes from storage on focus (covers the focus effect)", async () => {
+    // Both the mount effect's resolveDisplayName + the focus effect call
+    // getDisplayName. They share the same mock, so a single resolved value
+    // covers both — "New" simulates the user having just typed it in Setup.
+    mockGet.mockResolvedValue("New");
+    const { result } = renderHook(() => useDisplayName());
+    await waitFor(() => expect(result.current.name).toBe("New"));
+    // Mount + focus both read storage — at least 2 calls.
+    expect(mockGet.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("ignores undefined from storage on focus refresh", async () => {
+    // First mount call returns "Set"; second (focus) returns undefined,
+    // which must NOT clear the name.
+    mockGet
+      .mockResolvedValueOnce("Set")
+      .mockResolvedValueOnce(undefined);
+    const { result } = renderHook(() => useDisplayName());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.name).toBe("Set");
+  });
+});
+
+describe("persistDisplayName", () => {
+  beforeEach(() => {
+    mockSet.mockReset();
+    mockSet.mockResolvedValue(undefined);
+  });
+
+  it("stores a trimmed value", async () => {
+    await persistDisplayName("  Omer  ");
+    expect(mockSet).toHaveBeenCalledWith("Omer");
+  });
+
+  it("clears the name on empty / whitespace / null", async () => {
+    await persistDisplayName("");
+    await persistDisplayName("   ");
+    await persistDisplayName(null);
+    expect(mockSet).toHaveBeenNthCalledWith(1, null);
+    expect(mockSet).toHaveBeenNthCalledWith(2, null);
+    expect(mockSet).toHaveBeenNthCalledWith(3, null);
   });
 });

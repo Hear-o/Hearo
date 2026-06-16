@@ -32,7 +32,7 @@ The app is a **monolithic frontend** talking directly to **Supabase**. There is 
 | Charts | `victory-native` or `react-native-svg-charts` | only if we need them |
 | Linting | `eslint` + `@react-native/eslint-config` | planned |
 | Formatting | Prettier | planned |
-| Audio | `react-native-audio-api` (Software Mansion) | in use — requires dev build, Expo Go incompatible |
+| Audio | `react-native-audio-api` (Software Mansion) | in use — requires a native dev build (no sandboxed runner) |
 | Video | `expo-video` | planned (scene loops, asset-blocked) |
 
 ## 2. Folder structure
@@ -206,20 +206,25 @@ Rules:
 - [ ] User-meaningful actions wired through `useAnalytics()`
 - [ ] Hebrew strings present for every English string
 
-## 13a. When you need a dev build
+## 13a. Cutting a dev build
 
-Some native modules cannot run in Expo Go. They require entitlements, native pods, or both, and only show up in a custom development build:
+All on-device work runs against a native build — no sandboxed runner. The relevant native modules are:
 
-- **`@kingstinct/react-native-healthkit`** (HealthKit) — needs the HealthKit entitlement + a paired Apple Watch to read real samples. Expo Go can't grant entitlements.
+- **`react-native-audio-api`** (audio engine) — Software Mansion native module; the entire session screen depends on it.
+- **`@kingstinct/react-native-healthkit`** (HealthKit) — needs the HealthKit entitlement + a paired Apple Watch to read real samples.
 - Anything else that adds a config-plugin which mutates `Info.plist`, the entitlements file, or the Podfile.
 
 Cut a dev build with:
 
 ```bash
+# local
+npx expo run:ios            # or run:android
+
+# cloud (EAS)
 eas build --profile development --platform ios
 ```
 
-Then install the resulting `.ipa` on a device through TestFlight or the Expo orbit "install on device" flow. The same JS bundle that runs in Expo Go runs on the dev build — only the native bits differ. Day-to-day work that doesn't touch HealthKit continues in Expo Go; cut a fresh dev build only when the native config changes.
+Install the resulting `.ipa` via TestFlight or the Expo orbit "install on device" flow. Re-cut whenever native config (plist keys, entitlements, native deps) changes — JS-only changes don't need a rebuild.
 
 ## 14. Current state vs. aspiration
 

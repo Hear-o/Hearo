@@ -13,7 +13,7 @@
 
 ## 3. Scene media
 
-- [ ] 3.1 Integrate `expo-video` for the active session background (muted, looping) — DEFERRED: no video assets yet, and installing a player with nothing to play adds Expo Go risk for no demo benefit. Seam supports it (Scene.media.video optional).
+- [ ] 3.1 Integrate `expo-video` for the active session background (muted, looping) — DEFERRED: no video assets yet, and installing a player with nothing to play has no demo benefit. Seam supports it (Scene.media.video optional).
 - [~] 3.2 `SceneBackground.tsx` consumes `content.ts`; renders video when present, falls back to still otherwise, keeps the dark overlay — consume + still-fallback + overlay DONE; video-render path deferred with 3.1.
 - [ ] 3.3 Setup picker uses each scene's still (no video on the picker) — DEFERRED: picker is still a radio list; turning options into image cards is a visual rework that wants real still assets to look right.
 - [ ] 3.4 Wire `require()` references for bundled assets in `ui/assets/scenes/` — DEFERRED: no assets yet; using marked placeholder URIs + scene-tint fallback.

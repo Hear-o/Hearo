@@ -2,7 +2,7 @@
 
 Content is scattered across three files with no single owner per scene, which produced the river-voice-on-every-scene bug. The app's data layer is **Supabase** — no service layer in between. The job here is to create one client-side adapter that local data feeds today and Supabase queries will feed tomorrow, fix the per-scene coherence now, and leave a greppable `TODO(supabase)` trail at every hard-coded site naming the table or query that will replace it.
 
-Constraints: Expo SDK 54, Expo Go (so no native modules that need a custom dev build for the demo), offline-capable, bilingual.
+Constraints: Expo SDK 56 with a native dev build (no sandboxed runner), offline-capable, bilingual.
 
 ## Goals / Non-Goals
 
@@ -60,7 +60,7 @@ This is the fix for the mismatch: the voice script lives *inside* the scene, so 
 
 ## Risks / Trade-offs
 
-- **Risk:** `expo-video` behavior in Expo Go on SDK 54 for looping background video. → **Mitigation:** the seam returns an optional `video`; if it's absent or fails, `SceneBackground` falls back to the `still`. The demo works either way.
+- **Risk:** `expo-video` behavior on SDK 56 for looping background video. → **Mitigation:** the seam returns an optional `video`; if it's absent or fails, `SceneBackground` falls back to the `still`. The demo works either way.
 - **Risk:** bundling four video loops inflates app size. → **Mitigation:** keep clips short (~6–10s seamless loops), compressed to ~1–2 MB; only the session loads video, lazily.
 - **Trade-off:** marking-in-place (rather than moving) some data leaves partial inconsistency — some content is behind the seam, some is just commented. Accepted: moving everything at once is a bigger change than the demo timeline allows, and the markers keep it honest.
 

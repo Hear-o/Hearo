@@ -21,9 +21,11 @@ async function configureAudioSession(): Promise<void> {
     AudioManager.observeAudioInterruptions(true);
     await AudioManager.setAudioSessionActivity(true);
   } catch {
-    // Bridge not available (web platform, jest, or pre-link) — silently skip.
-    // The session falls back to the library's default category; sessions
-    // running outside an iOS dev/TestFlight build don't need this anyway.
+    // Native bridge unavailable (jest, or a partially-linked build). On a
+    // properly built TestFlight / dev binary this never enters the catch.
+    // The session falls back to the library's default category — fine for
+    // the tests; silence on a real device here is a build problem, not a
+    // runtime one.
   }
 }
 

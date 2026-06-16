@@ -420,24 +420,16 @@ const PSYCHO_EDUCATION: PsychoEducationContent = {
   },
   body: [
     {
-      en: "To understand why triggers overwhelm us, it helps to know the amygdala, a region in the brain that works as the body's smoke detector. In a moment of danger, it activates the body's emergency system instantly: heart races, breath gets shallow, tunnel vision, muscles tense, the body prepares to fight or flee.",
-      he: "כדי להבין למה טריגרים מציפים אותנו, חשוב להכיר את האמיגדלה, אזור במוח שמתפקד כ'גלאי העשן' של הגוף. במצב סכנה, האמיגדלה מפעילה מיד את מערכת החירום הפיזיולוגית. הדופק נהיה מהיר, הנשימה נהיית שטחית, לפעמים נחווה מין 'ראיית מנהרה', מתח השרירים עולה והגוף מכין אותנו לתגובת הישרדות של הילחם או ברח.",
+      en: "When your body senses danger, an alarm kicks in. Heart races, breath gets shallow, muscles tense. That's the amygdala, your built-in smoke detector. It kept you alive.",
+      he: "כשהגוף שלך מזהה סכנה, אזעקה מופעלת. הדופק מהיר, הנשימה שטחית, השרירים נדרכים. זאת האמיגדלה, גלאי העשן הפנימי שלך. היא שמרה עליך.",
     },
     {
-      en: "When we live inside danger, or under continuous threat, the nervous system makes a vital adjustment. It turns the detector's sensitivity all the way up. That's what keeps us alive.",
-      he: "כשאנו נמצאים באזור סכנה או תחת איום מתמשך, מערכת העצבים מבצעת התאמה חיונית. היא מכוונת את רגישות הגלאי למקסימום כדי לשמור עלינו ערניים.",
+      en: "After the danger passes, the detector usually stays on max sensitivity. A sound, a smell, a place can fire the alarm even when nothing's wrong. That's not a malfunction. It's a protection system that adapted to keep you safe.",
+      he: "אחרי שהסכנה חולפת, הגלאי לרוב נשאר ברגישות שיא. צליל, ריח או מקום יכולים להפעיל את האזעקה גם כשאין סכנה. זה לא קלקול. זאת מערכת הגנה שהתאימה את עצמה כדי לשמור עליך.",
     },
     {
-      en: "The problem is that even after the threat passes and the world is safe again, the detector usually stays at maximum sensitivity. So any small reminder of the original event (a sound, a smell, a place) instantly fires the alarm. The brain signals an immediate life-threat, while the actual present is calm and safe. A false alarm.",
-      he: "הבעיה היא שגם כשהאיום חולף והסביבה חוזרת להיות בטוחה, הגלאי לרוב נשאר ברגישות שיא. במצב זה, כל גירוי קטן שמזכיר את האירוע המקורי, צליל, ריח או מקום מסוים, מקפיץ מיד את האזעקה, רק שהפעם זוהי אזעקת שווא. המוח מאותת על סכנת חיים מיידית, למרות שבמציאות הנוכחית הכל רגוע ובטוח.",
-    },
-    {
-      en: "The distress and the physical response you feel are not a sign of malfunction. They're a protection system that adapted to operate on 'emergency settings' so you could survive a chaotic and dangerous reality.",
-      he: "המצוקה והתגובה הגופנית שאתה חווה אינן מעידות על קלקול, אלא דווקא על מערכת הגנה יעילה שהתאימה את עצמה לפעול על 'הגדרות חירום' בשביל לעזור לך לשרוד בתוך מציאות כאוטית ומסוכנת.",
-    },
-    {
-      en: "In the practice that follows, gradually and in a protected space, we'll teach the system that the danger has passed, and that the sensitivity can come down.",
-      he: "בתרגיל הקרוב אנחנו נלמד את המערכת, בצורה הדרגתית ובסביבה מוגנת, שהסכנה חלפה ושניתן להוריד את הרגישות.",
+      en: "Here, gradually and in a safe space, we'll teach the system that the danger has passed.",
+      he: "כאן, בהדרגה ובמרחב מוגן, נלמד את המערכת שהסכנה חלפה.",
     },
   ],
   continueLabel: {
@@ -504,18 +496,18 @@ const CALMING_PROTOCOL: CalmingProtocolStep[] = [
   {
     kind: "validation",
     text: {
-      en: "It's okay. You're safe now.\n\nWhat you're feeling is anxiety, and anxiety is a wave. It rises now. It feels overwhelming, but the wave will peak, and it will fall. Your body can't hold this much tension for long. It will settle on its own.\n\nI'm here with you, inside this wave. It will pass.",
-      he: "הכל בסדר, אתה בטוח עכשיו.\n\nמה שאתה מרגיש זה התקף חרדה. חרדה היא כמו גל, היא עולה עכשיו, זה מרגיש מציף ונורא אבל הגל הזה יגיע לשיא וייחלש. הגוף שלך לא יכול להישאר במתח הזה לאורך זמן והוא יירגע מעצמו.\n\nאני איתך בתוך הגל הזה, הוא יעבור.",
+      en: "It's okay. You're safe now.\n\nWhat you're feeling is anxiety. Anxiety is a wave. It rises, peaks, and falls.\n\nI'm here. It will pass.",
+      he: "הכל בסדר. אתה בטוח עכשיו.\n\nמה שאתה מרגיש זה חרדה. חרדה היא כמו גל. היא עולה, מגיעה לשיא, ויורדת.\n\nאני כאן. זה יעבור.",
     },
-    durationMs: 18_000,
+    durationMs: 12_000,
   },
   {
     kind: "body-grounding",
     text: {
-      en: "Let's come back to your body for a moment.\n\nIf you're standing, sit down. Feel your feet on the floor, feel them touching, steadily. Try to press them a little more into the floor.\n\nFeel the weight of your body in the chair.",
-      he: "בוא נחזור לרגע לגוף שלך.\n\nאם אתה עומד, שב. תרגיש את כפות הרגליים שלך נוגעות ברצפה בצורה יציבה, תנסה לדחוף אותם עוד יותר לכיוון הרצפה.\n\nתרגיש את המשקל של הגוף שלך על הכיסא.",
+      en: "Come back to your body.\n\nIf you're standing, sit. Feel your feet on the floor. Press them down.\n\nFeel your weight in the chair.",
+      he: "חזור לגוף שלך.\n\nאם אתה עומד, שב. תרגיש את כפות הרגליים על הרצפה. לחץ אותן למטה.\n\nתרגיש את משקל הגוף שלך על הכיסא.",
     },
-    durationMs: 14_000,
+    durationMs: 10_000,
   },
   {
     kind: "box-breathing",
@@ -559,10 +551,10 @@ const CALMING_PROTOCOL: CalmingProtocolStep[] = [
   {
     kind: "close",
     text: {
-      en: "Take one more slow, deep breath.\n\nThe sharp wave has passed. Your body is finding its way back.\n\nThis kind of practice takes energy, and what just happened is a natural part of the process. For today, this is the place to stop. You did important work by staying. We'll continue another time.",
-      he: "קח עוד נשימה עמוקה ואיטית.\n\nהמצוקה שהרגשת הולכת ופוחתת. הגל החריף עבר והגוף שלך מתחיל לחזור לאיזון.\n\nתרגול חשיפה דורש אנרגיה ומה שקרה עכשיו הוא חלק טבעי לחלוטין מהתהליך. עבור התרגול היום זהו סימן לעצור כאן ולתת לגוף ולנפש שלך לנוח. עשית עבודה חשובה בכך שנשארת והתמודדת. אנחנו נמשיך את התרגול בפעם אחרת.",
+      en: "Take one more slow breath.\n\nThe wave has passed. You stayed.\n\nThat was the work. We'll continue another time.",
+      he: "קח עוד נשימה איטית.\n\nהגל עבר. נשארת.\n\nזאת הייתה העבודה. נמשיך בפעם הבאה.",
     },
-    durationMs: 22_000,
+    durationMs: 14_000,
   },
 ];
 

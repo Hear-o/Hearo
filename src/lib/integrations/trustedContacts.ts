@@ -6,8 +6,20 @@
 // phone book are reflected without sync logic.
 //
 // No backend. No telemetry on which contact gets called or when.
+//
+// Uses the v56 Contact class API (Contact.presentPicker, new Contact(id),
+// contact.getDetails). The previous code used the legacy getContactsAsync
+// path, which in expo-contacts >= v56 is exported as a deprecated stub
+// that throws at runtime. The migration also lets us use the native iOS
+// picker (Contact.presentPicker) instead of a custom in-sheet list —
+// better UX, less code to maintain.
 
-import * as Contacts from "expo-contacts";
+import {
+  Contact,
+  ContactField,
+  getPermissionsAsync,
+  requestPermissionsAsync,
+} from "expo-contacts";
 
 import { getTrustedContactIds, setTrustedContactIds } from "@/lib/storage/storage";
 
@@ -22,13 +34,13 @@ export type ResolvedContact = {
 export type PermissionState = "granted" | "denied" | "undetermined";
 
 export async function getPermissionState(): Promise<PermissionState> {
-  const { status } = await Contacts.getPermissionsAsync();
-  return status;
+  const { status } = await getPermissionsAsync();
+  return status as PermissionState;
 }
 
 export async function requestPermission(): Promise<PermissionState> {
-  const { status } = await Contacts.requestPermissionsAsync();
-  return status;
+  const { status } = await requestPermissionsAsync();
+  return status as PermissionState;
 }
 
 export { getTrustedContactIds };
@@ -47,11 +59,12 @@ export async function removeTrustedContact(id: string): Promise<void> {
   await setTrustedContactIds(ids.filter((x) => x !== id));
 }
 
-function firstPhone(c: Contacts.ExistingContact): string | null {
-  const phones = c.phoneNumbers;
+type PhoneEntry = { label?: string | null; number?: string | null };
+
+function pickPhone(phones: PhoneEntry[] | undefined): string | null {
   if (!phones || phones.length === 0) return null;
   // Prefer mobile, fall back to first.
-  const mobile = phones.find((p: Contacts.PhoneNumber) => /mobile/i.test(p.label ?? ""));
+  const mobile = phones.find((p) => /mobile/i.test(p.label ?? ""));
   const picked = (mobile ?? phones[0]).number ?? null;
   return picked ? picked.replace(/\s+/g, "") : null;
 }
@@ -60,16 +73,16 @@ function firstPhone(c: Contacts.ExistingContact): string | null {
  *  can't find it (deleted contact, revoked permission, etc.). */
 export async function resolveContact(id: string): Promise<ResolvedContact | null> {
   try {
-    const result = await Contacts.getContactByIdAsync(id, [
-      Contacts.Fields.Name,
-      Contacts.Fields.PhoneNumbers,
+    const details = await new Contact(id).getDetails([
+      ContactField.FULL_NAME,
+      ContactField.PHONES,
     ]);
-    if (!result) return null;
-    const phone = firstPhone(result);
+    if (!details) return null;
+    const phone = pickPhone(details.phones as PhoneEntry[] | undefined);
     if (!phone) return null;
     return {
       id,
-      name: result.name ?? phone,
+      name: details.fullName ?? phone,
       phone,
     };
   } catch {
@@ -84,24 +97,19 @@ export async function resolveTrustedContacts(): Promise<ResolvedContact[]> {
   return resolved.filter((c): c is ResolvedContact => c !== null);
 }
 
-/** All device contacts with at least one phone number, name-sorted. Used by
- *  the in-sheet picker. Failures (permission revoked between checks, OS
- *  errors, etc.) are swallowed and surface as an empty list — never as an
- *  unhandled throw inside a crisis-flow click handler. */
-export async function listAllContacts(): Promise<ResolvedContact[]> {
+/** Open the native iOS contact picker and resolve to the chosen contact's
+ *  record (ID + name + first phone). Returns null if the user cancels or
+ *  the chosen contact has no phone number. The native picker handles
+ *  permission state internally, so callers don't need to gate on
+ *  getPermissionState first — though we still surface permission UI for
+ *  clarity in the crisis sheet. Failures (permission revoked between
+ *  checks, OS errors, user cancel) all collapse to null. */
+export async function presentContactPicker(): Promise<ResolvedContact | null> {
   try {
-    const { data } = await Contacts.getContactsAsync({
-      fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
-      sort: Contacts.SortTypes.FirstName,
-    });
-    return data
-      .map((c) => {
-        const phone = firstPhone(c);
-        if (!phone || !c.id || !c.name) return null;
-        return { id: c.id, name: c.name, phone };
-      })
-      .filter((c): c is ResolvedContact => c !== null);
+    const picked = await Contact.presentPicker();
+    if (!picked) return null;
+    return await resolveContact(picked.id);
   } catch {
-    return [];
+    return null;
   }
 }

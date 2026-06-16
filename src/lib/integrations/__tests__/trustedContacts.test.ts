@@ -10,13 +10,13 @@ import * as contactsMock from "../../../../test/mocks/expo-contacts";
 import { getTrustedContactIds, setTrustedContactIds } from "@/lib/storage/storage";
 import {
   MAX_CONTACTS,
-  getPermissionState,
-  requestPermission,
   addTrustedContact,
+  getPermissionState,
+  presentContactPicker,
   removeTrustedContact,
+  requestPermission,
   resolveContact,
   resolveTrustedContacts,
-  listAllContacts,
 } from "@/lib/integrations/trustedContacts";
 
 beforeEach(async () => {
@@ -66,19 +66,19 @@ describe("trustedContacts / removeTrustedContact", () => {
 
 describe("trustedContacts / resolveContact", () => {
   it("returns null when the OS has no record for the id", async () => {
-    contactsMock.getContactByIdAsync.mockResolvedValue(undefined);
+    contactsMock.getDetails.mockResolvedValue(null);
     expect(await resolveContact("x")).toBeNull();
   });
 
   it("returns null when the contact has no phone numbers", async () => {
-    contactsMock.getContactByIdAsync.mockResolvedValue({ name: "A", phoneNumbers: [] });
+    contactsMock.getDetails.mockResolvedValue({ fullName: "A", phones: [] });
     expect(await resolveContact("x")).toBeNull();
   });
 
   it("prefers a mobile number and strips whitespace", async () => {
-    contactsMock.getContactByIdAsync.mockResolvedValue({
-      name: "Omer",
-      phoneNumbers: [
+    contactsMock.getDetails.mockResolvedValue({
+      fullName: "Omer",
+      phones: [
         { label: "home", number: "02 111 1111" },
         { label: "mobile", number: "050 222 3333" },
       ],
@@ -91,9 +91,9 @@ describe("trustedContacts / resolveContact", () => {
   });
 
   it("falls back to the first number when none is labelled mobile", async () => {
-    contactsMock.getContactByIdAsync.mockResolvedValue({
-      name: "Noa",
-      phoneNumbers: [{ number: "03 1234567" }], // label undefined → label ?? "" branch
+    contactsMock.getDetails.mockResolvedValue({
+      fullName: "Noa",
+      phones: [{ number: "03 1234567" }], // label undefined → label ?? "" branch
     });
     expect(await resolveContact("c2")).toEqual({
       id: "c2",
@@ -103,8 +103,8 @@ describe("trustedContacts / resolveContact", () => {
   });
 
   it("uses the phone as the display name when the contact has no name", async () => {
-    contactsMock.getContactByIdAsync.mockResolvedValue({
-      phoneNumbers: [{ label: "mobile", number: "0501112222" }],
+    contactsMock.getDetails.mockResolvedValue({
+      phones: [{ label: "mobile", number: "0501112222" }],
     });
     expect(await resolveContact("c3")).toEqual({
       id: "c3",
@@ -114,15 +114,15 @@ describe("trustedContacts / resolveContact", () => {
   });
 
   it("returns null when the chosen phone entry has no number", async () => {
-    contactsMock.getContactByIdAsync.mockResolvedValue({
-      name: "X",
-      phoneNumbers: [{ label: "mobile" }], // number undefined → null
+    contactsMock.getDetails.mockResolvedValue({
+      fullName: "X",
+      phones: [{ label: "mobile" }], // number undefined → null
     });
     expect(await resolveContact("c4")).toBeNull();
   });
 
   it("returns null and swallows OS errors", async () => {
-    contactsMock.getContactByIdAsync.mockRejectedValue(new Error("permission revoked"));
+    contactsMock.getDetails.mockRejectedValue(new Error("permission revoked"));
     expect(await resolveContact("c5")).toBeNull();
   });
 });
@@ -130,10 +130,10 @@ describe("trustedContacts / resolveContact", () => {
 describe("trustedContacts / resolveTrustedContacts", () => {
   it("resolves all stored ids and skips ones that don't resolve", async () => {
     await setTrustedContactIds(["good", "bad"]);
-    contactsMock.getContactByIdAsync.mockImplementation(async (id: string) =>
+    contactsMock.getDetails.mockImplementation(async (id: string) =>
       id === "good"
-        ? { name: "G", phoneNumbers: [{ label: "mobile", number: "0500000000" }] }
-        : undefined,
+        ? { fullName: "G", phones: [{ label: "mobile", number: "0500000000" }] }
+        : null,
     );
     expect(await resolveTrustedContacts()).toEqual([
       { id: "good", name: "G", phone: "0500000000" },
@@ -141,23 +141,33 @@ describe("trustedContacts / resolveTrustedContacts", () => {
   });
 });
 
-describe("trustedContacts / listAllContacts", () => {
-  it("returns phone-bearing, named contacts and filters out incomplete ones", async () => {
-    contactsMock.getContactsAsync.mockResolvedValue({
-      data: [
-        { id: "1", name: "A", phoneNumbers: [{ label: "mobile", number: "0501112222" }] },
-        { id: "2", name: "NoPhone", phoneNumbers: [] }, // no phone → skipped
-        { name: "NoId", phoneNumbers: [{ number: "0500000000" }] }, // no id → skipped
-        { id: "3", phoneNumbers: [{ number: "0500000000" }] }, // no name → skipped
-      ],
-    });
-    expect(await listAllContacts()).toEqual([
-      { id: "1", name: "A", phone: "0501112222" },
-    ]);
+describe("trustedContacts / presentContactPicker", () => {
+  it("returns null when the user cancels the native picker", async () => {
+    contactsMock.presentPicker.mockResolvedValue(null);
+    expect(await presentContactPicker()).toBeNull();
   });
 
-  it("returns an empty list when the OS call throws", async () => {
-    contactsMock.getContactsAsync.mockRejectedValue(new Error("boom"));
-    expect(await listAllContacts()).toEqual([]);
+  it("resolves the picked contact through getDetails", async () => {
+    contactsMock.presentPicker.mockResolvedValue({ id: "c9" });
+    contactsMock.getDetails.mockResolvedValue({
+      fullName: "Maya",
+      phones: [{ label: "mobile", number: "0509999999" }],
+    });
+    expect(await presentContactPicker()).toEqual({
+      id: "c9",
+      name: "Maya",
+      phone: "0509999999",
+    });
+  });
+
+  it("returns null when the picked contact has no phone", async () => {
+    contactsMock.presentPicker.mockResolvedValue({ id: "c9" });
+    contactsMock.getDetails.mockResolvedValue({ fullName: "Maya", phones: [] });
+    expect(await presentContactPicker()).toBeNull();
+  });
+
+  it("swallows native errors and returns null", async () => {
+    contactsMock.presentPicker.mockRejectedValue(new Error("picker error"));
+    expect(await presentContactPicker()).toBeNull();
   });
 });

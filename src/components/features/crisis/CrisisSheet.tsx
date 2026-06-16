@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Dimensions, Linking, Pressable, ScrollView, Text, View } from "react-native";
+import { Dimensions, Linking, Pressable, Text, View } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -13,9 +13,9 @@ import { fonts, tokens } from "@/lib/ui/tokens";
 import {
   addTrustedContact,
   getPermissionState,
-  listAllContacts,
   MAX_CONTACTS,
   PermissionState,
+  presentContactPicker,
   requestPermission,
   ResolvedContact,
   resolveTrustedContacts,
@@ -25,8 +25,6 @@ const SCREEN_HEIGHT = Dimensions.get("window").height;
 const SHEET_HEIGHT = Math.min(SCREEN_HEIGHT * 0.78, 600);
 const SLIDE_MS = 600;
 
-type SheetView = "main" | "picker";
-
 export function CrisisSheet() {
   const { t } = useTranslation();
   const isOpen = useCrisisStore((s) => s.isOpen);
@@ -35,10 +33,8 @@ export function CrisisSheet() {
   const translateY = useSharedValue(SHEET_HEIGHT);
   const backdropOpacity = useSharedValue(0);
 
-  const [view, setView] = useState<SheetView>("main");
   const [permission, setPermission] = useState<PermissionState>("undetermined");
   const [trusted, setTrusted] = useState<ResolvedContact[]>([]);
-  const [pickerCandidates, setPickerCandidates] = useState<ResolvedContact[] | null>(null);
 
   const refreshState = useCallback(async () => {
     const perm = await getPermissionState();
@@ -50,16 +46,11 @@ export function CrisisSheet() {
     }
   }, []);
 
-  // Reset the sheet's inner view to "main" the moment the sheet *closes*, so
-  // when it re-opens the slide-up animation never flashes a stale picker view
-  // before our useEffect-driven reset catches up. Re-load contacts data each
-  // time the sheet opens.
+  // Re-load contacts each time the sheet opens, so freshly-added trusted
+  // names show up immediately.
   useEffect(() => {
     if (isOpen) {
       void refreshState();
-    } else {
-      setView("main");
-      setPickerCandidates(null);
     }
   }, [isOpen, refreshState]);
 
@@ -96,25 +87,18 @@ export function CrisisSheet() {
       setPermission(perm);
     }
     if (perm !== "granted") return;
-    const candidates = await listAllContacts();
-    // Filter out already-trusted to keep the picker tidy.
-    const trustedIds = new Set(trusted.map((c) => c.id));
-    setPickerCandidates(candidates.filter((c) => !trustedIds.has(c.id)));
-    setView("picker");
-  };
 
-  const onPickContact = async (contact: ResolvedContact) => {
-    const result = await addTrustedContact(contact.id);
+    // Open the native iOS contact picker. Returns the chosen contact's
+    // resolved record, or null if the user cancels or the chosen contact
+    // has no phone number. Way better UX than a custom in-sheet list, and
+    // it's what iOS users expect from "pick from contacts".
+    const picked = await presentContactPicker();
+    if (!picked) return;
+
+    const result = await addTrustedContact(picked.id);
     if (result.ok) {
       setTrusted(await resolveTrustedContacts());
     }
-    setView("main");
-    setPickerCandidates(null);
-  };
-
-  const onCancelPicker = () => {
-    setView("main");
-    setPickerCandidates(null);
   };
 
   return (
@@ -161,24 +145,15 @@ export function CrisisSheet() {
           sheetStyle,
         ]}
       >
-        {view === "main" ? (
-          <MainView
-            t={t}
-            permission={permission}
-            trusted={trusted}
-            onCallEran={onCallEran}
-            onCallTrusted={onCallTrusted}
-            onAddSomeone={onAddSomeone}
-            onClose={close}
-          />
-        ) : (
-          <PickerView
-            t={t}
-            candidates={pickerCandidates ?? []}
-            onPick={onPickContact}
-            onCancel={onCancelPicker}
-          />
-        )}
+        <MainView
+          t={t}
+          permission={permission}
+          trusted={trusted}
+          onCallEran={onCallEran}
+          onCallTrusted={onCallTrusted}
+          onAddSomeone={onAddSomeone}
+          onClose={close}
+        />
       </Animated.View>
     </View>
   );
@@ -347,73 +322,3 @@ function MainView({
   );
 }
 
-function PickerView({
-  t,
-  candidates,
-  onPick,
-  onCancel,
-}: {
-  t: (key: string) => string;
-  candidates: ResolvedContact[];
-  onPick: (c: ResolvedContact) => void;
-  onCancel: () => void;
-}) {
-  return (
-    <View style={{ flex: 1 }}>
-      <Text
-        style={{
-          color: tokens.text,
-          fontFamily: fonts.display,
-          fontSize: 24,
-          lineHeight: 32,
-          marginBottom: 18,
-        }}
-      >
-        {t("crisis.trustedContacts.pickHeading")}
-      </Text>
-
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-        {candidates.map((c) => (
-          <Pressable
-            key={c.id}
-            onPress={() => onPick(c)}
-            hitSlop={4}
-            style={{ paddingVertical: 12 }}
-          >
-            <Text
-              style={{
-                color: tokens.text,
-                fontFamily: fonts.body,
-                fontSize: 17,
-              }}
-            >
-              {c.name}
-            </Text>
-            <Text
-              style={{
-                color: tokens.textMute,
-                fontFamily: fonts.body,
-                fontSize: 13,
-                marginTop: 2,
-              }}
-            >
-              {c.phone}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
-
-      <Pressable onPress={onCancel} hitSlop={12} style={{ marginTop: 16, alignSelf: "flex-start" }}>
-        <Text
-          style={{
-            color: tokens.textMute,
-            fontFamily: fonts.body,
-            fontSize: 15,
-          }}
-        >
-          {t("crisis.close")}
-        </Text>
-      </Pressable>
-    </View>
-  );
-}

@@ -100,7 +100,7 @@ export default function Home() {
               marginBottom: 14,
             }}
           >
-            {t("home.todaysMoment")}
+            {t("home.todaysExperience")}
           </Text>
 
           <Text

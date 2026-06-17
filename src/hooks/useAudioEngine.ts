@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useMemo } from 'react';
 import { AudioEngine, TriggerSchedulerConfig } from '@/lib/audio/audio-engine';
 import { audioSessionReady } from '@/lib/audio/audio-session';
 
@@ -45,7 +45,7 @@ export interface UseAudioEngineResult {
 export function useAudioEngine(): UseAudioEngineResult {
   const engineRef = useRef<AudioEngine | null>(null);
 
-  if (!engineRef.current) {
+  if (engineRef.current == null) {
     engineRef.current = new AudioEngine();
   }
 
@@ -140,23 +140,44 @@ export function useAudioEngine(): UseAudioEngineResult {
     []
   );
 
-  return {
-    loadAmbientAndVoice,
-    loadTrigger,
-    startAmbient,
-    setAmbientGain,
-    startTriggerScheduler,
-    stopTriggerScheduler,
-    setTriggerPeakGain,
-    setIntervalRange,
-    setBurstDuration,
-    onSpike,
-    onNormalized,
-    playVoiceClip,
-    pauseAll,
-    resumeAll,
-    fadeOutAll,
-    currentTriggerGain,
-    isBurstActive,
-  };
+  return useMemo(
+    () => ({
+      loadAmbientAndVoice,
+      loadTrigger,
+      startAmbient,
+      setAmbientGain,
+      startTriggerScheduler,
+      stopTriggerScheduler,
+      setTriggerPeakGain,
+      setIntervalRange,
+      setBurstDuration,
+      onSpike,
+      onNormalized,
+      playVoiceClip,
+      pauseAll,
+      resumeAll,
+      fadeOutAll,
+      currentTriggerGain,
+      isBurstActive,
+    }),
+    [
+      loadAmbientAndVoice,
+      loadTrigger,
+      startAmbient,
+      setAmbientGain,
+      startTriggerScheduler,
+      stopTriggerScheduler,
+      setTriggerPeakGain,
+      setIntervalRange,
+      setBurstDuration,
+      onSpike,
+      onNormalized,
+      playVoiceClip,
+      pauseAll,
+      resumeAll,
+      fadeOutAll,
+      currentTriggerGain,
+      isBurstActive,
+    ]
+  );
 }

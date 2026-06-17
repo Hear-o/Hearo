@@ -58,6 +58,15 @@ describe("useAudioEngine", () => {
     expect(MockAudioEngine).toHaveBeenCalledTimes(1);
   });
 
+  it("returns the same API object on re-render", () => {
+    const { result, rerender } = renderHook(() => useAudioEngine());
+    const firstResult = result.current;
+
+    rerender({});
+
+    expect(result.current).toBe(firstResult);
+  });
+
   it("delegates loadAmbientAndVoice to the engine", async () => {
     const { result } = renderHook(() => useAudioEngine());
     await act(() => result.current.loadAmbientAndVoice(1, [2, 3]));

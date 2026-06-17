@@ -1,0 +1,207 @@
+# Device-level iOS audio verification.
+#
+# The Jest job (test.yml) runs against a FAKE AudioContext — it proves our
+# wiring but never that the native react-native-audio-api engine produces sound.
+# This job closes that gap as close to a real device as CI allows: it natively
+# compiles + links the audio module, boots a real iOS Simulator, and runs the
+# in-app audio self-test (src/app/audio-selftest.tsx → src/lib/audio/audioSelfTest.ts),
+# which makes the real native engine synthesize a tone and MEASURES the output.
+#
+# Two signals:
+#   • GATING (blocks the PR): the in-app measurement. A real OfflineAudioContext
+#     render + a live AnalyserNode tap must both report a non-silent signal,
+#     written to <Documents>/audio-selftest.json and read back here. Deterministic
+#     — needs no host audio hardware.
+#   • DIAGNOSTIC (never blocks): a best-effort recording of the simulator's actual
+#     audio output via the BlackHole virtual device + ffmpeg RMS. Truest to "sound
+#     left the output", but audio routing on CI is flaky, so it is informational.
+#
+# Honest limits: a headless runner has no speaker and the Simulator has no Apple
+# Watch / real HealthKit data, so this does NOT verify audible playback through
+# real hardware or HR-driven ducking. It DOES verify the native audio pipeline
+# builds, links, activates AVAudioSession, and emits a real signal on iOS.
+#
+# NOTE: this workflow is authored on Windows and cannot be run locally; the
+# macOS-only steps (scheme name, simulator runtime, log/file extraction) may need
+# one or two real CI runs to settle. The `xcodebuild -list` step prints the
+# available schemes to make any mismatch obvious.
+
+name: iOS audio (device-level)
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ios-audio-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios-audio:
+    name: Build + verify audio on iOS Simulator
+    runs-on: macos-15
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      # Inlined into the embedded Release bundle → enables the hidden self-test
+      # route. Unset everywhere else, so the route is inert in shipped builds.
+      EXPO_PUBLIC_AUDIO_SELFTEST: "1"
+      BUNDLE_ID: com.techheal.hearo
+      SCHEME: Hearo
+      CONFIGURATION: Release
+      SIM_DEVICE: iPhone 16
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # CNG: this repo has no committed ios/ dir; generate it. The EXPO_PUBLIC_*
+      # flag above is baked into the JS bundle during the build below.
+      - name: Prebuild iOS project
+        run: npx expo prebuild -p ios --clean
+
+      - name: Discover workspace + schemes
+        id: xc
+        run: |
+          set -euo pipefail
+          WS=$(ls -d ios/*.xcworkspace | head -n1)
+          echo "workspace=$WS" >> "$GITHUB_OUTPUT"
+          echo "Using workspace: $WS"
+          xcodebuild -list -workspace "$WS" || true
+
+      # Release build → JS bundle is embedded, so the app launches standalone
+      # (no Metro packager needed). Simulator builds need no code signing.
+      - name: Build for iOS Simulator
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -workspace "${{ steps.xc.outputs.workspace }}" \
+            -scheme "$SCHEME" \
+            -configuration "$CONFIGURATION" \
+            -sdk iphonesimulator \
+            -derivedDataPath ios/build \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Boot simulator
+        run: |
+          set -euo pipefail
+          # Resolve ONE concrete UDID and reuse it for every later simctl call.
+          # `simctl ... booted` is ambiguous as soon as any device is booted, and
+          # a name-based fallback would otherwise leave bootstatus waiting on the
+          # wrong device. Prefer $SIM_DEVICE by name, else any available iPhone.
+          UDID=$(xcrun simctl list devices available -j | node -e '
+            const data = JSON.parse(require("fs").readFileSync(0, "utf8")).devices;
+            const all = Object.values(data).flat();
+            const want = process.argv[1];
+            const pick = all.find((d) => d.name === want) || all.find((d) => /^iPhone/.test(d.name));
+            if (!pick) { console.error("no available iPhone simulator on this runner"); process.exit(1); }
+            process.stdout.write(pick.udid);
+          ' "$SIM_DEVICE")
+          echo "Booting simulator $UDID (preferred name: $SIM_DEVICE)"
+          # Tolerate an already-booted device; bootstatus is the real gate.
+          xcrun simctl boot "$UDID" 2>/dev/null || true
+          xcrun simctl bootstatus "$UDID" -b
+          echo "SIM_UDID=$UDID" >> "$GITHUB_ENV"
+
+      # NON-BLOCKING diagnostic setup: route the Mac's default output to a
+      # virtual device so the Simulator's audio can be recorded.
+      - name: Set up audio capture (BlackHole)
+        id: capture_setup
+        continue-on-error: true
+        run: |
+          brew install blackhole-2ch switchaudio-osx
+          SwitchAudioSource -s "BlackHole 2ch" || true
+
+      - name: Install app on simulator
+        run: |
+          set -euo pipefail
+          APP=$(find "ios/build/Build/Products/${CONFIGURATION}-iphonesimulator" -maxdepth 1 -name "*.app" | head -n1)
+          echo "Installing $APP on $SIM_UDID"
+          xcrun simctl install "$SIM_UDID" "$APP"
+
+      - name: Start audio capture
+        continue-on-error: true
+        run: |
+          # Record ~8s from BlackHole in the background; analysed after the test.
+          ( ffmpeg -y -f avfoundation -i ":BlackHole 2ch" -t 8 capture.wav >ffmpeg.log 2>&1 & echo $! > ffmpeg.pid ) || true
+
+      - name: Run audio self-test and assert (GATING)
+        run: |
+          set -euo pipefail
+
+          # Fallback signal: stream the device log for the marker line.
+          xcrun simctl spawn "$SIM_UDID" log stream --style compact \
+            --predicate 'eventMessage CONTAINS "AUDIO_SELFTEST_RESULT"' > selftest.log 2>&1 &
+          LOG_PID=$!
+
+          # Launch, then deep-link into the hidden self-test route.
+          xcrun simctl launch "$SIM_UDID" "$BUNDLE_ID" || true
+          sleep 2
+          xcrun simctl openurl "$SIM_UDID" "hearo://audio-selftest"
+
+          # The route writes its verdict to the app's Documents container, which
+          # lives on the host filesystem under the simulator's data container.
+          CONTAINER=$(xcrun simctl get_app_container "$SIM_UDID" "$BUNDLE_ID" data)
+          RESULT="$CONTAINER/Documents/audio-selftest.json"
+
+          echo "Waiting for result file: $RESULT"
+          for _ in $(seq 1 60); do
+            [ -f "$RESULT" ] && break
+            sleep 1
+          done
+          kill "$LOG_PID" 2>/dev/null || true
+
+          echo "----- device log -----"
+          cat selftest.log 2>/dev/null || true
+
+          if [ ! -f "$RESULT" ]; then
+            echo "::error::audio self-test produced no result file (app did not run the test)"
+            exit 1
+          fi
+
+          echo "----- result file -----"
+          cat "$RESULT"; echo
+          node -e '
+            const r = require(process.argv[1]);
+            if (!r.pass) {
+              console.error("AUDIO SELF-TEST FAILED:", JSON.stringify(r));
+              process.exit(1);
+            }
+            console.log("AUDIO SELF-TEST PASSED:", JSON.stringify(r));
+          ' "$RESULT"
+
+      - name: Analyse captured audio (RMS)
+        continue-on-error: true
+        run: |
+          [ -f ffmpeg.pid ] && wait "$(cat ffmpeg.pid)" 2>/dev/null || true
+          if [ -f capture.wav ]; then
+            echo "Measuring captured output level:"
+            ffmpeg -i capture.wav -af volumedetect -f null /dev/null 2>&1 \
+              | grep -E "mean_volume|max_volume" || echo "volumedetect produced no levels"
+          else
+            echo "no capture.wav — speaker capture is best-effort and did not run"
+          fi
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-audio-selftest
+          path: |
+            selftest.log
+            capture.wav
+            ffmpeg.log
+          if-no-files-found: ignore

@@ -15,6 +15,14 @@ This app uses native modules that can't run in any sandboxed runner — `react-n
 
 There is no Expo Go fallback. If something appears to "do nothing" in the audio or pulse paths, you are almost certainly on a build without the native modules linked — re-cut a dev build.
 
+### iOS audio CI (`.github/workflows/ios-audio.yml`)
+
+The Jest suites run against a **fake** AudioContext (`test/mocks/react-native-audio-api.ts`) — they verify our wiring but never that the native engine emits sound. The `iOS audio (device-level)` job closes that gap on every PR to `main`: it prebuilds + natively compiles the audio module, boots a real iOS Simulator, and runs the in-app audio self-test (`src/app/audio-selftest.tsx` → `src/lib/audio/audioSelfTest.ts`), which makes the real `react-native-audio-api` engine synthesize a tone and **measures the output** (an `OfflineAudioContext` render + a live `AnalyserNode` tap, asserted non-silent). The verdict is written to `<Documents>/audio-selftest.json` and read back from the simulator's data container.
+
+What it proves: the native audio pipeline builds, links, activates `AVAudioSession`, and produces a real signal on iOS. What it does **not** prove (honest limits of a headless runner): audible playback through real speakers, or HR-driven ducking (the Simulator has no Apple Watch / HealthKit data). A best-effort BlackHole + ffmpeg recording of the simulator's actual output runs as a **non-blocking** diagnostic.
+
+The self-test route is inert unless built with `EXPO_PUBLIC_AUDIO_SELFTEST=1`, so it never ships in normal builds.
+
 ## Platform parity
 
 - `react-native-audio-api`, `expo-notifications`, `expo-contacts`, `expo-localization`, `expo-file-system`, `expo-router` all work on both platforms; nothing on the JS side should branch on `Platform.OS` unless the underlying behavior actually differs (e.g. iOS DateTimePicker spinner vs Android modal).

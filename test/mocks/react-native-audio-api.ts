@@ -42,8 +42,94 @@ class FakeAudioBufferSourceNode {
   stop = jest.fn();
 }
 
+// When true, rendered/analysed buffers come back as digital silence so the
+// audio self-test suite can exercise the FAIL path. Reset via __setSilent.
+let silentRender = false;
+
+class FakeOscillatorNode {
+  frequency = new FakeAudioParam();
+  detune = new FakeAudioParam();
+  type = "sine";
+  connect = jest.fn();
+  start = jest.fn();
+  stop = jest.fn();
+}
+
+class FakeAnalyserNode {
+  fftSize = 2048;
+  connect = jest.fn();
+  // Silence in 8-bit time-domain data is a flat 128. A live signal swings
+  // away from it; we synthesize a swing unless silentRender is set.
+  getByteTimeDomainData = jest.fn((arr: Uint8Array) => {
+    for (let i = 0; i < arr.length; i++) {
+      arr[i] = silentRender ? 128 : 128 + Math.round(100 * Math.sin((2 * Math.PI * i) / 32));
+    }
+  });
+  getFloatTimeDomainData = jest.fn();
+  getByteFrequencyData = jest.fn();
+  getFloatFrequencyData = jest.fn();
+}
+
 class FakeAudioBuffer {
-  constructor(public duration = 1) {}
+  length: number;
+  sampleRate: number;
+  numberOfChannels = 1;
+  private _samples: Float32Array;
+
+  // Backward compatible: existing suites construct `new FakeAudioBuffer(1)` and
+  // only read `.duration`. The optional opts add a real (or silent) PCM frame
+  // so the audio self-test can call getChannelData().
+  constructor(
+    public duration = 1,
+    opts?: { length?: number; sampleRate?: number; silent?: boolean },
+  ) {
+    this.sampleRate = opts?.sampleRate ?? 44100;
+    this.length = opts?.length ?? Math.max(1, Math.floor(duration * this.sampleRate));
+    const silent = opts?.silent ?? false;
+    this._samples = new Float32Array(this.length);
+    if (!silent) {
+      for (let i = 0; i < this.length; i++) {
+        this._samples[i] = 0.5 * Math.sin((2 * Math.PI * 440 * i) / this.sampleRate);
+      }
+    }
+  }
+
+  getChannelData(_channel: number): Float32Array {
+    return this._samples;
+  }
+}
+
+class FakeOfflineAudioContext {
+  destination = {};
+  gains: FakeGainNode[] = [];
+  oscillators: FakeOscillatorNode[] = [];
+
+  constructor(
+    public numberOfChannels: number,
+    public length: number,
+    public sampleRate: number,
+  ) {}
+
+  createGain = jest.fn(() => {
+    const g = new FakeGainNode();
+    this.gains.push(g);
+    return g;
+  });
+
+  createOscillator = jest.fn(() => {
+    const o = new FakeOscillatorNode();
+    this.oscillators.push(o);
+    return o;
+  });
+
+  startRendering = jest.fn(
+    async () =>
+      new FakeAudioBuffer(this.length / this.sampleRate, {
+        length: this.length,
+        sampleRate: this.sampleRate,
+        silent: silentRender,
+      }),
+  );
 }
 
 class FakeAudioContext {
@@ -54,10 +140,24 @@ class FakeAudioContext {
   destination = {};
   gains: FakeGainNode[] = [];
   sources: FakeAudioBufferSourceNode[] = [];
+  oscillators: FakeOscillatorNode[] = [];
+  analysers: FakeAnalyserNode[] = [];
 
   constructor() {
     FakeAudioContext.last = this;
   }
+
+  createOscillator = jest.fn(() => {
+    const o = new FakeOscillatorNode();
+    this.oscillators.push(o);
+    return o;
+  });
+
+  createAnalyser = jest.fn(() => {
+    const a = new FakeAnalyserNode();
+    this.analysers.push(a);
+    return a;
+  });
 
   createGain = jest.fn(() => {
     const g = new FakeGainNode();
@@ -87,9 +187,18 @@ class FakeAudioContext {
 }
 
 export const AudioContext = FakeAudioContext;
+export const OfflineAudioContext = FakeOfflineAudioContext;
 export const AudioBuffer = FakeAudioBuffer;
 export const AudioBufferSourceNode = FakeAudioBufferSourceNode;
 export const GainNode = FakeGainNode;
+export const OscillatorNode = FakeOscillatorNode;
+export const AnalyserNode = FakeAnalyserNode;
+
+/** Force rendered/analysed audio to digital silence (audio self-test FAIL
+ *  path). Call __setSilent(false) to restore the default tone. */
+export function __setSilent(value: boolean): void {
+  silentRender = value;
+}
 
 // audio-session.ts (imported transitively by useAudioEngine + _layout) calls
 // these at module load. They have to exist on the mock or the entire engine

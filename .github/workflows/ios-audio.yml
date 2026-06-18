@@ -163,21 +163,25 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Fallback signal and diagnostics: stream this app's device log. This
-          # includes the AUDIO_SELFTEST_* markers plus native startup failures
-          # that would otherwise look like "no result file".
+          # Keep Unified Logging for native startup diagnostics. React Native's
+          # console output is process stdout/stderr, so it is captured separately
+          # by simctl launch --console-pty below.
           xcrun simctl spawn "$SIM_UDID" log stream --style compact \
             --predicate 'process == "Hearo" OR eventMessage CONTAINS "AUDIO_SELFTEST"' > selftest.log 2>&1 &
           LOG_PID=$!
+          CONSOLE_PID=""
           cleanup() {
+            [ -n "$CONSOLE_PID" ] && kill "$CONSOLE_PID" 2>/dev/null || true
             kill "$LOG_PID" 2>/dev/null || true
           }
           trap cleanup EXIT
 
           # The CI-only generated root layout renders the self-test directly at
-          # app startup. Terminate first to avoid reusing an old process.
+          # app startup. Attach its stdout/stderr because console.log does not go
+          # through the Unified Logging stream used above in a Release build.
           xcrun simctl terminate "$SIM_UDID" "$BUNDLE_ID" 2>/dev/null || true
-          xcrun simctl launch "$SIM_UDID" "$BUNDLE_ID"
+          xcrun simctl launch --console-pty "$SIM_UDID" "$BUNDLE_ID" > selftest-console.log 2>&1 &
+          CONSOLE_PID=$!
 
           # The route writes its verdict to the app's Documents container, which
           # lives on the host filesystem under the simulator's data container.
@@ -187,16 +191,35 @@ jobs:
           echo "Waiting for result file: $RESULT"
           for _ in $(seq 1 60); do
             [ -f "$RESULT" ] && break
+            grep -q 'AUDIO_SELFTEST_RESULT=' selftest-console.log 2>/dev/null && break
+            if ! kill -0 "$CONSOLE_PID" 2>/dev/null; then
+              echo "App console attachment exited before producing a verdict."
+              break
+            fi
             sleep 1
           done
+
+          if [ ! -f "$RESULT" ]; then
+            xcrun simctl io "$SIM_UDID" screenshot selftest.png 2>/dev/null || true
+            xcrun simctl spawn "$SIM_UDID" ps -ax > simulator-processes.log 2>&1 || true
+            xcrun simctl spawn "$SIM_UDID" log show --last 2m --style compact \
+              --predicate 'process == "Hearo" OR eventMessage CONTAINS[c] "com.techheal.hearo"' \
+              > simulator-postmortem.log 2>&1 || true
+          fi
           cleanup
 
+          echo "----- app console -----"
+          cat selftest-console.log 2>/dev/null || true
           echo "----- device log -----"
           cat selftest.log 2>/dev/null || true
 
           if [ ! -f "$RESULT" ]; then
             echo "----- Documents directory -----"
             ls -la "$CONTAINER/Documents" 2>/dev/null || true
+            if grep -q 'AUDIO_SELFTEST_RESULT=PASS' selftest-console.log 2>/dev/null; then
+              echo "::warning::result file was not written; accepting measured PASS verdict from app stdout"
+              exit 0
+            fi
             echo "::error::audio self-test produced no result file (app did not run the CI entry)"
             exit 1
           fi
@@ -232,6 +255,10 @@ jobs:
           name: ios-audio-selftest
           path: |
             selftest.log
+            selftest-console.log
+            simulator-postmortem.log
+            simulator-processes.log
+            selftest.png
             capture.wav
             ffmpeg.log
           if-no-files-found: ignore

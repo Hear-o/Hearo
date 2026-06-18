@@ -24,20 +24,41 @@ import {
   AudioSelfTestResult,
 } from "@/lib/audio/audioSelfTest";
 
-const ENABLED = process.env.EXPO_PUBLIC_AUDIO_SELFTEST === "1";
+export const AUDIO_SELF_TEST_TIMEOUT_MS = 20_000;
 const RESULT_FILE = `${FileSystem.documentDirectory}audio-selftest.json`;
+
+function audioSelfTestEnabled(): boolean {
+  return process.env.EXPO_PUBLIC_AUDIO_SELFTEST === "1";
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`audio self-test timed out after ${ms}ms`));
+    }, ms);
+  });
+
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
 
 export default function AudioSelfTestScreen() {
   const [result, setResult] = useState<AudioSelfTestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const enabled = audioSelfTestEnabled();
 
   useEffect(() => {
-    if (!ENABLED) return;
+    if (!enabled) return;
     let cancelled = false;
 
     (async () => {
       try {
-        const r = await runAudioSelfTest();
+        console.log("AUDIO_SELFTEST_STARTED");
+        const r = await withTimeout(runAudioSelfTest(), AUDIO_SELF_TEST_TIMEOUT_MS);
         // Fallback signal: a single greppable line in the device log.
         console.log(formatSelfTestLog(r));
         // Primary signal: a JSON file CI reads from the app data container.
@@ -61,9 +82,9 @@ export default function AudioSelfTestScreen() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [enabled]);
 
-  if (!ENABLED) {
+  if (!enabled) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
         <Text testID="audio-selftest-disabled">audio self-test disabled</Text>

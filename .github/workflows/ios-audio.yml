@@ -124,14 +124,26 @@ jobs:
           xcrun simctl bootstatus "$UDID" -b
           echo "SIM_UDID=$UDID" >> "$GITHUB_ENV"
 
-      # NON-BLOCKING diagnostic setup: route the Mac's default output to a
-      # virtual device so the Simulator's audio can be recorded.
-      - name: Set up audio capture (BlackHole)
+      # NON-BLOCKING diagnostic setup: if a runner already has the host audio
+      # capture tools wired, route output to BlackHole and record it below. Do
+      # not install audio drivers here: the BlackHole cask requires a reboot on
+      # hosted runners, so installing it mid-job only adds noise.
+      - name: Detect audio capture tools
         id: capture_setup
-        continue-on-error: true
         run: |
-          brew install blackhole-2ch switchaudio-osx
-          SwitchAudioSource -s "BlackHole 2ch" || true
+          set -euo pipefail
+          capture=false
+
+          if command -v ffmpeg >/dev/null 2>&1 &&
+             command -v SwitchAudioSource >/dev/null 2>&1 &&
+             SwitchAudioSource -a -t output | grep -Fxq "BlackHole 2ch"; then
+            SwitchAudioSource -s "BlackHole 2ch" || true
+            capture=true
+          else
+            echo "Host audio capture unavailable; continuing with in-app gating signal only."
+          fi
+
+          echo "capture=$capture" >> "$GITHUB_OUTPUT"
 
       - name: Install app on simulator
         run: |
@@ -141,6 +153,7 @@ jobs:
           xcrun simctl install "$SIM_UDID" "$APP"
 
       - name: Start audio capture
+        if: steps.capture_setup.outputs.capture == 'true'
         continue-on-error: true
         run: |
           # Record ~8s from BlackHole in the background; analysed after the test.
@@ -150,10 +163,16 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Fallback signal: stream the device log for the marker line.
+          # Fallback signal and diagnostics: stream this app's device log. This
+          # includes the AUDIO_SELFTEST_* markers plus native startup failures
+          # that would otherwise look like "no result file".
           xcrun simctl spawn "$SIM_UDID" log stream --style compact \
-            --predicate 'eventMessage CONTAINS "AUDIO_SELFTEST_RESULT"' > selftest.log 2>&1 &
+            --predicate 'process == "Hearo" OR eventMessage CONTAINS "AUDIO_SELFTEST"' > selftest.log 2>&1 &
           LOG_PID=$!
+          cleanup() {
+            kill "$LOG_PID" 2>/dev/null || true
+          }
+          trap cleanup EXIT
 
           # The CI-only generated root layout renders the self-test directly at
           # app startup. Terminate first to avoid reusing an old process.
@@ -170,12 +189,14 @@ jobs:
             [ -f "$RESULT" ] && break
             sleep 1
           done
-          kill "$LOG_PID" 2>/dev/null || true
+          cleanup
 
           echo "----- device log -----"
           cat selftest.log 2>/dev/null || true
 
           if [ ! -f "$RESULT" ]; then
+            echo "----- Documents directory -----"
+            ls -la "$CONTAINER/Documents" 2>/dev/null || true
             echo "::error::audio self-test produced no result file (app did not run the CI entry)"
             exit 1
           fi
@@ -192,6 +213,7 @@ jobs:
           ' "$RESULT"
 
       - name: Analyse captured audio (RMS)
+        if: steps.capture_setup.outputs.capture == 'true'
         continue-on-error: true
         run: |
           [ -f ffmpeg.pid ] && wait "$(cat ffmpeg.pid)" 2>/dev/null || true
@@ -205,7 +227,7 @@ jobs:
 
       - name: Upload diagnostics
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: ios-audio-selftest
           path: |

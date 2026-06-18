@@ -13,6 +13,7 @@ import {
 import { Heebo_400Regular, Heebo_500Medium } from "@expo-google-fonts/heebo";
 
 import { CrisisSheet } from "@/components/features/crisis/CrisisSheet";
+import { SettingsSheet } from "@/components/features/settings/SettingsSheet";
 import { isRTL } from "@/lib/ui/i18n";
 import { configureNotificationHandler, reassertSchedule } from "@/lib/integrations/reminders";
 // Import for its side effect: kicks off iOS audio-session configure+activate
@@ -64,6 +65,7 @@ export default function RootLayout() {
         }}
       />
       <CrisisSheet />
+      <SettingsSheet />
     </GestureHandlerRootView>
   );
 }

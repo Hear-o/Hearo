@@ -4,11 +4,18 @@ import ArrowRightSvg from "@/assets/icons/arrow-right.svg";
 import CloseSvg from "@/assets/icons/close.svg";
 import InfoSvg from "@/assets/icons/info.svg";
 import MenuSvg from "@/assets/icons/menu.svg";
+import SettingsSvg from "@/assets/icons/settings.svg";
 
 // The user-facing icon names. `arrow-left` is rendered as the right-arrow SVG
 // flipped horizontally — the Streamline free set has no clean thin left-arrow
 // to match the right-arrow's stroke weight.
-export type IconName = "close" | "menu" | "info" | "arrow-right" | "arrow-left";
+export type IconName =
+  | "close"
+  | "menu"
+  | "info"
+  | "settings"
+  | "arrow-right"
+  | "arrow-left";
 
 type Props = {
   name: IconName;
@@ -20,6 +27,7 @@ const COMPONENTS = {
   close: CloseSvg,
   menu: MenuSvg,
   info: InfoSvg,
+  settings: SettingsSvg,
   "arrow-right": ArrowRightSvg,
   "arrow-left": ArrowRightSvg,
 } as const;

@@ -12,6 +12,7 @@ import { VoiceLine } from "@/components/features/session/VoiceLine";
 import { useSessionStore } from "@/lib/storage/session-store";
 import { getScene, getVoiceScript, localize, SceneKey, isPlaceholderSource, getAmbientTrack, getVoiceClips, getSound } from "@/lib/content/content";
 import { dBToGain } from "@/lib/audio/audio-engine";
+import { audioTrace, audioWarn } from "@/lib/audio/audio-log";
 import { useCrisisStore } from "@/lib/storage/crisis-store";
 import { fonts, tokens } from "@/lib/ui/tokens";
 import { useAudioEngine } from "@/hooks/useAudioEngine";
@@ -127,8 +128,12 @@ export default function Session() {
 
   // ── Machine state ──────────────────────────────────────────────────────
 
-  const [machineState, dispatch] = useReducer(sessionReducer, "LOADING");
-  const machineStateRef = useRef<MachineState>("LOADING");
+  // /preparing now handles asset cache + buffer decode + audio activation
+  // before routing here, so we skip LOADING and land directly on DISCLAIMER.
+  // (LOADING is still in the state machine to support a future fallback path
+  // where /session is reached without going through /preparing.)
+  const [machineState, dispatch] = useReducer(sessionReducer, "DISCLAIMER");
+  const machineStateRef = useRef<MachineState>("DISCLAIMER");
   useEffect(() => { machineStateRef.current = machineState; }, [machineState]);
 
   // ── UI state ───────────────────────────────────────────────────────────
@@ -269,22 +274,28 @@ export default function Session() {
       .filter((c) => !isPlaceholderSource(c.source))
       .map((c) => c.source as number | string);
 
+    audioTrace("session DISCLAIMER: kicking off loadAmbientAndVoice");
     engine
       .loadAmbientAndVoice(
         isPlaceholderSource(ambientTrack.source) ? 0 : (ambientTrack.source as number | string),
         voiceSources
       )
-      .then(() => {
-        // startAmbient only after buffer is loaded.
+      .then(async () => {
+        // startAmbient only after buffer is loaded. Await it — it's now
+        // async because we explicitly wait for ctx.resume() to flip
+        // suspended→running on iOS.
         if (!isPlaceholderSource(ambientTrack.source)) {
-          engine.startAmbient();
+          await engine.startAmbient();
         }
         if (!isPlaceholderSource(disclaimerClip.source)) {
           return engine.playVoiceClip(0);
         }
       })
       .then(() => dispatch({ type: "DISCLAIMER_DONE" }))
-      .catch(() => dispatch({ type: "DISCLAIMER_DONE" }));
+      .catch((e) => {
+        audioWarn("session DISCLAIMER: chain FAILED, advancing anyway", e);
+        dispatch({ type: "DISCLAIMER_DONE" });
+      });
   }, [machineState, engine]);
 
   // ── ADAPTIVE_LOOP: load trigger buffer, then start ramp ──────────────
@@ -333,7 +344,8 @@ export default function Session() {
           }
         }, ADAPTIVE_LOOP_MS);
       })
-      .catch(() => {
+      .catch((e) => {
+        audioWarn("session ADAPTIVE_LOOP: loadTrigger FAILED, falling back to rehearsal", e);
         // Trigger failed to load — continue as rehearsal walk.
         if (!cancelled) {
           timerId = setTimeout(() => {
@@ -360,7 +372,9 @@ export default function Session() {
       midSessionFiredRef.current = true;
       const voiceClips = getVoiceClips(scene, i18n.language);
       if (!isPlaceholderSource(voiceClips[1].source)) {
-        engine.playVoiceClip(1).catch(() => {});
+        engine.playVoiceClip(1).catch((e) => {
+          audioWarn("session MID_SESSION: playVoiceClip(1) REJECTED", e);
+        });
       }
     }, halfMs);
     return () => clearTimeout(id);
@@ -384,7 +398,10 @@ export default function Session() {
       engine
         .playVoiceClip(2)
         .then(() => dispatch({ type: "WIND_DOWN_DONE" }))
-        .catch(() => dispatch({ type: "WIND_DOWN_DONE" }));
+        .catch((e) => {
+          audioWarn("session WIND_DOWN: playVoiceClip(2) REJECTED", e);
+          dispatch({ type: "WIND_DOWN_DONE" });
+        });
     }, 3200); // after fade completes
   }, [machineState, engine]);
 

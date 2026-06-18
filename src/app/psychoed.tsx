@@ -26,7 +26,8 @@ export default function PsychoEducation() {
   async function handleContinue() {
     await setPsychoEducationSeen(true);
     if (sceneParam) {
-      router.replace({ pathname: "/session", params: { scene: sceneParam } });
+      // /preparing now pre-loads the audio engine; /session lands ready.
+      router.replace({ pathname: "/preparing", params: { scene: sceneParam } });
     } else {
       router.back();
     }

@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
 import { Icon } from "@/components/common/Icon";
 import { useSwipeForward } from "@/hooks/useSwipeForward";
+import { useSettingsSheetStore } from "@/lib/storage/settings-sheet-store";
 import { getScene, getSound, localize } from "@/lib/content/content";
 import { useDisplayName } from "@/lib/ui/displayName";
 import { useSessionStore } from "@/lib/storage/session-store";
@@ -38,7 +39,9 @@ export default function Home() {
   async function handleBegin() {
     const seen = await getPsychoEducationSeen();
     if (seen) {
-      router.push({ pathname: "/session", params: { scene } });
+      // /preparing pre-decodes buffers + activates the iOS audio session, then
+      // hands off to /session ready-to-play. v1.0.9.
+      router.push({ pathname: "/preparing", params: { scene } });
     } else {
       router.push({ pathname: "/psychoed", params: { scene } });
     }
@@ -54,8 +57,14 @@ export default function Home() {
             leading edge — LEFT in LTR English, RIGHT in RTL Hebrew (auto-
             flipped by I18nManager.forceRTL). Crisis takes the trailing edge. */}
         <View className="flex-row justify-between items-center pt-2">
-          <Pressable hitSlop={16} onPress={() => router.push("/setup")}>
-            <Icon name="menu" size={22} color={tokens.text} />
+          {/* Gear opens the global settings bottom sheet (name + reminder).
+              Setup (scene/sounds) is still reachable via "Change" at bottom. */}
+          <Pressable
+            hitSlop={16}
+            onPress={() => useSettingsSheetStore.getState().open()}
+            accessibilityLabel={t("settings.open")}
+          >
+            <Icon name="settings" size={22} color={tokens.text} />
           </Pressable>
           <CrisisAffordance />
         </View>

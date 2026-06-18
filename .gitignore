@@ -28,7 +28,6 @@ dist/
 web-build/
 expo-env.d.ts
 .metro-health-check*
-src/app/audio-selftest.tsx
 
 # TypeScript
 *.tsbuildinfo

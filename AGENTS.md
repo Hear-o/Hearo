@@ -17,11 +17,11 @@ There is no Expo Go fallback. If something appears to "do nothing" in the audio 
 
 ### iOS audio CI (`.github/workflows/ios-audio.yml`)
 
-The Jest suites run against a **fake** AudioContext (`test/mocks/react-native-audio-api.ts`) — they verify our wiring but never that the native engine emits sound. The `iOS audio (device-level)` job closes that gap on every PR to `main`: it prebuilds + natively compiles the audio module, boots a real iOS Simulator, generates a temporary self-test route, and runs the in-app audio self-test (`src/devtools/AudioSelfTestScreen.tsx` → `src/lib/audio/audioSelfTest.ts`), which makes the real `react-native-audio-api` engine synthesize a tone and **measures the output** (an `OfflineAudioContext` render + a live `AnalyserNode` tap, asserted non-silent). The verdict is written to `<Documents>/audio-selftest.json` and read back from the simulator's data container.
+The Jest suites run against a **fake** AudioContext (`test/mocks/react-native-audio-api.ts`) — they verify our wiring but never that the native engine emits sound. The `iOS audio (device-level)` job closes that gap on every PR to `main`: it prebuilds + natively compiles the audio module, boots a real iOS Simulator, generates a temporary self-test root layout, and runs the in-app audio self-test (`src/devtools/AudioSelfTestScreen.tsx` → `src/lib/audio/audioSelfTest.ts`), which makes the real `react-native-audio-api` engine synthesize a tone and **measures the output** (an `OfflineAudioContext` render + a live `AnalyserNode` tap, asserted non-silent). The verdict is written to `<Documents>/audio-selftest.json` and read back from the simulator's data container.
 
 What it proves: the native audio pipeline builds, links, activates `AVAudioSession`, and produces a real signal on iOS. What it does **not** prove (honest limits of a headless runner): audible playback through real speakers, or HR-driven ducking (the Simulator has no Apple Watch / HealthKit data). A best-effort BlackHole + ffmpeg recording of the simulator's actual output runs as a **non-blocking** diagnostic.
 
-The self-test screen lives outside `src/app`. The workflow creates `src/app/audio-selftest.tsx` only in the CI working tree when built with `EXPO_PUBLIC_AUDIO_SELFTEST=1`, so the route never ships in normal builds.
+The self-test screen lives outside `src/app`. The workflow rewrites `src/app/_layout.tsx` only in the CI working tree when built with `EXPO_PUBLIC_AUDIO_SELFTEST=1`, so the screen never ships in normal builds.
 
 ## Platform parity
 

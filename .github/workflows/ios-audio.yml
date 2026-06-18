@@ -4,7 +4,7 @@
 # wiring but never that the native react-native-audio-api engine produces sound.
 # This job closes that gap as close to a real device as CI allows: it natively
 # compiles + links the audio module, boots a real iOS Simulator, generates a
-# temporary Expo Router route, and runs the in-app audio self-test
+# temporary Expo Router root layout, and runs the in-app audio self-test
 # (src/devtools/AudioSelfTestScreen.tsx -> src/lib/audio/audioSelfTest.ts),
 # which makes the real native engine synthesize a tone and MEASURES the output.
 #
@@ -47,7 +47,7 @@ jobs:
       contents: read
     env:
       # Inlined into the embedded Release bundle and used to generate the
-      # temporary CI-only self-test route.
+      # temporary CI-only self-test app entry.
       EXPO_PUBLIC_AUDIO_SELFTEST: "1"
       BUNDLE_ID: com.techheal.hearo
       SCHEME: Hearo
@@ -69,13 +69,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Materialize audio self-test route
+      - name: Materialize audio self-test app entry
         run: node scripts/write-audio-selftest-route.mjs
 
       # CNG: this repo has no committed ios/ dir; generate it. The EXPO_PUBLIC_*
       # flag above is baked into the JS bundle during the build below. The
-      # generated route is CI-only and is not committed, so normal production
-      # builds never include the self-test route.
+      # generated root layout is CI-only and is not committed, so normal
+      # production builds never include the self-test screen.
       - name: Prebuild iOS project
         run: npx expo prebuild -p ios --clean
 
@@ -155,10 +155,10 @@ jobs:
             --predicate 'eventMessage CONTAINS "AUDIO_SELFTEST_RESULT"' > selftest.log 2>&1 &
           LOG_PID=$!
 
-          # Launch, then deep-link into the hidden self-test route.
-          xcrun simctl launch "$SIM_UDID" "$BUNDLE_ID" || true
-          sleep 2
-          xcrun simctl openurl "$SIM_UDID" "hearo://audio-selftest"
+          # The CI-only generated root layout renders the self-test directly at
+          # app startup. Terminate first to avoid reusing an old process.
+          xcrun simctl terminate "$SIM_UDID" "$BUNDLE_ID" 2>/dev/null || true
+          xcrun simctl launch "$SIM_UDID" "$BUNDLE_ID"
 
           # The route writes its verdict to the app's Documents container, which
           # lives on the host filesystem under the simulator's data container.
@@ -176,7 +176,7 @@ jobs:
           cat selftest.log 2>/dev/null || true
 
           if [ ! -f "$RESULT" ]; then
-            echo "::error::audio self-test produced no result file (app did not run the test)"
+            echo "::error::audio self-test produced no result file (app did not run the CI entry)"
             exit 1
           fi
 

@@ -1,5 +1,7 @@
-// Hidden device/CI diagnostic route — NOT linked from any app UI. Reached by
-// deep link (hearo://audio-selftest) from .github/workflows/ios-audio.yml.
+// Hidden device/CI diagnostic screen. This file intentionally lives outside
+// src/app so Expo Router does not include it in normal production route maps.
+// .github/workflows/ios-audio.yml generates a temporary route that points here
+// only for the EXPO_PUBLIC_AUDIO_SELFTEST=1 CI build.
 //
 // On mount it runs the native audio self-test (a half-second 440 Hz tone) and:
 //   1. writes the result to <Documents>/audio-selftest.json, which CI reads
@@ -8,8 +10,8 @@
 //   2. logs a greppable marker as a fallback signal;
 //   3. renders the measured numbers on screen for manual / visual runs.
 //
-// Guarded by EXPO_PUBLIC_AUDIO_SELFTEST so it is inert (and tree-shaken) in
-// normal builds; the workflow sets that flag before building.
+// Guarded by EXPO_PUBLIC_AUDIO_SELFTEST as a second layer of defense; the
+// workflow sets that flag before building.
 
 import { useEffect, useState } from "react";
 import { Text, View } from "react-native";

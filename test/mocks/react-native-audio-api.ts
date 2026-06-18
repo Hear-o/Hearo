@@ -218,4 +218,5 @@ export function __lastContext(): FakeAudioContext {
 
 export function __reset(): void {
   FakeAudioContext.last = null;
+  silentRender = false;
 }

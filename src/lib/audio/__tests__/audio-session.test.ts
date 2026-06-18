@@ -49,9 +49,11 @@ async function importWithManager(
 ): Promise<void> {
   let ready: Promise<void> | undefined;
   jest.isolateModules(() => {
-    jest.doMock("react-native-audio-api", () => ({
-      AudioManager: manager.AudioManager,
-    }));
+    jest.doMock("react-native-audio-api", () => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const base = require("../../../../test/mocks/react-native-audio-api");
+      return { ...base, AudioManager: manager.AudioManager };
+    });
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     ready = require("@/lib/audio/audio-session").audioSessionReady as Promise<void>;
   });

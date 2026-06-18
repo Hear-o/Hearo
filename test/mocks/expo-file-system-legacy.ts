@@ -7,6 +7,7 @@
 
 // asset-cache.ts reads this at module load to build CACHE_DIR.
 export const cacheDirectory = "file:///cache/";
+export const documentDirectory = "file:///documents/";
 
 const files = new Map<string, string | undefined>();
 const dirs = new Set<string>();

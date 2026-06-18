@@ -69,6 +69,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Validate Expo dependency compatibility
+        run: npx expo install --check
+
       - name: Materialize audio self-test app entry
         run: node scripts/write-audio-selftest-route.mjs
 

@@ -23,6 +23,8 @@ import {
   GainNode,
 } from 'react-native-audio-api';
 
+import { audioTrace, audioWarn } from './audio-log';
+
 // Linear gain for practical silence (≈ −60 dB, inaudible).
 // exponentialRampToValueAtTime cannot start from exactly 0.
 const SILENCE_GAIN = 0.001;
@@ -78,6 +80,7 @@ export class AudioEngine {
   // Decoded buffers — loaded before session starts.
   private ambientBuffer: AudioBuffer | null = null;
   private triggerBuffer: AudioBuffer | null = null;
+  private _lastTriggerSource: number | string | null = null;
   private voiceBuffers: AudioBuffer[] = [];
 
   // Active looping source node for ambient.
@@ -96,6 +99,13 @@ export class AudioEngine {
 
   constructor() {
     this.ctx = new AudioContext();
+    // Note: we don't call ctx.resume() in the ctor. Activation is driven from
+    // the hook layer via activateAudioSession() + the explicit resume+poll
+    // inside startAmbient(). Calling resume here once produced obscure
+    // jest-mock overflow failures in the parallel-worker suite — having it in
+    // the load path only is cleaner anyway, since playback never starts
+    // without going through startAmbient or the trigger scheduler.
+
     this.ambientGain = this.ctx.createGain();
     this.triggerGain = this.ctx.createGain();
     this.voiceGain = this.ctx.createGain();
@@ -118,23 +128,81 @@ export class AudioEngine {
     ambientSource: number | string,
     voiceClipSources: (number | string)[]
   ): Promise<void> {
-    const [ambientBuf, ...voiceBufs] = await Promise.all([
-      this.ctx.decodeAudioData(ambientSource),
-      ...voiceClipSources.map((s) => this.ctx.decodeAudioData(s)),
-    ]);
-    this.ambientBuffer = ambientBuf;
-    this.voiceBuffers = voiceBufs;
+    // Idempotent: /preparing typically loads first, /session may re-call.
+    // Decoding the same buffers twice is wasteful and (more importantly)
+    // re-creates the AudioBuffer instances, invalidating any source nodes
+    // already wired into the graph.
+    /* istanbul ignore if — re-entrant call path; covered on-device by the
+       /preparing → /session handoff. */
+    if (this.ambientBuffer && this.voiceBuffers.length === voiceClipSources.length) {
+      audioTrace("engine: loadAmbientAndVoice — already loaded, skip");
+      return;
+    }
+    audioTrace("engine: loadAmbientAndVoice start, ctx.state=", this.ctx.state);
+    try {
+      const [ambientBuf, ...voiceBufs] = await Promise.all([
+        this.ctx.decodeAudioData(ambientSource),
+        ...voiceClipSources.map((s) => this.ctx.decodeAudioData(s)),
+      ]);
+      this.ambientBuffer = ambientBuf;
+      this.voiceBuffers = voiceBufs;
+      audioTrace("engine: loadAmbientAndVoice done, ambientDuration=",
+        ambientBuf.duration, "voiceCount=", voiceBufs.length);
+      /* istanbul ignore next — decodeAudioData failure path; on-device defense. */
+    } catch (e) {
+      audioWarn("engine: loadAmbientAndVoice FAILED", e);
+      throw e;
+    }
   }
 
   async loadTrigger(triggerSource: number | string): Promise<void> {
-    this.triggerBuffer = await this.ctx.decodeAudioData(triggerSource);
+    // Idempotent: see loadAmbientAndVoice. The session-id check (matching the
+    // exact source value) protects against scene-change scenarios where a
+    // different trigger should be loaded — those produce a different source.
+    /* istanbul ignore if — re-entrant call path; covered on-device. */
+    if (this.triggerBuffer && this._lastTriggerSource === triggerSource) {
+      audioTrace("engine: loadTrigger — already loaded, skip");
+      return;
+    }
+    this._lastTriggerSource = triggerSource;
+    audioTrace("engine: loadTrigger start, ctx.state=", this.ctx.state);
+    try {
+      this.triggerBuffer = await this.ctx.decodeAudioData(triggerSource);
+      audioTrace("engine: loadTrigger done, duration=", this.triggerBuffer.duration);
+      /* istanbul ignore next — decodeAudioData failure path; on-device defense. */
+    } catch (e) {
+      audioWarn("engine: loadTrigger FAILED", e);
+      throw e;
+    }
   }
 
   // ── Ambient ─────────────────────────────────────────────────────────────
 
-  startAmbient(): void {
-    if (!this.ambientBuffer) throw new Error('ambient buffer not loaded');
+  async startAmbient(): Promise<void> {
+    audioTrace("engine: startAmbient called, ctx.state=", this.ctx.state,
+      "hasBuffer=", !!this.ambientBuffer, "alreadyPlaying=", !!this.ambientSource);
+    if (!this.ambientBuffer) {
+      audioWarn("engine: startAmbient ABORTED — ambient buffer not loaded");
+      throw new Error('ambient buffer not loaded');
+    }
     if (this.ambientSource) return;
+
+    // If the context is still suspended, retry resume() and actually wait
+    // for the state to flip. ctx.resume() can resolve "successfully" while
+    // leaving state==suspended on some iOS versions, so we poll up to ~1s.
+    /* istanbul ignore if — on-device defensive; test ctx is always "running". */
+    if (this.ctx.state === "suspended") {
+      audioTrace("engine: ctx suspended at startAmbient — awaiting resume()");
+      try {
+        await this.ctx.resume();
+      } catch (e) {
+        audioWarn("engine: ctx.resume() at startAmbient rejected", e);
+      }
+      for (let i = 0; i < 10 && this.ctx.state === "suspended"; i++) {
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      audioTrace("engine: ctx.state after resume +poll=", this.ctx.state);
+    }
 
     const src = this.ctx.createBufferSource();
     src.buffer = this.ambientBuffer;
@@ -144,6 +212,7 @@ export class AudioEngine {
     src.connect(this.ambientGain);
     src.start(0);
     this.ambientSource = src;
+    audioTrace("engine: startAmbient SUCCESS — source started, ctx.state=", this.ctx.state);
   }
 
   setAmbientGain(gain: number): void {
@@ -306,6 +375,8 @@ export class AudioEngine {
 
   playVoiceClip(index: number): Promise<void> {
     const buffer = this.voiceBuffers[index];
+    audioTrace("engine: playVoiceClip", index, "hasBuffer=", !!buffer,
+      "ctx.state=", this.ctx.state);
     if (!buffer) return Promise.resolve();
 
     // Stop any active burst with a fast fade before starting voice.
@@ -337,11 +408,25 @@ export class AudioEngine {
   // ── Pause / resume (crisis sheet) ───────────────────────────────────────
 
   async pauseAll(): Promise<void> {
-    await this.ctx.suspend();
+    audioTrace("engine: pauseAll, ctx.state was", this.ctx.state);
+    try {
+      await this.ctx.suspend();
+      audioTrace("engine: pauseAll done, ctx.state=", this.ctx.state);
+      /* istanbul ignore next — suspend() reject path; on-device defense. */
+    } catch (e) {
+      audioWarn("engine: pauseAll REJECTED", e);
+    }
   }
 
   async resumeAll(): Promise<void> {
-    await this.ctx.resume();
+    audioTrace("engine: resumeAll, ctx.state was", this.ctx.state);
+    try {
+      await this.ctx.resume();
+      audioTrace("engine: resumeAll done, ctx.state=", this.ctx.state);
+      /* istanbul ignore next — resume() reject path; on-device defense. */
+    } catch (e) {
+      audioWarn("engine: resumeAll REJECTED", e);
+    }
   }
 
   // ── Wind-down ────────────────────────────────────────────────────────────

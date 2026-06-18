@@ -6,19 +6,20 @@
 // stubs the engine out entirely — so the app ↔ native session boundary has no
 // behavioral coverage. This file fills that gap.
 //
-// `audio-session.ts` runs its side effect (`configureAudioSession`) once, at
-// module import, and exposes the in-flight promise as `audioSessionReady`. To
-// drive each scenario we re-import the module inside `jest.isolateModules`
-// with a per-test `AudioManager` double, so we own the spies and get a fresh
-// `audioSessionReady` every time. (The global mock in test/setup.ts handles
-// the *other* suites that import this module transitively; here we override it
-// so we can assert ordering and exercise the native-failure branch.)
+// `audio-session.ts` configures the category at module import, then activates
+// explicitly at first I/O. To drive each scenario we re-import the module
+// inside `jest.isolateModules` with a per-test `AudioManager` double.
 
 const EXPECTED_OPTIONS = {
   iosCategory: "playback",
   iosMode: "default",
-  iosOptions: ["allowBluetoothA2DP", "allowAirPlay"],
+  iosOptions: [],
 } as const;
+
+interface AudioSessionModule {
+  audioSessionReady: Promise<void>;
+  activateAudioSession: () => Promise<boolean>;
+}
 
 /** A controllable `AudioManager` double plus the spies, mirroring the three
  *  native calls `configureAudioSession` makes. `activate` lets a test make the
@@ -41,13 +42,12 @@ function makeAudioManager(
   };
 }
 
-/** Import a fresh copy of audio-session.ts against `manager`, returning the
- *  resolved `audioSessionReady` promise. The synchronous AudioManager calls
- *  fire during `require`; we await activation before handing back. */
-async function importWithManager(
+/** Import a fresh copy of audio-session.ts against `manager`. Category setup
+ *  fires synchronously during `require`; activation remains explicit. */
+function importWithManager(
   manager: ReturnType<typeof makeAudioManager>,
-): Promise<void> {
-  let ready: Promise<void> | undefined;
+): AudioSessionModule {
+  let session: AudioSessionModule | undefined;
   jest.isolateModules(() => {
     jest.doMock("react-native-audio-api", () => {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -55,35 +55,44 @@ async function importWithManager(
       return { ...base, AudioManager: manager.AudioManager };
     });
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    ready = require("@/lib/audio/audio-session").audioSessionReady as Promise<void>;
+    session = require("@/lib/audio/audio-session") as AudioSessionModule;
   });
-  await ready;
+  if (!session) throw new Error("audio session module did not load");
+  return session;
 }
 
 beforeEach(() => {
   jest.resetModules();
 });
 
-describe("audioSessionReady / iOS session activation", () => {
-  it("configures the playback category with Bluetooth + AirPlay routing", async () => {
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+
+describe("iOS audio-session configuration and activation", () => {
+  it("configures playback without invalid category options", () => {
     const mgr = makeAudioManager();
-    await importWithManager(mgr);
+    importWithManager(mgr);
 
     expect(mgr.setAudioSessionOptions).toHaveBeenCalledTimes(1);
     expect(mgr.setAudioSessionOptions).toHaveBeenCalledWith(EXPECTED_OPTIONS);
   });
 
-  it("registers the interruption observer so audio recovers after calls/Siri", async () => {
+  it("registers the interruption observer so audio recovers after calls/Siri", () => {
     const mgr = makeAudioManager();
-    await importWithManager(mgr);
+    importWithManager(mgr);
 
     expect(mgr.observeAudioInterruptions).toHaveBeenCalledWith(true);
   });
 
-  it("activates the AVAudioSession and resolves audioSessionReady", async () => {
+  it("defers activation until explicitly requested", async () => {
     const mgr = makeAudioManager();
-    await expect(importWithManager(mgr)).resolves.toBeUndefined();
+    const session = importWithManager(mgr);
 
+    await expect(session.audioSessionReady).resolves.toBeUndefined();
+    expect(mgr.setAudioSessionActivity).not.toHaveBeenCalled();
+
+    await expect(session.activateAudioSession()).resolves.toBe(true);
     expect(mgr.setAudioSessionActivity).toHaveBeenCalledTimes(1);
     expect(mgr.setAudioSessionActivity).toHaveBeenCalledWith(true);
   });
@@ -93,7 +102,8 @@ describe("audioSessionReady / iOS session activation", () => {
     // first playback routes through the wrong category. invocationCallOrder is a
     // monotonic global counter, so a smaller value means "called earlier".
     const mgr = makeAudioManager();
-    await importWithManager(mgr);
+    const session = importWithManager(mgr);
+    await session.activateAudioSession();
 
     const optionsOrder = mgr.setAudioSessionOptions.mock.invocationCallOrder[0];
     const observeOrder = mgr.observeAudioInterruptions.mock.invocationCallOrder[0];
@@ -103,28 +113,29 @@ describe("audioSessionReady / iOS session activation", () => {
     expect(observeOrder).toBeLessThan(activateOrder);
   });
 
-  it("never rejects when native activation throws (interruption / unlinked build)", async () => {
-    // A partially-linked dev build or a native bridge error must not produce an
-    // unhandled rejection — consumers `await audioSessionReady` before every
-    // playback path, so a rejection here would break loading on every screen.
+  it("retries and returns false without rejecting when native activation throws", async () => {
+    jest.spyOn(console, "warn").mockImplementation(() => {});
     const mgr = makeAudioManager(async () => {
       throw new Error("AVAudioSession setActive failed");
     });
+    const session = importWithManager(mgr);
 
-    await expect(importWithManager(mgr)).resolves.toBeUndefined();
+    await expect(session.activateAudioSession()).resolves.toBe(false);
+    expect(mgr.setAudioSessionActivity).toHaveBeenCalledTimes(3);
     expect(mgr.setAudioSessionActivity).toHaveBeenCalledWith(true);
   });
 
-  it("swallows a synchronous AudioManager failure and skips the rest of setup", async () => {
+  it("swallows a synchronous category failure and skips the observer", () => {
     // If the very first native call throws (no native module at all), the catch
     // wraps the whole sequence: activation is never attempted, yet the promise
     // still resolves so the app keeps running on the library's default session.
     const mgr = makeAudioManager();
+    jest.spyOn(console, "warn").mockImplementation(() => {});
     mgr.setAudioSessionOptions.mockImplementation(() => {
       throw new Error("native module unavailable");
     });
 
-    await expect(importWithManager(mgr)).resolves.toBeUndefined();
+    importWithManager(mgr);
     expect(mgr.observeAudioInterruptions).not.toHaveBeenCalled();
     expect(mgr.setAudioSessionActivity).not.toHaveBeenCalled();
   });

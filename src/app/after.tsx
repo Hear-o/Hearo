@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GestureDetector } from "react-native-gesture-handler";
@@ -6,6 +7,7 @@ import { useTranslation } from "react-i18next";
 
 import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
 import { useSwipeForward } from "@/hooks/useSwipeForward";
+import { releaseAudioEngine } from "@/lib/audio/audio-engine-host";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 /** Post-session affirmation screen. Per the UI QA pass, the previous
@@ -24,6 +26,13 @@ export default function After() {
   const { t } = useTranslation();
   const handleDone = () => router.replace("/home");
   const swipeGesture = useSwipeForward(handleDone);
+
+  // Session over → tear down the singleton audio engine so the next session
+  // gets a fresh AudioContext + decoded buffers. Engine ownership moved from
+  // per-screen useEffect cleanup to an explicit boundary in v1.0.9.
+  useEffect(() => {
+    releaseAudioEngine();
+  }, []);
 
   return (
     <SafeAreaView className="flex-1 bg-bg">

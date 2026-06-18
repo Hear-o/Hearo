@@ -74,6 +74,17 @@ const resources = {
         hearPrompt: "Notice {{count}} things\nyou can hear.",
         touchPrompt: "Notice {{count}} thing\nyou can touch.",
       },
+      preparing: {
+        eyebrow: "Preparing",
+        body: "A quiet moment\nto settle in.",
+        error: "Couldn't load the soundscape. Check your connection and try again.",
+      },
+      settings: {
+        title: "Settings",
+        nameLabel: "Your name",
+        open: "Open settings",
+        dismiss: "Close settings",
+      },
       session: {
         end: "End session",
         pause: "Pause",
@@ -192,6 +203,17 @@ const resources = {
         seePrompt: "שים לב ל-{{count}} דברים\nשאתה יכול לראות.",
         hearPrompt: "שים לב ל-{{count}} צלילים\nשאתה יכול לשמוע.",
         touchPrompt: "שים לב ל-{{count}} מרקם\nשאתה יכול לגעת בו.",
+      },
+      preparing: {
+        eyebrow: "מתכוננים",
+        body: "רגע של שקט\nכדי להתמקם.",
+        error: "לא הצלחנו לטעון את הצליל. בדוק את החיבור ונסה שוב.",
+      },
+      settings: {
+        title: "הגדרות",
+        nameLabel: "השם שלך",
+        open: "פתח הגדרות",
+        dismiss: "סגור הגדרות",
       },
       session: {
         end: "סיים סשן",

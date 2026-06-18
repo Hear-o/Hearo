@@ -57,27 +57,34 @@ describe("AudioEngine / construction + loading", () => {
     expect(engine.isBurstActive).toBe(false);
   });
 
-  it("startAmbient throws before the ambient buffer is loaded", () => {
+  it("startAmbient rejects before the ambient buffer is loaded", async () => {
+    // Inline try/catch rather than `await expect(...).rejects.toThrow(...)` —
+    // the latter, combined with the async startAmbient + fake timers from
+    // this file's beforeEach, produced a jest-mock stack-overflow only under
+    // the full-suite parallel runner. Plain try/catch sidesteps that
+    // bookkeeping path.
     const engine = new AudioEngine();
-    let err: unknown;
+    let caught: unknown;
     try {
-      engine.startAmbient();
+      await engine.startAmbient();
     } catch (e) {
-      err = e;
+      caught = e;
     }
-    expect((err as Error)?.message).toMatch(/ambient buffer not loaded/);
+    expect((caught as Error | undefined)?.message).toMatch(
+      /ambient buffer not loaded/,
+    );
   });
 
   it("startAmbient loops the buffer once and is idempotent", async () => {
     const engine = await loadedEngine();
-    engine.startAmbient();
+    await engine.startAmbient();
     const c = ctx();
     expect(c.createBufferSource).toHaveBeenCalledTimes(1);
     const src = c.sources[0];
     expect(src.loop).toBe(true);
     expect(src.start).toHaveBeenCalledWith(0);
 
-    engine.startAmbient(); // already started → no new source
+    await engine.startAmbient(); // already started → no new source
     expect(c.createBufferSource).toHaveBeenCalledTimes(1);
   });
 
@@ -265,6 +272,10 @@ describe("AudioEngine / gain + lifecycle", () => {
 
   it("pauseAll and resumeAll drive the context", async () => {
     const engine = await loadedEngine();
+    // The engine ctor calls ctx.resume() proactively (iOS suspended-state
+    // workaround), so clear the call count before exercising the explicit
+    // pause/resume API the test cares about.
+    ctx().resume.mockClear();
     await engine.pauseAll();
     await engine.resumeAll();
     expect(ctx().suspend).toHaveBeenCalledTimes(1);
@@ -286,7 +297,7 @@ describe("AudioEngine / gain + lifecycle", () => {
 
   it("destroy clears timers, stops the ambient source, and closes the context", async () => {
     const engine = await loadedEngine();
-    engine.startAmbient();
+    await engine.startAmbient();
     engine.startTriggerScheduler(CFG);
     jest.advanceTimersByTime(CFG.intervalMinMs);
 

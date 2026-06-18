@@ -1,4 +1,5 @@
-// Integration test for useAudioEngine ↔ the REAL AudioEngine ↔ audioSessionReady.
+// Integration test for useAudioEngine ↔ the REAL AudioEngine ↔ explicit
+// audio-session activation.
 //
 // The sibling unit suite (useAudioEngine.test.ts) mocks AudioEngine wholesale,
 // so it only proves the hook forwards arguments. It can't catch a wiring break
@@ -17,6 +18,7 @@ import { renderHook, act } from "@testing-library/react-native";
 
 import * as audioApi from "../../../test/mocks/react-native-audio-api";
 import { useAudioEngine } from "@/hooks/useAudioEngine";
+import { releaseAudioEngine } from "@/lib/audio/audio-engine-host";
 
 const SILENCE_GAIN = 0.001;
 
@@ -33,7 +35,7 @@ const CFG = {
 
 const ctx = () => audioApi.__lastContext();
 
-/** Mount the hook and load every buffer, awaiting the audioSessionReady gate
+/** Mount the hook and load every buffer, awaiting the audio-session gate
  *  the same way the DISCLAIMER/ADAPTIVE_LOOP effects in session.tsx do. */
 async function mountLoaded() {
   const view = renderHook(() => useAudioEngine());
@@ -45,7 +47,13 @@ async function mountLoaded() {
 }
 
 beforeEach(() => {
+  releaseAudioEngine();
+  jest.clearAllMocks();
   audioApi.__reset();
+});
+
+afterEach(() => {
+  releaseAudioEngine();
 });
 
 describe("useAudioEngine / real engine wiring", () => {
@@ -67,18 +75,18 @@ describe("useAudioEngine / real engine wiring", () => {
     expect(result.current.isBurstActive()).toBe(false);
   });
 
-  it("gates buffer loading on audioSessionReady, then decodes on the real context", async () => {
+  it("activates the audio session before decoding on the real context", async () => {
     const { result } = await mountLoaded();
-    // loadAmbientAndVoice awaits the iOS session gate, then decodes ambient + 2
-    // voice clips; loadTrigger decodes the 4th. If the gate never resolved (a
-    // wiring break), these awaits would hang and the test would time out.
+    expect(audioApi.AudioManager.setAudioSessionActivity).toHaveBeenCalledWith(true);
     expect(ctx().decodeAudioData).toHaveBeenCalledTimes(4);
     expect(result.current).toBeDefined();
   });
 
   it("startAmbient drives the real engine to start one looping source", async () => {
     const { result } = await mountLoaded();
-    act(() => result.current.startAmbient());
+    await act(async () => {
+      await result.current.startAmbient();
+    });
 
     const c = ctx();
     expect(c.createBufferSource).toHaveBeenCalledTimes(1);
@@ -87,12 +95,13 @@ describe("useAudioEngine / real engine wiring", () => {
     expect(src.start).toHaveBeenCalledWith(0);
   });
 
-  it("closes the real AudioContext when the hook unmounts", async () => {
+  it("keeps the shared context across unmounts until explicitly released", async () => {
     const { unmount } = await mountLoaded();
     const c = ctx();
     unmount();
-    // Hook cleanup → engine.destroy() → ctx.close(). Without the unmount wiring
-    // the native context would leak across screens.
+
+    expect(c.close).not.toHaveBeenCalled();
+    releaseAudioEngine();
     expect(c.close).toHaveBeenCalledTimes(1);
   });
 });
@@ -103,7 +112,6 @@ describe("useAudioEngine / HR-spike loop (iOS pulse → audio)", () => {
     // Math.random=0 → randomBetween() returns the interval minimum, so the
     // first burst fires deterministically at intervalMinMs.
     jest.spyOn(Math, "random").mockReturnValue(0);
-    audioApi.__reset();
   });
 
   afterEach(() => {

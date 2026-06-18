@@ -1,5 +1,6 @@
 import { renderHook, act } from "@testing-library/react-native";
 import { useAudioEngine } from "@/hooks/useAudioEngine";
+import { releaseAudioEngine } from "@/lib/audio/audio-engine-host";
 
 // Mock AudioEngine so no native audio context is created in the test runner.
 const mockEngine = {
@@ -32,8 +33,11 @@ const MockAudioEngine = jest.mocked(AudioEngine);
 
 describe("useAudioEngine", () => {
   beforeEach(() => {
+    // Order matters: tear down the singleton from any previous test BEFORE
+    // we reset mock call counts. Otherwise the leftover release's destroy()
+    // call would be counted and pollute the current test's assertions.
+    releaseAudioEngine();
     jest.clearAllMocks();
-    // Reset mock return values after clearAllMocks.
     mockEngine.loadAmbientAndVoice.mockResolvedValue(undefined);
     mockEngine.loadTrigger.mockResolvedValue(undefined);
     mockEngine.playVoiceClip.mockResolvedValue(undefined);
@@ -46,16 +50,38 @@ describe("useAudioEngine", () => {
     expect(MockAudioEngine).toHaveBeenCalledTimes(1);
   });
 
-  it("calls destroy() on unmount", () => {
-    const { unmount } = renderHook(() => useAudioEngine());
-    unmount();
+  it("releaseAudioEngine destroys + clears the singleton", () => {
+    renderHook(() => useAudioEngine());
+    expect(MockAudioEngine).toHaveBeenCalledTimes(1);
+    releaseAudioEngine();
     expect(mockEngine.destroy).toHaveBeenCalledTimes(1);
+    // Next renderHook constructs a fresh engine.
+    renderHook(() => useAudioEngine());
+    expect(MockAudioEngine).toHaveBeenCalledTimes(2);
   });
 
   it("does not create a second engine on re-render", () => {
     const { rerender } = renderHook(() => useAudioEngine());
     rerender({});
     expect(MockAudioEngine).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not create a second engine when two consumers mount", () => {
+    // Per v1.0.9: /preparing and /session both call useAudioEngine and must
+    // share the same singleton instance so preloaded buffers survive the
+    // route transition.
+    renderHook(() => useAudioEngine());
+    renderHook(() => useAudioEngine());
+    expect(MockAudioEngine).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns the same API object on re-render", () => {
+    const { result, rerender } = renderHook(() => useAudioEngine());
+    const firstResult = result.current;
+
+    rerender({});
+
+    expect(result.current).toBe(firstResult);
   });
 
   it("delegates loadAmbientAndVoice to the engine", async () => {
@@ -154,17 +180,8 @@ describe("useAudioEngine", () => {
     expect(result.current.isBurstActive()).toBe(false);
   });
 
-  it("currentTriggerGain returns 0 when engine ref is null (defensive)", () => {
-    // Simulate the edge case where engineRef.current is null after destroy.
-    const { result, unmount } = renderHook(() => useAudioEngine());
-    unmount();
-    // After unmount engineRef.current is null; the getter falls back to 0.
-    expect(result.current.currentTriggerGain()).toBe(0);
-  });
-
-  it("isBurstActive returns false when engine ref is null (defensive)", () => {
-    const { result, unmount } = renderHook(() => useAudioEngine());
-    unmount();
-    expect(result.current.isBurstActive()).toBe(false);
-  });
+  // The pre-v1.0.9 "engine ref is null after destroy" defensive path no
+  // longer exists — engineRef is initialized eagerly from the singleton
+  // host. Destruction is via releaseAudioEngine() and is followed by either
+  // app exit or a fresh /preparing mount, not lingering hook consumers.
 });

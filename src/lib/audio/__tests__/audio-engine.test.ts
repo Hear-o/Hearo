@@ -245,6 +245,32 @@ describe("AudioEngine / voice overlay", () => {
     await expect(p).resolves.toBeUndefined();
     jest.advanceTimersByTime(2000); // late timeout finish → guarded no-op
   });
+
+  it("stopVoice cuts a mid-flight clip immediately (v1.1.0 'Need a moment')", async () => {
+    const engine = await loadedEngine();
+    void engine.playVoiceClip(0);
+    jest.advanceTimersByTime(350); // settle delay → source created + started
+    const voiceSrc = ctx().sources[ctx().sources.length - 1];
+    expect(voiceSrc.stop).not.toHaveBeenCalled();
+    engine.stopVoice();
+    expect(voiceSrc.stop).toHaveBeenCalledTimes(1);
+  });
+
+  it("stopVoice is a no-op when no voice clip is active", () => {
+    const engine = new AudioEngine();
+    expect(() => engine.stopVoice()).not.toThrow();
+  });
+
+  it("stopVoice swallows a throw from the underlying source.stop()", async () => {
+    const engine = await loadedEngine();
+    void engine.playVoiceClip(0);
+    jest.advanceTimersByTime(350);
+    const voiceSrc = ctx().sources[ctx().sources.length - 1];
+    voiceSrc.stop.mockImplementation(() => {
+      throw new Error("already stopped");
+    });
+    expect(() => engine.stopVoice()).not.toThrow();
+  });
 });
 
 describe("AudioEngine / gain + lifecycle", () => {

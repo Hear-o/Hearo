@@ -17,6 +17,7 @@ const mockEngine = {
   onSpike: jest.fn(),
   onNormalized: jest.fn(),
   playVoiceClip: jest.fn().mockResolvedValue(undefined),
+  stopVoice: jest.fn(),
   pauseAll: jest.fn().mockResolvedValue(undefined),
   resumeAll: jest.fn().mockResolvedValue(undefined),
   fadeOutAll: jest.fn(),
@@ -130,6 +131,12 @@ describe("useAudioEngine", () => {
     const { result } = renderHook(() => useAudioEngine());
     await act(() => result.current.playVoiceClip(1));
     expect(mockEngine.playVoiceClip).toHaveBeenCalledWith(1);
+  });
+
+  it("delegates stopVoice to the engine", () => {
+    const { result } = renderHook(() => useAudioEngine());
+    act(() => result.current.stopVoice());
+    expect(mockEngine.stopVoice).toHaveBeenCalled();
   });
 
   it("delegates startTriggerScheduler to the engine", () => {

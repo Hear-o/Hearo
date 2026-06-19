@@ -8,26 +8,27 @@ import { Icon } from "@/components/common/Icon";
 import { useSessionStore } from "@/lib/storage/session-store";
 import { tokens } from "@/lib/ui/tokens";
 
-/** Self-tap calming protocol (B-03 v1). Reached from:
- *  - the in-session "I need a moment" affordance (replaces the session route)
- *  - the Home "Need a moment?" button (pushes onto the stack)
+/** Self-tap calming protocol (B-03 v1, updated v1.1.0). Reached from:
+ *  - the in-session "I need a moment" affordance (push, /session stays mounted
+ *    underneath and resumes when we router.back())
+ *  - the Home "Need a moment?" button (push from /home)
  *
- *  On completion: records `lastEndedBy = "calming-protocol"` and routes to
- *  /after via `replace`. The user can also exit mid-flow via the close
- *  affordance, which routes to /home (no recorded session-end since they
- *  didn't finish the protocol). Per UI QA: the "no mid-flow exit" constraint
- *  from the original spec was dropped in favor of user control. */
+ *  v1.1.0 change: completion + exit both router.back() so we return to
+ *  whatever screen called us. /session detects the focus regain and resumes
+ *  the audio graph + timer. The previous "end the session entirely from
+ *  calming" semantics moved to /session's End-session button; this screen
+ *  is now strictly a pause-and-return overlay. */
 export default function Calming() {
   const router = useRouter();
   const setLastEndedBy = useSessionStore((s) => s.setLastEndedBy);
 
   function handleProtocolEnd() {
     setLastEndedBy("calming-protocol");
-    router.replace("/after");
+    router.back();
   }
 
   function handleExit() {
-    router.replace("/home");
+    router.back();
   }
 
   return (

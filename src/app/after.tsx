@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
 import { useSwipeForward } from "@/hooks/useSwipeForward";
 import { releaseAudioEngine } from "@/lib/audio/audio-engine-host";
+import { incrementSessionsCompleted } from "@/lib/storage/storage";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 /** Post-session affirmation screen. Per the UI QA pass, the previous
@@ -28,10 +29,11 @@ export default function After() {
   const swipeGesture = useSwipeForward(handleDone);
 
   // Session over → tear down the singleton audio engine so the next session
-  // gets a fresh AudioContext + decoded buffers. Engine ownership moved from
-  // per-screen useEffect cleanup to an explicit boundary in v1.0.9.
+  // gets a fresh AudioContext + decoded buffers (v1.0.9), and increment the
+  // lifetime sessions counter shown on the new /home (v1.1.0).
   useEffect(() => {
     releaseAudioEngine();
+    void incrementSessionsCompleted();
   }, []);
 
   return (

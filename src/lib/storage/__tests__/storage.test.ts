@@ -15,6 +15,10 @@ import {
   setPsychoEducationSeen,
   getClinicalScreeningResult,
   setClinicalScreeningResult,
+  getOnboardedAt,
+  setOnboardedAt,
+  getSessionsCompleted,
+  incrementSessionsCompleted,
 } from "@/lib/storage/storage";
 
 // Tri-state semantics under test: `undefined` (never tried) vs `null` (tried,
@@ -255,5 +259,56 @@ describe("storage / clinical screening result", () => {
   it("returns undefined when the stored value isn't JSON", async () => {
     await AsyncStorage.setItem("hearo:clinicalScreeningResult", "not-json-not-declined");
     expect(await getClinicalScreeningResult()).toBeUndefined();
+  });
+});
+
+// v1.1.0 — onboarded timestamp drives the launch routing (index.tsx skips
+// the welcome flow when this is set). Tri-state-ish: null on cold install,
+// a real number once the user has reached /home, never goes back to null.
+describe("storage / onboardedAt", () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it("defaults to null when never onboarded", async () => {
+    expect(await getOnboardedAt()).toBeNull();
+  });
+
+  it("round-trips a real timestamp", async () => {
+    await setOnboardedAt(1_750_000_000_000);
+    expect(await getOnboardedAt()).toBe(1_750_000_000_000);
+  });
+
+  it("returns null when the persisted value isn't a finite number", async () => {
+    await AsyncStorage.setItem("hearo:onboardedAt", "definitely-not-a-number");
+    expect(await getOnboardedAt()).toBeNull();
+  });
+});
+
+// v1.1.0 — lifetime sessions counter shown on the new /home. Monotonic;
+// only ever incremented via incrementSessionsCompleted from /after.
+describe("storage / sessions completed", () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it("defaults to 0", async () => {
+    expect(await getSessionsCompleted()).toBe(0);
+  });
+
+  it("incrementSessionsCompleted returns the new value", async () => {
+    expect(await incrementSessionsCompleted()).toBe(1);
+    expect(await incrementSessionsCompleted()).toBe(2);
+    expect(await getSessionsCompleted()).toBe(2);
+  });
+
+  it("defends against a corrupt stored value (returns 0 if not a number)", async () => {
+    await AsyncStorage.setItem("hearo:sessionsCompleted", "garbage");
+    expect(await getSessionsCompleted()).toBe(0);
+  });
+
+  it("defends against a stored negative number (returns 0)", async () => {
+    await AsyncStorage.setItem("hearo:sessionsCompleted", "-5");
+    expect(await getSessionsCompleted()).toBe(0);
   });
 });

@@ -33,6 +33,7 @@ export interface UseAudioEngineResult {
 
   // ── Voice ──
   playVoiceClip: (index: number) => Promise<void>;
+  stopVoice: () => void;
 
   // ── Session lifecycle ──
   pauseAll: () => Promise<void>;
@@ -126,6 +127,8 @@ export function useAudioEngine(): UseAudioEngineResult {
     []
   );
 
+  const stopVoice = useCallback(() => engineRef.current!.stopVoice(), []);
+
   const pauseAll = useCallback(() => engineRef.current!.pauseAll(), []);
 
   const resumeAll = useCallback(() => engineRef.current!.resumeAll(), []);
@@ -167,6 +170,7 @@ export function useAudioEngine(): UseAudioEngineResult {
       onSpike,
       onNormalized,
       playVoiceClip,
+      stopVoice,
       pauseAll,
       resumeAll,
       fadeOutAll,

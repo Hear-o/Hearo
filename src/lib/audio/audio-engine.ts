@@ -85,6 +85,10 @@ export class AudioEngine {
 
   // Active looping source node for ambient.
   private ambientSource: AudioBufferSourceNode | null = null;
+  // Active voice source — tracked so "Need a moment" can cut a mid-sentence
+  // clip immediately rather than letting it ride out. Set in playVoiceClip,
+  // cleared on natural end OR explicit stopVoice().
+  private _voiceSource: AudioBufferSourceNode | null = null;
 
   // ── Burst scheduler state ────────────────────────────────────────────────
 
@@ -393,6 +397,9 @@ export class AudioEngine {
         const finish = () => {
           if (resolved) return;
           resolved = true;
+          // Clear tracker so a later stopVoice() doesn't try to stop an
+          // already-ended source (some platforms throw on that).
+          if (this._voiceSource === src) this._voiceSource = null;
           // Resume scheduler after voice clip finishes (if not paused by spike).
           if (!this._schedulerPaused) this._scheduleNextBurst();
           resolve();
@@ -401,8 +408,22 @@ export class AudioEngine {
         src.onEnded = finish;
         setTimeout(finish, buffer.duration * 1000 + 300);
         src.start(0);
+        this._voiceSource = src;
       }, 350);
     });
+  }
+
+  /** Cut any in-flight voice clip immediately. Used by "Need a moment" so the
+   *  narration doesn't keep speaking through a pause. Idempotent. */
+  stopVoice(): void {
+    if (!this._voiceSource) return;
+    audioTrace("engine: stopVoice — cutting in-flight voice clip");
+    try {
+      this._voiceSource.stop();
+    } catch {
+      /* already stopped — harmless */
+    }
+    this._voiceSource = null;
   }
 
   // ── Pause / resume (crisis sheet) ───────────────────────────────────────

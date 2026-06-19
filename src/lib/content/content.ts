@@ -482,12 +482,12 @@ const PSYCHO_EDUCATION: PsychoEducationContent = {
   },
   body: [
     {
-      en: "When your body senses danger, an alarm kicks in. Heart races, breath gets shallow, muscles tense. That's the amygdala, your built-in smoke detector. It kept you alive.",
-      he: "כשהגוף שלך מזהה סכנה, אזעקה מופעלת. הדופק מהיר, הנשימה שטחית, השרירים נדרכים. זאת האמיגדלה, גלאי העשן הפנימי שלך. היא שמרה עליך.",
+      en: "Your body has a built-in alarm. Racing heart, shallow breath, tense muscles — that's the amygdala doing its job. It kept you alive.",
+      he: "לגוף שלך יש אזעקה מובנית. דופק מהיר, נשימה שטחית, שרירים דרוכים — זו האמיגדלה עושה את עבודתה. היא שמרה עליך.",
     },
     {
-      en: "After the danger passes, the detector usually stays on max sensitivity. A sound, a smell, a place can fire the alarm even when nothing's wrong. That's not a malfunction. It's a protection system that adapted to keep you safe.",
-      he: "אחרי שהסכנה חולפת, הגלאי לרוב נשאר ברגישות שיא. צליל, ריח או מקום יכולים להפעיל את האזעקה גם כשאין סכנה. זה לא קלקול. זאת מערכת הגנה שהתאימה את עצמה כדי לשמור עליך.",
+      en: "After the danger passes, the alarm stays sensitive. A sound, a smell, a place can still set it off. That's not broken — it's a protection system that adapted.",
+      he: "אחרי שהסכנה חולפת, האזעקה נשארת רגישה. צליל, ריח או מקום עוד יכולים להפעיל אותה. זה לא קלקול — זאת מערכת הגנה שהתאימה את עצמה.",
     },
     {
       en: "Here, gradually and in a safe space, we'll teach the system that the danger has passed.",
@@ -694,9 +694,9 @@ const CLINICAL_SCREENING: PcPtsd5Content = {
       he: "חמש שאלות קצרות\nלפני שמתחילים.",
     },
     body: {
-      en: "These help us understand what's right for you, and whether we should suggest talking to someone alongside the app. Your answers stay on this device.",
+      en: "Five quick questions. We use them to suggest whether to pair the app with talking to someone. Your answers stay on this device.",
       // TODO(hirschman-review)
-      he: "השאלות האלה עוזרות לנו להבין מה מתאים לך, ואם כדאי שנציע גם לדבר עם מישהו במקביל לאפליקציה. התשובות שלך נשארות במכשיר הזה.",
+      he: "חמש שאלות קצרות. עוזרות לנו להציע אם כדאי לשלב את האפליקציה עם שיחה עם מישהו. התשובות נשארות במכשיר.",
     },
   },
   traumaExposure: {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import { BreathingCircle } from "@/components/features/session/BreathingCircle";
@@ -18,7 +18,6 @@ import { fonts, tokens } from "@/lib/ui/tokens";
 import { useAudioEngine } from "@/hooks/useAudioEngine";
 import { usePulseMonitor, SessionState } from "@/hooks/usePulseMonitor";
 import { ensureAssets, AssetManifest } from "@/lib/audio/asset-cache";
-import { PostSessionFeedback, FeedbackAnswers } from "@/components/features/post-session";
 
 // ── Constants ────────────────────────────────────────────────────────────
 
@@ -139,8 +138,6 @@ export default function Session() {
   // ── UI state ───────────────────────────────────────────────────────────
 
   const [elapsed, setElapsed] = useState(0);
-  // POST_SESSION: show feedback form before routing to After.
-  const [showingFeedback, setShowingFeedback] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [watchBanner, setWatchBanner] = useState<"no-watch" | "disconnected" | null>(null);
@@ -380,52 +377,20 @@ export default function Session() {
     return () => clearTimeout(id);
   }, [machineState, engine]);
 
-  // ── WIND_DOWN: fade all audio, play wind-down clip ────────────────────
+  // ── WIND_DOWN → /winding-down transition screen (v1.1.0) ──────────────
+  //
+  // The wind-down narration + feedback handoff used to live on /session
+  // itself. v1.1.0 routes to a dedicated /winding-down screen so the user
+  // gets a clear transition moment between the active session UI and the
+  // feedback form. /winding-down owns the fadeOutAll + voice clip + feedback
+  // → /after; we replace, not push, so the user can't back-swipe into a
+  // technically-ended session.
 
   useEffect(() => {
     if (machineState !== "WIND_DOWN") return;
-
-    engine.fadeOutAll(3);
-
-    const voiceClips = getVoiceClips(scene, i18n.language);
-    const windDownClip = voiceClips[2];
-
-    setTimeout(() => {
-      if (isPlaceholderSource(windDownClip.source)) {
-        dispatch({ type: "WIND_DOWN_DONE" });
-        return;
-      }
-      engine
-        .playVoiceClip(2)
-        .then(() => dispatch({ type: "WIND_DOWN_DONE" }))
-        .catch((e) => {
-          audioWarn("session WIND_DOWN: playVoiceClip(2) REJECTED", e);
-          dispatch({ type: "WIND_DOWN_DONE" });
-        });
-    }, 3200); // after fade completes
-  }, [machineState, engine]);
-
-  // ── POST_SESSION → feedback form → After screen ────────────────────────
-
-  useEffect(() => {
-    if (machineState === "POST_SESSION") {
-      setShowingFeedback(true);
-    }
-  }, [machineState]);
-
-  const handleFeedbackSubmit = useCallback(
-    (_answers: FeedbackAnswers) => {
-      // TODO(supabase): persist answers to sessions feedback table.
-      setShowingFeedback(false);
-      router.push("/after");
-    },
-    [router]
-  );
-
-  const handleFeedbackSkip = useCallback(() => {
-    setShowingFeedback(false);
-    router.push("/after");
-  }, [router]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    router.replace({ pathname: "/winding-down" as any, params: { scene } });
+  }, [machineState, router, scene]);
 
   // ── Crisis sheet pause/resume ─────────────────────────────────────────
 
@@ -440,10 +405,44 @@ export default function Session() {
     }
   }, [isCrisisOpen, engine]);
 
+  // ── Focus-based pause/resume (v1.1.0: "Need a moment" → /calming push) ──
+  //
+  // When /calming is pushed on top, /session blurs (still mounted, not focused).
+  // Suspend the audio graph + freeze the elapsed timer; on return-to-focus,
+  // resume + add the pause duration back to startedAt so the visible clock
+  // doesn't jump. Uses the same pausedSince ref the crisis-sheet path uses —
+  // they're mutually exclusive in practice (you can't open the crisis sheet
+  // and navigate away simultaneously).
+  useFocusEffect(
+    useCallback(() => {
+      // Returning to focus: if we were paused via blur, resume.
+      if (pausedSince.current !== null) {
+        startedAt.current += Date.now() - pausedSince.current;
+        pausedSince.current = null;
+        engine.resumeAll();
+      }
+      return () => {
+        // On blur: only pause if the crisis sheet didn't already take the
+        // pause baton (its useEffect runs first when isCrisisOpen flips).
+        if (pausedSince.current === null) {
+          pausedSince.current = Date.now();
+          engine.pauseAll();
+        }
+      };
+    }, [engine]),
+  );
+
   // ── Elapsed timer ─────────────────────────────────────────────────────
+  //
+  // v1.1.0: the visible timer ticks from the moment the session screen
+  // mounts (DISCLAIMER state included), so the user doesn't see it
+  // jump from 0:00 → 0:24 the instant DISCLAIMER finishes. Excludes
+  // WIND_DOWN / POST_SESSION — by then we're routing to the wind-down
+  // transition screen anyway.
 
   useEffect(() => {
     const active =
+      machineState === "DISCLAIMER" ||
       machineState === "AMBIENT_FADE_IN" ||
       machineState === "ADAPTIVE_LOOP";
     if (!active) return;
@@ -508,17 +507,6 @@ export default function Session() {
 
   // ── Pulse mock phase (drives mock generator arc) ──────────────────────
   // usePulseMonitor handles this internally, so we just display pulseBpm.
-
-  // ── POST_SESSION: feedback form overlay ──────────────────────────────
-
-  if (showingFeedback) {
-    return (
-      <PostSessionFeedback
-        onSubmit={handleFeedbackSubmit}
-        onSkip={handleFeedbackSkip}
-      />
-    );
-  }
 
   // ── LOADING screen ────────────────────────────────────────────────────
 
@@ -685,8 +673,14 @@ export default function Session() {
             <Pressable
               hitSlop={12}
               onPress={() => {
-                engine.fadeOutAll(0.6);
-                router.replace("/calming");
+                // v1.1.0: pause-and-return instead of teardown-and-route.
+                // Cut any in-flight voice clip immediately (otherwise the
+                // narration keeps speaking mid-sentence under the calming
+                // protocol), then PUSH /calming so /session stays mounted
+                // underneath. The blur effect below suspends the audio
+                // graph; on return, focus resumes it at the same point.
+                engine.stopVoice();
+                router.push("/calming");
               }}
             >
               <Text style={{ color: tokens.sceneText, fontFamily: fonts.body, fontSize: 14, opacity: 0.75 }}>

@@ -16,6 +16,8 @@ const KEYS = {
   healthKitGranted: `${PREFIX}healthKitGranted`,
   psychoEducationSeen: `${PREFIX}psychoEducationSeen`,
   clinicalScreeningResult: `${PREFIX}clinicalScreeningResult`,
+  onboardedAt: `${PREFIX}onboardedAt`,
+  sessionsCompleted: `${PREFIX}sessionsCompleted`,
 } as const;
 
 /** A name we've resolved (or explicitly determined we can't resolve) for the
@@ -178,4 +180,35 @@ export async function setClinicalScreeningResult(
   } else {
     await AsyncStorage.setItem(KEYS.clinicalScreeningResult, JSON.stringify(result));
   }
+}
+
+/** Epoch-ms timestamp set the first time the user reaches /home after
+ *  completing the full onboarding flow (welcome → permissions → screening →
+ *  setup → home). `null` means they haven't onboarded yet — _layout routes
+ *  to the welcome screen. Set lets _layout skip straight to /home on launch. */
+export async function getOnboardedAt(): Promise<number | null> {
+  const raw = await AsyncStorage.getItem(KEYS.onboardedAt);
+  if (!raw) return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export async function setOnboardedAt(timestamp: number): Promise<void> {
+  await AsyncStorage.setItem(KEYS.onboardedAt, String(timestamp));
+}
+
+/** Lifetime count of completed sessions. Incremented from /after on mount
+ *  (the session-ended screen). Used by /home to render "X sessions" progress. */
+export async function getSessionsCompleted(): Promise<number> {
+  const raw = await AsyncStorage.getItem(KEYS.sessionsCompleted);
+  if (!raw) return 0;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
+}
+
+export async function incrementSessionsCompleted(): Promise<number> {
+  const current = await getSessionsCompleted();
+  const next = current + 1;
+  await AsyncStorage.setItem(KEYS.sessionsCompleted, String(next));
+  return next;
 }

@@ -186,22 +186,6 @@ export default function Ready() {
           </View>
 
           <Pressable
-            onPress={() => router.push("/calming")}
-            hitSlop={8}
-            style={{ alignSelf: "center", paddingTop: 8, paddingBottom: 4 }}
-          >
-            <Text
-              style={{
-                color: tokens.textMute,
-                fontFamily: fonts.body,
-                fontSize: 14,
-              }}
-            >
-              {t("home.needAMoment")}
-            </Text>
-          </Pressable>
-
-          <Pressable
             onPress={() => router.push("/setup")}
             hitSlop={8}
             style={{ alignSelf: "center", paddingVertical: 14 }}

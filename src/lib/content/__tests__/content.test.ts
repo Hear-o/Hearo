@@ -8,6 +8,7 @@ import {
   getDefaultPreferences,
   getAmbientTrack,
   getVoiceClips,
+  getDailyAffirmation,
   getPsychoEducation,
   getCalmingProtocol,
   getClinicalScreening,
@@ -296,5 +297,28 @@ describe("content / computeClinicalScreeningOutcome", () => {
     expect(
       computeClinicalScreeningOutcome(true, [true, true, true, true, true], 3),
     ).toEqual({ score: 5, outcome: "above-threshold" });
+  });
+});
+
+// v1.1.x — daily affirmation on Home. Same quote whole day, rotates per
+// local-date. Content itself is pre-clinical-review (see content.ts comment).
+describe("content / daily affirmation", () => {
+  it("returns a non-empty string for he and en", () => {
+    expect(getDailyAffirmation("he").length).toBeGreaterThan(0);
+    expect(getDailyAffirmation("en").length).toBeGreaterThan(0);
+  });
+
+  it("is stable within the same render pass (same calendar day)", () => {
+    // Two reads on the same day must return the same quote — otherwise it
+    // would flicker between re-renders, defeating the point.
+    expect(getDailyAffirmation("he")).toBe(getDailyAffirmation("he"));
+    expect(getDailyAffirmation("en")).toBe(getDailyAffirmation("en"));
+  });
+
+  it("returns the localized form for the requested language", () => {
+    // The HE and EN strings for the same day's quote shouldn't be identical
+    // (one is Hebrew, one is English). This catches a wiring bug where the
+    // localize() helper might collapse to one language regardless of input.
+    expect(getDailyAffirmation("he")).not.toBe(getDailyAffirmation("en"));
   });
 });

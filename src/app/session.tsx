@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import { BreathingCircle } from "@/components/features/session/BreathingCircle";
+import { ExitSessionConfirm } from "@/components/features/session/ExitSessionConfirm";
 import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
 import { Icon } from "@/components/common/Icon";
 import { SceneBackground } from "@/components/features/session/SceneBackground";
@@ -53,16 +54,39 @@ const TRIGGER_CEILING_DB: Record<string, number> = {
   siren: 0,
   "car-horn": 0,
   "door-slam": 0,
+  // v1.1.x — new triggers default to 0 dB (no attenuation) until clinical
+  // review tunes per-sound ceilings. Roy delivery is loudness-normalized to
+  // similar levels as the originals; if any feels too hot we'll dial in.
+  "party-shout": 0,
+  "glass-breaking": 0,
+  "train-horn": 0,
+  "brake-squeal": 0,
+  "station-announcement": 0,
+  "bus-horn": 0,
+  "brake-hiss": 0,
+  "checkout-beep": 0,
+  "pa-announcement": 0,
+  "baby-crying": 0,
+  dog: 0,
+  restaurant: 0,
 };
 const DEFAULT_CEILING_DB = 0;
 
 // Burst scheduler defaults.
 // TODO(supabase): session_programs table — per-scene/per-sound timing config.
-const TRIGGER_INTERVAL_MIN_MS = 15_000; // minimum gap between bursts
-const TRIGGER_INTERVAL_MAX_MS = 45_000; // maximum gap (randomized)
+// v1.1.0: tightened the interval (was 15–45s) so the session has more
+// practice moments. The engine also rotates between all the user's selected
+// trigger sounds now, so variety + density both rise.
+const TRIGGER_INTERVAL_MIN_MS = 10_000; // minimum gap between bursts
+const TRIGGER_INTERVAL_MAX_MS = 30_000; // maximum gap (randomized)
 const TRIGGER_BURST_DURATION_MS = 8_000; // time at peak gain per burst
 const TRIGGER_FADE_IN_MS = 1_500;        // onset ramp
 const TRIGGER_FADE_OUT_MS = 1_500;       // offset ramp
+
+// How long the "back to the moment" caption stays on screen after a burst
+// fades out. Tuned so the user finishes one breath cycle while reading it,
+// then returns to the regular session text.
+const POST_TRIGGER_CAPTION_MS = 10_000;
 
 // Manual distress auto-return after 90 seconds (no watch / watch disconnected).
 const MANUAL_RETURN_MS = 90_000;
@@ -141,6 +165,10 @@ export default function Session() {
   const [loadProgress, setLoadProgress] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [watchBanner, setWatchBanner] = useState<"no-watch" | "disconnected" | null>(null);
+  // Timestamp of the most recent burst's fade-out completion. Used to show
+  // the "back to the moment" caption for POST_TRIGGER_CAPTION_MS afterwards.
+  // Set from the engine's onBurstEnd callback in the ADAPTIVE_LOOP effect.
+  const [lastBurstEndedAt, setLastBurstEndedAt] = useState<number | null>(null);
   // Manual distress countdown (seconds remaining, null when not active).
   const [manualCountdown, setManualCountdown] = useState<number | null>(null);
 
@@ -295,13 +323,12 @@ export default function Session() {
       });
   }, [machineState, engine]);
 
-  // ── ADAPTIVE_LOOP: load trigger buffer, then start ramp ──────────────
+  // ── ADAPTIVE_LOOP: load all consented trigger sources, then start ramp ──
 
   useEffect(() => {
     if (machineState !== "ADAPTIVE_LOOP") return;
 
-    const sound = consentedSounds[0];
-    if (!sound) {
+    if (consentedSounds.length === 0) {
       // Rehearsal walk — no trigger. Just start the auto-advance timer.
       const id = setTimeout(() => {
         if (machineStateRef.current === "ADAPTIVE_LOOP") {
@@ -312,18 +339,27 @@ export default function Session() {
       return () => clearTimeout(id);
     }
 
-    const ceilingDb = TRIGGER_CEILING_DB[sound] ?? DEFAULT_CEILING_DB;
-    triggerCeilingDbRef.current = ceilingDb;
+    // v1.1.0: load ALL variations of EVERY selected trigger sound. The engine
+    // picks one at random per burst, so a session rotates between the user's
+    // full set instead of using only the first sound.
+    const allTriggerSources: number[] = [];
+    for (const key of consentedSounds) {
+      const variations = getSound(key).audioVariations as number[];
+      allTriggerSources.push(...variations);
+    }
+
+    // Peak gain — take the LOWEST ceiling across selected sounds so no
+    // burst exceeds any individual sound's safety limit.
+    const minCeilingDb = consentedSounds.reduce(
+      (acc, key) => Math.min(acc, TRIGGER_CEILING_DB[key] ?? DEFAULT_CEILING_DB),
+      DEFAULT_CEILING_DB,
+    );
+    triggerCeilingDbRef.current = minCeilingDb;
     let cancelled = false;
     let timerId: ReturnType<typeof setTimeout>;
 
-    // Pick a random variation from the consented sound's audioVariations.
-    // TODO(supabase): sounds / sound_variations table supplies these.
-    const variations = getSound(sound).audioVariations as number[];
-    const triggerSource = variations[Math.floor(Math.random() * variations.length)];
-
     engine
-      .loadTrigger(triggerSource)
+      .loadTriggers(allTriggerSources)
       .then(() => {
         if (cancelled) return;
         engine.startTriggerScheduler({
@@ -332,7 +368,13 @@ export default function Session() {
           burstDurationMs: TRIGGER_BURST_DURATION_MS,
           fadeInMs: TRIGGER_FADE_IN_MS,
           fadeOutMs: TRIGGER_FADE_OUT_MS,
-          peakGain: dBToGain(ceilingDb),
+          peakGain: dBToGain(minCeilingDb),
+          onBurstEnd: () => {
+            // Surface the post-trigger grounding caption for ~10s. Voice
+            // narration for this moment is TODO(roy) — when those clips
+            // land we'll also queue an audio play here.
+            setLastBurstEndedAt(Date.now());
+          },
         });
         timerId = setTimeout(() => {
           if (machineStateRef.current === "ADAPTIVE_LOOP") {
@@ -342,7 +384,7 @@ export default function Session() {
         }, ADAPTIVE_LOOP_MS);
       })
       .catch((e) => {
-        audioWarn("session ADAPTIVE_LOOP: loadTrigger FAILED, falling back to rehearsal", e);
+        audioWarn("session ADAPTIVE_LOOP: loadTriggers FAILED, falling back to rehearsal", e);
         // Trigger failed to load — continue as rehearsal walk.
         if (!cancelled) {
           timerId = setTimeout(() => {
@@ -488,19 +530,56 @@ export default function Session() {
   // Re-press resets the countdown (handleManualDistress always clears + restarts).
   const handleDistressPress = handleManualDistress;
 
+  // ── End-session confirm (v1.1.0) ───────────────────────────────────────
+  //
+  // Manual exit (close X, End-session pill) opens a custom-styled confirm
+  // overlay (ExitSessionConfirm) that matches the rest of the app's design
+  // language. On confirm: short fade-out then route straight to /after,
+  // skipping the /winding-down narration + transition (the user explicitly
+  // asked to leave early). Natural end (8-min timer) still goes through
+  // /winding-down for the full closing voice.
+  const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
+  const handleEndSessionPress = useCallback(() => {
+    setExitConfirmOpen(true);
+  }, []);
+  const handleExitCancel = useCallback(() => {
+    setExitConfirmOpen(false);
+  }, []);
+  const handleExitConfirm = useCallback(() => {
+    setExitConfirmOpen(false);
+    engine.fadeOutAll(0.3);
+    setLastEndedBy("manual-exit");
+    router.replace("/after");
+  }, [engine, router, setLastEndedBy]);
+
   // ── Derived display ───────────────────────────────────────────────────
+
+  // Compute "are we in the post-trigger window" — drives the grounding
+  // caption swap. Recomputed against `elapsed` so the 250ms timer that
+  // already runs for the progress bar also drives this flip (no extra
+  // setInterval needed).
+  const isPostTrigger =
+    lastBurstEndedAt !== null &&
+    Date.now() - lastBurstEndedAt < POST_TRIGGER_CAPTION_MS;
 
   const voiceText = useMemo(() => {
     if (machineState === "AMBIENT_FADE_IN" || machineState === "LOADING" || machineState === "DISCLAIMER") {
       return getVoiceScript(scene, "opening", i18n.language);
     }
     if (machineState === "ADAPTIVE_LOOP") {
-      return isSpiked
-        ? getVoiceScript(scene, "calming", i18n.language)
-        : getVoiceScript(scene, "during", i18n.language);
+      // v1.1.0: show the "calming" grounding script in two cases — when the
+      // pulse spiked (existing behavior) OR for ~10s after every burst (new
+      // post-trigger caption). Otherwise the normal in-session "during" line.
+      if (isSpiked || isPostTrigger) {
+        return getVoiceScript(scene, "calming", i18n.language);
+      }
+      return getVoiceScript(scene, "during", i18n.language);
     }
     return getVoiceScript(scene, "calming", i18n.language);
-  }, [machineState, scene, i18n.language, isSpiked]);
+    // elapsed is intentionally in the dep list — it's the heartbeat that
+    // re-evaluates `isPostTrigger` each tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [machineState, scene, i18n.language, isSpiked, isPostTrigger, elapsed]);
 
   const slow = machineState === "WIND_DOWN" || isSpiked;
   const sceneLabel = localize(getScene(scene).label, i18n.language);
@@ -538,6 +617,12 @@ export default function Session() {
 
   return (
     <View className="flex-1 bg-bg">
+      {/* Lock the iOS back-swipe + Android back-gesture while mid-session.
+          The only ways out are the close X, the End-session pill, or the
+          natural session-end timer. Prevents an accidental swipe-back from
+          dumping the user into /preparing mid-flow. */}
+      <Stack.Screen options={{ gestureEnabled: false }} />
+
       <SceneBackground scene={scene} intensity={slow ? 0.86 : 0.78} />
       <SafeAreaView className="flex-1">
         <View className="flex-1 px-7">
@@ -546,13 +631,7 @@ export default function Session() {
               correctly across both reading directions: LEFT in LTR English,
               RIGHT in RTL Hebrew (auto-flipped via I18nManager). */}
           <View className="flex-row justify-between items-center pt-2">
-            <Pressable
-              hitSlop={16}
-              onPress={() => {
-                setLastEndedBy("manual-exit");
-                dispatch({ type: "SESSION_END" });
-              }}
-            >
+            <Pressable hitSlop={16} onPress={handleEndSessionPress}>
               <Icon name="close" size={20} color={tokens.sceneText} />
             </Pressable>
             <CrisisAffordance tone="on-scene" />
@@ -698,10 +777,7 @@ export default function Session() {
           <View className="flex-row justify-end items-center pt-4 pb-6">
             <Pressable
               hitSlop={12}
-              onPress={() => {
-                setLastEndedBy("manual-exit");
-                dispatch({ type: "SESSION_END" });
-              }}
+              onPress={handleEndSessionPress}
               style={{
                 borderWidth: 1,
                 borderColor: tokens.sceneText,
@@ -724,6 +800,12 @@ export default function Session() {
 
         </View>
       </SafeAreaView>
+
+      <ExitSessionConfirm
+        isOpen={exitConfirmOpen}
+        onCancel={handleExitCancel}
+        onConfirm={handleExitConfirm}
+      />
     </View>
   );
 }

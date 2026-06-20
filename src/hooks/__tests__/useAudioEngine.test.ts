@@ -7,6 +7,7 @@ const mockEngine = {
   destroy: jest.fn(),
   loadAmbientAndVoice: jest.fn().mockResolvedValue(undefined),
   loadTrigger: jest.fn().mockResolvedValue(undefined),
+  loadTriggers: jest.fn().mockResolvedValue(undefined),
   startAmbient: jest.fn(),
   setAmbientGain: jest.fn(),
   startTriggerScheduler: jest.fn(),
@@ -41,6 +42,7 @@ describe("useAudioEngine", () => {
     jest.clearAllMocks();
     mockEngine.loadAmbientAndVoice.mockResolvedValue(undefined);
     mockEngine.loadTrigger.mockResolvedValue(undefined);
+    mockEngine.loadTriggers.mockResolvedValue(undefined);
     mockEngine.playVoiceClip.mockResolvedValue(undefined);
     mockEngine.pauseAll.mockResolvedValue(undefined);
     mockEngine.resumeAll.mockResolvedValue(undefined);
@@ -89,6 +91,12 @@ describe("useAudioEngine", () => {
     const { result } = renderHook(() => useAudioEngine());
     await act(() => result.current.loadAmbientAndVoice(1, [2, 3]));
     expect(mockEngine.loadAmbientAndVoice).toHaveBeenCalledWith(1, [2, 3]);
+  });
+
+  it("delegates loadTriggers to the engine", async () => {
+    const { result } = renderHook(() => useAudioEngine());
+    await act(() => result.current.loadTriggers([10, 11, 12, 13]));
+    expect(mockEngine.loadTriggers).toHaveBeenCalledWith([10, 11, 12, 13]);
   });
 
   it("delegates loadTrigger to the engine", async () => {

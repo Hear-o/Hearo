@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Text, View } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import { PostSessionFeedback, FeedbackAnswers } from "@/components/features/post-session";
@@ -114,6 +114,10 @@ export default function WindingDown() {
 
   return (
     <View className="flex-1 bg-bg">
+      {/* No back-swipe out of the wind-down — this is the closing moment of
+          the session; the user moves forward to feedback, not backward to
+          a halfway-ended session. */}
+      <Stack.Screen options={{ gestureEnabled: false }} />
       <SceneBackground scene={scene} intensity={0.86} />
       <View
         style={{

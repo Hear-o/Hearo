@@ -16,11 +16,25 @@ export type SoundKey =
   | "fireworks"
   | "siren"
   | "car-horn"
-  | "door-slam";
-// Note: dog, baby-crying, restaurant audio files remain on disk under
-// ui/assets/sounds/triggers/ — these are off-persona for combat veterans
-// (postpartum / K9 / social-anxiety trauma) but kept for a future expansion
-// to other trauma profiles.
+  | "door-slam"
+  // v1.1.x — Roy delivery of 9 new triggers (paired with the 5 new scenarios:
+  // Party, Bar, Train, Bus, Supermarket — see docs/roy-asset-brief.md §3).
+  | "party-shout"
+  | "glass-breaking"
+  | "train-horn"
+  | "brake-squeal"
+  | "station-announcement"
+  | "bus-horn"
+  | "brake-hiss"
+  | "checkout-beep"
+  | "pa-announcement"
+  // v1.1.x — broader trauma-profile sounds wired in alongside the Roy drop.
+  // Off-canonical for combat-veteran focus but useful for partners/parents
+  // and future profile expansion (no UI gating on this — they show in the
+  // Setup picker like any other).
+  | "baby-crying"
+  | "dog"
+  | "restaurant";
 
 /** `require()` of a bundled mp3 returns a number from RN's asset registry. */
 export type AudioModule = number;
@@ -50,6 +64,11 @@ export type Scene = {
   media: SceneMedia;
   tint: { top: string };
   voice: Record<Phase, LocalizedText>;
+  /** Trigger sounds that make sense IN this scene's context — used by Setup
+   *  to filter the picker grid (v1.1.x). A helicopter in a quiet road scene
+   *  is plausible; a checkout-beep on the beach is not. Keep curated lists
+   *  short (3–8 candidates per scene) so the picker stays scannable. */
+  triggerCandidates: SoundKey[];
 };
 
 export type Sound = {
@@ -63,6 +82,10 @@ export type Sound = {
   // Variations exist so the user can't anticipate the exact clip — a small but
   // therapeutically meaningful unpredictability.
   audioVariations: AudioModule[];
+  /** Trigger-card illustration shown on the Setup picker (v1.1.x). PNG sourced
+   *  externally; require()'d here so Metro bundles it. Optional because future
+   *  sound entries may exist before their illustration ships. */
+  image?: AudioModule;
 };
 
 export type Preferences = {
@@ -99,6 +122,7 @@ const SCENES: Record<SceneKey, Scene> = {
         he: "הצליל הזה הוא חלק מהיום.\nאתה עדיין ליד המים.\nאתה עדיין בטוח.",
       },
     },
+    triggerCandidates: ["motorcycle", "helicopter", "siren", "fireworks", "dog"],
   },
   park: {
     key: "park",
@@ -123,6 +147,7 @@ const SCENES: Record<SceneKey, Scene> = {
         he: "הצליל הזה שייך לפארק.\nאתה עדיין על השביל.\nאתה עדיין בטוח.",
       },
     },
+    triggerCandidates: ["dog", "motorcycle", "helicopter", "siren", "baby-crying"],
   },
   cafe: {
     key: "cafe",
@@ -147,6 +172,7 @@ const SCENES: Record<SceneKey, Scene> = {
         he: "הצליל הזה הוא חלק מהבוקר.\nאתה עדיין בכיסא שלך.\nאתה עדיין בטוח.",
       },
     },
+    triggerCandidates: ["car-horn", "door-slam", "siren", "baby-crying", "restaurant", "glass-breaking"],
   },
   road: {
     key: "road",
@@ -171,6 +197,16 @@ const SCENES: Record<SceneKey, Scene> = {
         he: "הצליל הזה חולף.\nאתה עדיין על הכביש.\nאתה עדיין בטוח.",
       },
     },
+    triggerCandidates: [
+      "motorcycle",
+      "car-horn",
+      "siren",
+      "helicopter",
+      "bus-horn",
+      "brake-squeal",
+      "door-slam",
+      "dog",
+    ],
   },
 };
 
@@ -186,7 +222,12 @@ const SOUNDS: Record<SoundKey, Sound> = {
       require("@/assets/sounds/triggers/motorcycle/2.mp3"),
       require("@/assets/sounds/triggers/motorcycle/3.mp3"),
       require("@/assets/sounds/triggers/motorcycle/4.mp3"),
+      require("@/assets/sounds/triggers/motorcycle/5.mp3"),
+      require("@/assets/sounds/triggers/motorcycle/6.mp3"),
+      require("@/assets/sounds/triggers/motorcycle/7.mp3"),
+      require("@/assets/sounds/triggers/motorcycle/8.mp3"),
     ],
+    image: require("@/assets/trigger-images/motorcycle.png"),
   },
   helicopter: {
     key: "helicopter",
@@ -195,7 +236,10 @@ const SOUNDS: Record<SoundKey, Sound> = {
     audioVariations: [
       require("@/assets/sounds/triggers/helicopter/1.mp3"),
       require("@/assets/sounds/triggers/helicopter/2.mp3"),
+      require("@/assets/sounds/triggers/helicopter/3.mp3"),
+      require("@/assets/sounds/triggers/helicopter/4.mp3"),
     ],
+    image: require("@/assets/trigger-images/helicopter.png"),
   },
   fireworks: {
     key: "fireworks",
@@ -206,7 +250,12 @@ const SOUNDS: Record<SoundKey, Sound> = {
       require("@/assets/sounds/triggers/fireworks/2.mp3"),
       require("@/assets/sounds/triggers/fireworks/3.mp3"),
       require("@/assets/sounds/triggers/fireworks/4.mp3"),
+      require("@/assets/sounds/triggers/fireworks/5.mp3"),
+      require("@/assets/sounds/triggers/fireworks/6.mp3"),
+      require("@/assets/sounds/triggers/fireworks/7.mp3"),
+      require("@/assets/sounds/triggers/fireworks/8.mp3"),
     ],
+    image: require("@/assets/trigger-images/fireworks.png"),
   },
   siren: {
     key: "siren",
@@ -216,7 +265,11 @@ const SOUNDS: Record<SoundKey, Sound> = {
       require("@/assets/sounds/triggers/siren/1.mp3"),
       require("@/assets/sounds/triggers/siren/2.mp3"),
       require("@/assets/sounds/triggers/siren/3.mp3"),
+      require("@/assets/sounds/triggers/siren/4.mp3"),
+      require("@/assets/sounds/triggers/siren/5.mp3"),
+      require("@/assets/sounds/triggers/siren/6.mp3"),
     ],
+    image: require("@/assets/trigger-images/siren.png"),
   },
   "car-horn": {
     key: "car-horn",
@@ -225,7 +278,10 @@ const SOUNDS: Record<SoundKey, Sound> = {
     audioVariations: [
       require("@/assets/sounds/triggers/car-horn/1.mp3"),
       require("@/assets/sounds/triggers/car-horn/2.mp3"),
+      require("@/assets/sounds/triggers/car-horn/3.mp3"),
+      require("@/assets/sounds/triggers/car-horn/4.mp3"),
     ],
+    image: require("@/assets/trigger-images/car-horn.png"),
   },
   "door-slam": {
     key: "door-slam",
@@ -236,6 +292,153 @@ const SOUNDS: Record<SoundKey, Sound> = {
       require("@/assets/sounds/triggers/door-slam/2.mp3"),
       require("@/assets/sounds/triggers/door-slam/3.mp3"),
       require("@/assets/sounds/triggers/door-slam/4.mp3"),
+      require("@/assets/sounds/triggers/door-slam/5.mp3"),
+      require("@/assets/sounds/triggers/door-slam/6.mp3"),
+      require("@/assets/sounds/triggers/door-slam/7.mp3"),
+      require("@/assets/sounds/triggers/door-slam/8.mp3"),
+    ],
+    image: require("@/assets/trigger-images/door-slam.png"),
+  },
+  // v1.1.x — new triggers from Roy's delivery (paired with the 5 new scenarios).
+  "party-shout": {
+    key: "party-shout",
+    label: { en: "Party shout", he: "צעקה במסיבה" },
+    inAction: { en: "a shout at a party", he: "צעקה במסיבה" },
+    audioVariations: [
+      require("@/assets/sounds/triggers/party-shout/1.mp3"),
+      require("@/assets/sounds/triggers/party-shout/2.mp3"),
+      require("@/assets/sounds/triggers/party-shout/3.mp3"),
+    ],
+    image: require("@/assets/trigger-images/party-shout.png"),
+  },
+  "glass-breaking": {
+    key: "glass-breaking",
+    label: { en: "Glass breaking", he: "כוס נשברת" },
+    inAction: { en: "a glass breaking nearby", he: "כוס נשברת בקרבת מקום" },
+    audioVariations: [
+      require("@/assets/sounds/triggers/glass-breaking/1.mp3"),
+      require("@/assets/sounds/triggers/glass-breaking/2.mp3"),
+      require("@/assets/sounds/triggers/glass-breaking/3.mp3"),
+      require("@/assets/sounds/triggers/glass-breaking/4.mp3"),
+    ],
+    image: require("@/assets/trigger-images/glass-breaking.png"),
+  },
+  "train-horn": {
+    key: "train-horn",
+    label: { en: "Train horn", he: "צפירת רכבת" },
+    inAction: { en: "a train horn in the distance", he: "צפירת רכבת במרחק" },
+    audioVariations: [
+      require("@/assets/sounds/triggers/train-horn/1.mp3"),
+      require("@/assets/sounds/triggers/train-horn/2.mp3"),
+      require("@/assets/sounds/triggers/train-horn/3.mp3"),
+      require("@/assets/sounds/triggers/train-horn/4.mp3"),
+    ],
+    image: require("@/assets/trigger-images/train-horn.png"),
+  },
+  "brake-squeal": {
+    key: "brake-squeal",
+    label: { en: "Brake squeal", he: "חריקת בלמים" },
+    inAction: { en: "brakes squealing", he: "חריקת בלמים" },
+    audioVariations: [
+      require("@/assets/sounds/triggers/brake-squeal/1.mp3"),
+      require("@/assets/sounds/triggers/brake-squeal/2.mp3"),
+      require("@/assets/sounds/triggers/brake-squeal/3.mp3"),
+      require("@/assets/sounds/triggers/brake-squeal/4.mp3"),
+    ],
+    image: require("@/assets/trigger-images/brake-squeal.png"),
+  },
+  "station-announcement": {
+    key: "station-announcement",
+    label: { en: "Station announcement", he: "כריזה בתחנה" },
+    inAction: { en: "a station announcement", he: "כריזה בתחנה" },
+    audioVariations: [require("@/assets/sounds/triggers/station-announcement/1.mp3")],
+    image: require("@/assets/trigger-images/station-announcement.png"),
+  },
+  "bus-horn": {
+    key: "bus-horn",
+    label: { en: "Bus horn", he: "צפירת אוטובוס" },
+    inAction: { en: "a bus horn", he: "צפירת אוטובוס" },
+    audioVariations: [
+      require("@/assets/sounds/triggers/bus-horn/1.mp3"),
+      require("@/assets/sounds/triggers/bus-horn/2.mp3"),
+      require("@/assets/sounds/triggers/bus-horn/3.mp3"),
+    ],
+    image: require("@/assets/trigger-images/bus-horn.png"),
+  },
+  "brake-hiss": {
+    key: "brake-hiss",
+    label: { en: "Brake hiss", he: "שריקת בלמים" },
+    inAction: { en: "a bus braking", he: "אוטובוס מאט" },
+    audioVariations: [
+      require("@/assets/sounds/triggers/brake-hiss/1.mp3"),
+      require("@/assets/sounds/triggers/brake-hiss/2.mp3"),
+      require("@/assets/sounds/triggers/brake-hiss/3.mp3"),
+    ],
+    image: require("@/assets/trigger-images/brake-hiss.png"),
+  },
+  "checkout-beep": {
+    key: "checkout-beep",
+    label: { en: "Checkout beep", he: "ביפ בקופה" },
+    inAction: { en: "a checkout beeping", he: "ביפ בקופה" },
+    audioVariations: [
+      require("@/assets/sounds/triggers/checkout-beep/1.mp3"),
+      require("@/assets/sounds/triggers/checkout-beep/2.mp3"),
+      require("@/assets/sounds/triggers/checkout-beep/3.mp3"),
+    ],
+    image: require("@/assets/trigger-images/checkout-beep.png"),
+  },
+  "pa-announcement": {
+    key: "pa-announcement",
+    label: { en: "Store announcement", he: "כריזה בסופר" },
+    inAction: { en: "a store announcement", he: "כריזה בסופר" },
+    audioVariations: [
+      require("@/assets/sounds/triggers/pa-announcement/1.mp3"),
+      require("@/assets/sounds/triggers/pa-announcement/2.mp3"),
+    ],
+    image: require("@/assets/trigger-images/pa-announcement.png"),
+  },
+  // v1.1.x — previously-on-disk-but-unwired sounds, now wired with Roy's
+  // additional variations. No trigger illustration yet (TODO Roy).
+  "baby-crying": {
+    key: "baby-crying",
+    label: { en: "Baby crying", he: "תינוק בוכה" },
+    inAction: { en: "a baby crying", he: "תינוק בוכה" },
+    audioVariations: [
+      require("@/assets/sounds/triggers/baby-crying/1.mp3"),
+      require("@/assets/sounds/triggers/baby-crying/2.mp3"),
+      require("@/assets/sounds/triggers/baby-crying/3.mp3"),
+      require("@/assets/sounds/triggers/baby-crying/4.mp3"),
+      require("@/assets/sounds/triggers/baby-crying/5.mp3"),
+      require("@/assets/sounds/triggers/baby-crying/6.mp3"),
+    ],
+  },
+  dog: {
+    key: "dog",
+    label: { en: "Dog barking", he: "כלב נובח" },
+    inAction: { en: "a dog barking nearby", he: "כלב נובח בקרבת מקום" },
+    audioVariations: [
+      require("@/assets/sounds/triggers/dog/1.mp3"),
+      require("@/assets/sounds/triggers/dog/2.mp3"),
+      require("@/assets/sounds/triggers/dog/3.mp3"),
+      require("@/assets/sounds/triggers/dog/4.mp3"),
+      require("@/assets/sounds/triggers/dog/5.mp3"),
+      require("@/assets/sounds/triggers/dog/6.mp3"),
+    ],
+  },
+  restaurant: {
+    key: "restaurant",
+    label: { en: "Restaurant noise", he: "רעש מסעדה" },
+    inAction: { en: "a noisy restaurant", he: "מסעדה הומה" },
+    audioVariations: [
+      require("@/assets/sounds/triggers/restaurant/1.mp3"),
+      require("@/assets/sounds/triggers/restaurant/2.mp3"),
+      require("@/assets/sounds/triggers/restaurant/3.mp3"),
+      require("@/assets/sounds/triggers/restaurant/4.mp3"),
+      require("@/assets/sounds/triggers/restaurant/5.mp3"),
+      require("@/assets/sounds/triggers/restaurant/6.mp3"),
+      require("@/assets/sounds/triggers/restaurant/7.mp3"),
+      require("@/assets/sounds/triggers/restaurant/8.mp3"),
+      require("@/assets/sounds/triggers/restaurant/9.mp3"),
     ],
   },
 };
@@ -243,6 +446,8 @@ const SOUNDS: Record<SoundKey, Sound> = {
 export const SCENE_ORDER: SceneKey[] = ["beach", "park", "cafe", "road"];
 // Ordered roughly by how commonly users encounter each trigger in daily urban
 // life — most encountered first, so the picker reads as a familiar list.
+// v1.1.x adds the 9 new triggers grouped by typical situation
+// (transit / shopping / social) after the originals.
 export const SOUND_ORDER: SoundKey[] = [
   "motorcycle",
   "car-horn",
@@ -250,6 +455,22 @@ export const SOUND_ORDER: SoundKey[] = [
   "helicopter",
   "door-slam",
   "fireworks",
+  // transit
+  "bus-horn",
+  "brake-squeal",
+  "brake-hiss",
+  "train-horn",
+  "station-announcement",
+  // shopping
+  "checkout-beep",
+  "pa-announcement",
+  // social
+  "glass-breaking",
+  "party-shout",
+  // broader life
+  "baby-crying",
+  "dog",
+  "restaurant",
 ];
 
 // TODO(supabase): `supabase.from('scenes').select('*, scene_voice_lines(*)')`
@@ -450,6 +671,102 @@ export function getVoiceClips(scene: SceneKey, lang: string): VoiceClip[] {
     { ...VOICE_LABELS[1], source: tracks.mid },
     { ...VOICE_LABELS[2], source: tracks.end },
   ];
+}
+
+// ── Daily affirmations (v1.1.x) ─────────────────────────────────────────────
+//
+// Short quote shown on the Home screen, one per calendar day. Same quote
+// the whole day (deterministic by date), rotates daily.
+//
+// IMPORTANT — TODO(clinical-review): these are first-pass drafts. Affirmations
+// aimed at PTSD recovery are sensitive copy: bad tone (toxic positivity,
+// minimization, military-bro vibes) can re-injure. Before shipping to real
+// users they MUST be reviewed by the clinical team (Dr. Hirschman). The HE is the source
+// language since the target audience is Israeli combat veterans; EN is a
+// parallel translation, not the primary.
+//
+// Editorial rules used in the draft (so reviewers know the constraints):
+// - No "you are strong" or "you can do this" cheerleading.
+// - No "everything will be okay" minimization of trauma.
+// - No military or combat metaphors ("battle", "fight", "victory").
+// - Grounded, validating, normalizing. Permission to feel.
+// - Two short lines max — they sit under the greeting at body-text size.
+
+const DAILY_AFFIRMATIONS: LocalizedText[] = [
+  {
+    he: "הזיכרון של הגוף לא הופך אותך לשבור.\nהוא הופך אותך לאנושי.",
+    en: "Your body's memory doesn't make you broken.\nIt makes you human.",
+  },
+  {
+    he: "להתעורר היום\nכבר היה משהו.",
+    en: "Waking up today\nwas already something.",
+  },
+  {
+    he: "ההתאוששות לא קווית.\nאתה לא מאחר.",
+    en: "Healing isn't linear.\nYou're not behind.",
+  },
+  {
+    he: "אתה לא צריך להבין הכל עכשיו.\nרק להיות כאן.",
+    en: "You don't need to understand everything now.\nJust be here.",
+  },
+  {
+    he: "מה שעבר עליך אמיתי.\nמה שאתה מרגיש עכשיו זה לא חולשה.",
+    en: "What you went through is real.\nWhat you feel now isn't weakness.",
+  },
+  {
+    he: "הנשימה הזאת היא שלך.\nשום דבר לא ייקח אותה ממך.",
+    en: "This breath is yours.\nNothing takes it from you.",
+  },
+  {
+    he: "אתה לא לבד בזה.\nגם כשזה מרגיש ככה.",
+    en: "You're not alone in this.\nEven when it feels that way.",
+  },
+  {
+    he: "השקט אחרי הסערה הוא רגע.\nרגעים מצטברים.",
+    en: "The quiet after a storm is a moment.\nMoments add up.",
+  },
+  {
+    he: "להיות כאן היום\nזאת בחירה.",
+    en: "Being here today\nis a choice.",
+  },
+  {
+    he: "אין דרך נכונה\nלהרגיש בריא.",
+    en: "There's no right way\nto feel well.",
+  },
+  {
+    he: "אתה זכאי לזמן\nשאתה צריך.",
+    en: "You're entitled to the time\nyou need.",
+  },
+  {
+    he: "פעולה קטנה ביום\nהיא לא קטנה.",
+    en: "A small daily action\nisn't small.",
+  },
+  {
+    he: "המערכת שלך הייתה בכוננות.\nעכשיו אתה לומד אותה לסמוך שוב.",
+    en: "Your system was on alert.\nNow you're teaching it to trust again.",
+  },
+  {
+    he: "אתה לא הסיפור שאתה מספר על עצמך\nברגעים הקשים.",
+    en: "You are not the story you tell yourself\nin the hardest moments.",
+  },
+];
+
+/** Today's affirmation — same quote all day, rotates at local midnight.
+ *
+ *  Picks deterministically from DAILY_AFFIRMATIONS by hashing the local
+ *  YYYY-MM-DD into an index. Two callers in the same day see the same
+ *  quote; the next day rotates to a different one. */
+export function getDailyAffirmation(lang: string): string {
+  const today = new Date();
+  // Local-date integer key: YYYY * 10000 + MM * 100 + DD. Mod by array
+  // length to land in range. Day index is stable across re-renders within
+  // the same calendar day.
+  const dateKey =
+    today.getFullYear() * 10000 +
+    (today.getMonth() + 1) * 100 +
+    today.getDate();
+  const idx = dateKey % DAILY_AFFIRMATIONS.length;
+  return localize(DAILY_AFFIRMATIONS[idx], lang);
 }
 
 // ── Psycho-education ────────────────────────────────────────────────────────

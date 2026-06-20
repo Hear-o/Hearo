@@ -13,6 +13,7 @@ export interface UseAudioEngineResult {
     voiceClipSources: (number | string)[]
   ) => Promise<void>;
   loadTrigger: (triggerSource: number | string) => Promise<void>;
+  loadTriggers: (triggerSources: (number | string)[]) => Promise<void>;
 
   // ── Ambient ──
   startAmbient: () => Promise<void>;
@@ -82,6 +83,16 @@ export function useAudioEngine(): UseAudioEngineResult {
       await activateAudioSession();
       audioTrace("hook: calling loadTrigger");
       return engineRef.current!.loadTrigger(triggerSource);
+    },
+    []
+  );
+
+  const loadTriggers = useCallback(
+    async (triggerSources: (number | string)[]) => {
+      audioTrace("hook: activating audio session before loadTriggers");
+      await activateAudioSession();
+      audioTrace("hook: calling loadTriggers, count=", triggerSources.length);
+      return engineRef.current!.loadTriggers(triggerSources);
     },
     []
   );
@@ -160,6 +171,7 @@ export function useAudioEngine(): UseAudioEngineResult {
     () => ({
       loadAmbientAndVoice,
       loadTrigger,
+      loadTriggers,
       startAmbient,
       setAmbientGain,
       startTriggerScheduler,

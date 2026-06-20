@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -6,15 +6,19 @@ import { useTranslation } from "react-i18next";
 import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
 import { Icon } from "@/components/common/Icon";
 import { SceneCarousel } from "@/components/features/setup/SceneCarousel";
-import { getSounds, localize } from "@/lib/content/content";
+import { getScene, getSound, localize } from "@/lib/content/content";
 import { useSessionStore } from "@/lib/storage/session-store";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 // v1.0.9 — Name input + Reminder schedule moved out of Setup and into the
 // global SettingsSheet (gear icon on Home). Setup is now focused only on
 // the session-content prefs: scene + consented sounds.
-
-const SOUNDS = getSounds();
+//
+// v1.1.x — the trigger picker is scene-filtered: each Scene declares which
+// SoundKeys make sense in its context (helicopter at a cafe doesn't), and
+// the grid only renders that subset. Scene change auto-deselects any
+// previously-picked sound that's not in the new scene's list (logic in
+// session-store.setScene).
 
 function Check({ selected }: { selected: boolean }) {
   return (
@@ -42,9 +46,18 @@ export default function Setup() {
   const { t, i18n } = useTranslation();
   const { scene, sounds, setScene, toggleSound } = useSessionStore();
 
+  // Filter the trigger grid to the current scene's candidate list — keeps
+  // implausible combos (helicopter at a cafe) out of the picker entirely.
+  const visibleSounds = getScene(scene).triggerCandidates.map(getSound);
+
   const handleReady = () => {
     if (sounds.length === 0) return;
-    router.push("/home");
+    // v1.1.0 update: Setup is now part of the begin-a-session flow (reached
+    // via /home Begin), so Ready → /ready (preview screen with scene image),
+    // not back to /home. The user can still revisit /setup later via the
+    // "Change what's planned" link on /home or /ready.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    router.push("/ready" as any);
   };
 
   return (
@@ -118,27 +131,69 @@ export default function Setup() {
           {t("setup.soundsHint")}
         </Text>
 
-        <View className="px-8">
-          {SOUNDS.map((s) => {
+        {/* v1.1.x — Trigger picker as a single-column row list. Each row shows
+            a clearly-sized thumbnail of the illustration on the leading edge,
+            the label, and a check on the trailing edge. Selected rows get an
+            accent border. The earlier 2-col grid had cards rendering too
+            narrow on phone with the illustrations cropped unreadably. */}
+        <View style={{ paddingHorizontal: 24, gap: 10 }}>
+          {visibleSounds.map((s) => {
             const selected = sounds.includes(s.key);
             return (
               <Pressable
                 key={s.key}
                 onPress={() => toggleSound(s.key)}
-                hitSlop={6}
-                style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10 }}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                accessibilityLabel={localize(s.label, i18n.language)}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 14,
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  borderWidth: 1,
+                  borderColor: selected ? tokens.accent : tokens.textMute + "33",
+                  borderRadius: 14,
+                  backgroundColor: tokens.bgElev,
+                }}
               >
-                <Check selected={selected} />
+                {s.image ? (
+                  <Image
+                    source={s.image}
+                    style={{
+                      width: 78,
+                      height: 60,
+                      borderRadius: 8,
+                      opacity: selected ? 1 : 0.85,
+                    }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  // Placeholder block for sounds that don't have an image yet
+                  // (baby-crying, dog, restaurant). Same dimensions as the
+                  // thumbnail so rows stay even.
+                  <View
+                    style={{
+                      width: 78,
+                      height: 60,
+                      borderRadius: 8,
+                      backgroundColor: tokens.textMute + "22",
+                    }}
+                  />
+                )}
                 <Text
                   style={{
                     color: selected ? tokens.text : tokens.textMute,
                     fontFamily: fonts.body,
                     fontSize: 17,
-                    marginLeft: 14,
+                    flex: 1,
                   }}
+                  numberOfLines={1}
                 >
                   {localize(s.label, i18n.language)}
                 </Text>
+                <Check selected={selected} />
               </Pressable>
             );
           })}

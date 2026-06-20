@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Text, View } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import { BreathingCircle } from "@/components/features/session/BreathingCircle";
@@ -102,6 +102,10 @@ export default function Preparing() {
 
   return (
     <View className="flex-1 bg-bg">
+      {/* No back-swipe while we're decoding buffers + activating the audio
+          session. Interrupting prep mid-flow puts the engine in a weird
+          partial state; the user proceeds forward or hits the OS home button. */}
+      <Stack.Screen options={{ gestureEnabled: false }} />
       <SceneBackground scene={scene} intensity={0.78} />
       <View
         style={{

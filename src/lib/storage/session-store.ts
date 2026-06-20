@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { getDefaultPreferences, SceneKey, SoundKey } from "@/lib/content/content";
+import { getDefaultPreferences, getScene, SceneKey, SoundKey } from "@/lib/content/content";
 
 export type { SceneKey, SoundKey };
 
@@ -26,7 +26,18 @@ export const useSessionStore = create<SessionState>((set) => ({
   scene: defaults.scene,
   sounds: defaults.sounds,
   lastEndedBy: null,
-  setScene: (scene) => set({ scene }),
+  // v1.1.x: when the scene changes, drop any selected sounds that no longer
+  // fit the new scene's triggerCandidates list. Keeps Setup's selection in
+  // sync with the visible picker — otherwise a user could carry over (say) a
+  // helicopter from the road scene into the cafe scene without seeing it.
+  setScene: (scene) =>
+    set((state) => {
+      const allowed = new Set(getScene(scene).triggerCandidates);
+      return {
+        scene,
+        sounds: state.sounds.filter((s) => allowed.has(s)),
+      };
+    }),
   toggleSound: (sound) =>
     set((state) => ({
       sounds: state.sounds.includes(sound)

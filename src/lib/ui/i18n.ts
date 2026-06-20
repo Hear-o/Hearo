@@ -69,6 +69,7 @@ const resources = {
         progress: "Sessions completed",
         sessionsCount_one: "{{count}} session",
         sessionsCount_other: "{{count}} sessions",
+        thoughtLabel: "A thought for today",
       },
       calming: {
         breatheIn: "Breathe in",
@@ -103,6 +104,9 @@ const resources = {
         watchDisconnected: "Watch disconnected. Use the button to control trigger volume manually.",
         triggerReturnsIn: "Sound returns in {{seconds}}s",
         lowerSound: "Lower sound",
+        exitConfirmTitle: "Are you sure you want to leave early?",
+        exitConfirmYes: "Yes, end now",
+        exitConfirmCancel: "Keep going",
       },
       postSession: {
         difficultyQuestion: "How difficult was this session?",
@@ -207,6 +211,7 @@ const resources = {
         sessionsCount_one: "{{count}} סשן",
         sessionsCount_two: "{{count}} סשנים",
         sessionsCount_other: "{{count}} סשנים",
+        thoughtLabel: "מחשבה להיום",
       },
       calming: {
         breatheIn: "שאיפה",
@@ -241,6 +246,9 @@ const resources = {
         watchDisconnected: "השעון התנתק. השתמש בכפתור לשליטה ידנית בעוצמה.",
         triggerReturnsIn: "הצליל חוזר בעוד {{seconds}} שניות",
         lowerSound: "הנמך צליל",
+        exitConfirmTitle: "בטוח שתרצה לעזוב מוקדם?",
+        exitConfirmYes: "כן, סיים עכשיו",
+        exitConfirmCancel: "המשך",
       },
       postSession: {
         difficultyQuestion: "עד כמה הסשן הזה היה קשה עבורך?",

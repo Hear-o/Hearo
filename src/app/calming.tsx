@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { CalmingProtocol } from "@/components/features/calming/CalmingProtocol";
 import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
 import { Icon } from "@/components/common/Icon";
+import { useCalmingOverlay } from "@/hooks/useCalmingOverlay";
 import { useSessionStore } from "@/lib/storage/session-store";
 import { tokens } from "@/lib/ui/tokens";
 
@@ -21,6 +22,12 @@ import { tokens } from "@/lib/ui/tokens";
 export default function Calming() {
   const router = useRouter();
   const setLastEndedBy = useSessionStore((s) => s.setLastEndedBy);
+
+  // v1.1.x — soothing soundtrack under the protocol (Roy's neo-classical
+  // calming track, looped at low volume). Spins up its own AudioContext so
+  // it doesn't touch the suspended session engine while we're on this
+  // screen; tears down on unmount.
+  useCalmingOverlay();
 
   function handleProtocolEnd() {
     setLastEndedBy("calming-protocol");

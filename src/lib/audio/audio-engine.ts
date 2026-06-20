@@ -65,6 +65,10 @@ export interface TriggerSchedulerConfig {
   fadeOutMs: number;
   /** Peak linear gain for the trigger during a burst. Use dBToGain() from content. */
   peakGain: number;
+  /** Optional: fired when a burst's fade-out ramp completes (v1.1.0).
+   *  Lets the screen layer present a "back to the moment" caption (and,
+   *  once Roy delivers the grounding voice clip, queue it for playback). */
+  onBurstEnd?: () => void;
 }
 
 export type { AudioBuffer };
@@ -79,8 +83,13 @@ export class AudioEngine {
 
   // Decoded buffers — loaded before session starts.
   private ambientBuffer: AudioBuffer | null = null;
-  private triggerBuffer: AudioBuffer | null = null;
-  private _lastTriggerSource: number | string | null = null;
+  // v1.1.0: a session can rotate between multiple trigger sounds (the user
+  // may pick 1–N in Setup). _fireBurst picks one at random per burst so the
+  // session feels less monotonous. Each entry is one decoded variation —
+  // sources is the parallel array of the input "keys" so subsequent
+  // loadTriggers() calls can skip work that's already cached.
+  private triggerBuffers: AudioBuffer[] = [];
+  private _loadedTriggerSources: (number | string)[] = [];
   private voiceBuffers: AudioBuffer[] = [];
 
   // Active looping source node for ambient.
@@ -159,23 +168,43 @@ export class AudioEngine {
     }
   }
 
+  /** Single-source loader (legacy, kept so existing call sites + tests still
+   *  work). Internally just forwards to loadTriggers([source]). */
   async loadTrigger(triggerSource: number | string): Promise<void> {
-    // Idempotent: see loadAmbientAndVoice. The session-id check (matching the
-    // exact source value) protects against scene-change scenarios where a
-    // different trigger should be loaded — those produce a different source.
+    await this.loadTriggers([triggerSource]);
+  }
+
+  /** Multi-source loader (v1.1.0). Decodes every passed source into the
+   *  trigger-buffers list. The scheduler picks one at random per burst so a
+   *  session with N selected sounds rotates between them.
+   *
+   *  Idempotent: if the source list matches what's already loaded (same
+   *  values in the same order), this is a no-op. Different set replaces. */
+  async loadTriggers(triggerSources: (number | string)[]): Promise<void> {
     /* istanbul ignore if — re-entrant call path; covered on-device. */
-    if (this.triggerBuffer && this._lastTriggerSource === triggerSource) {
-      audioTrace("engine: loadTrigger — already loaded, skip");
+    if (
+      this.triggerBuffers.length === triggerSources.length &&
+      triggerSources.every((s, i) => this._loadedTriggerSources[i] === s)
+    ) {
+      audioTrace("engine: loadTriggers — same set already loaded, skip");
       return;
     }
-    this._lastTriggerSource = triggerSource;
-    audioTrace("engine: loadTrigger start, ctx.state=", this.ctx.state);
+    audioTrace(
+      "engine: loadTriggers start, ctx.state=",
+      this.ctx.state,
+      "count=",
+      triggerSources.length,
+    );
     try {
-      this.triggerBuffer = await this.ctx.decodeAudioData(triggerSource);
-      audioTrace("engine: loadTrigger done, duration=", this.triggerBuffer.duration);
+      const buffers = await Promise.all(
+        triggerSources.map((s) => this.ctx.decodeAudioData(s)),
+      );
+      this.triggerBuffers = buffers;
+      this._loadedTriggerSources = triggerSources.slice();
+      audioTrace("engine: loadTriggers done, decoded=", buffers.length);
       /* istanbul ignore next — decodeAudioData failure path; on-device defense. */
     } catch (e) {
-      audioWarn("engine: loadTrigger FAILED", e);
+      audioWarn("engine: loadTriggers FAILED", e);
       throw e;
     }
   }
@@ -228,7 +257,9 @@ export class AudioEngine {
   // ── Burst scheduler ──────────────────────────────────────────────────────
 
   startTriggerScheduler(config: TriggerSchedulerConfig): void {
-    if (!this.triggerBuffer) throw new Error('trigger buffer not loaded');
+    if (this.triggerBuffers.length === 0) {
+      throw new Error('trigger buffer not loaded');
+    }
     this._config = { ...config };
     this._schedulerPaused = false;
     this._scheduleNextBurst();
@@ -247,15 +278,27 @@ export class AudioEngine {
   }
 
   private _fireBurst(): void {
-    if (this._schedulerPaused || !this._config || !this.triggerBuffer) return;
+    if (
+      this._schedulerPaused ||
+      !this._config ||
+      this.triggerBuffers.length === 0
+    ) {
+      return;
+    }
 
     const cfg = this._config;
     const now = this.ctx.currentTime;
     const fadeInSec = cfg.fadeInMs / 1000;
 
+    // v1.1.0: pick a random buffer from the loaded set so a session rotates
+    // between the user's selected triggers (and their variations).
+    const buffer = this.triggerBuffers[
+      Math.floor(Math.random() * this.triggerBuffers.length)
+    ];
+
     // Create a fresh non-looping source node for this burst.
     const src = this.ctx.createBufferSource();
-    src.buffer = this.triggerBuffer;
+    src.buffer = buffer;
     src.loop = false;
     src.connect(this.triggerGain);
 
@@ -283,6 +326,12 @@ export class AudioEngine {
 
     freezeGain(this.triggerGain.gain, this.ctx);
     this.triggerGain.gain.linearRampToValueAtTime(SILENCE_GAIN, now + fadeOutSec);
+
+    // Notify the screen layer that a burst just ended so it can show the
+    // post-trigger grounding caption (v1.1.0). Fire AFTER the fade is
+    // scheduled but BEFORE the cleanup-then-next-burst pipeline, so the
+    // caption appears as the sound recedes.
+    cfg.onBurstEnd?.();
 
     // Stop the source node after the fade completes, then schedule next burst.
     this._burstCleanupTimer = setTimeout(() => {

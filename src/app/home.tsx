@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
 import { Icon } from "@/components/common/Icon";
 import { useSwipeForward } from "@/hooks/useSwipeForward";
+import { getDailyAffirmation } from "@/lib/content/content";
 import { useDisplayName } from "@/lib/ui/displayName";
 import { useSettingsSheetStore } from "@/lib/storage/settings-sheet-store";
 import { getSessionsCompleted, setOnboardedAt } from "@/lib/storage/storage";
@@ -25,11 +26,15 @@ import { fonts, tokens } from "@/lib/ui/tokens";
  *  crisis affordance. */
 export default function Home() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { name } = useDisplayName();
   const band = getTimeOfDay();
 
   const [sessionsCount, setSessionsCount] = useState(0);
+
+  // Daily affirmation — same quote whole day, rotates at local midnight.
+  // Pre-clinical review; pending Hirschman pass before user-facing.
+  const affirmation = getDailyAffirmation(i18n.language);
 
   // Refresh on focus so the count updates after a session completes
   // (/after increments and routes back here).
@@ -48,8 +53,11 @@ export default function Home() {
     }, []),
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleBegin = () => router.push("/ready" as any);
+  // Begin a session goes through Setup (scene + sound pick) every time, so
+  // the user explicitly chooses what they're practicing on this run. Setup's
+  // "Ready" pushes /ready (the preview with scene image), which then goes to
+  // /preparing → /session.
+  const handleBegin = () => router.push("/setup");
   const swipeGesture = useSwipeForward(handleBegin);
 
   // Pluralization is i18next's job; we still need a small helper for the
@@ -93,9 +101,38 @@ export default function Home() {
               : t(`home.greetingNoName.${band}`)}
           </Text>
 
+          {/* Daily affirmation — clinical-team review pending (see content.ts).
+              Sits below the greeting in muted color so it reads as "today's
+              quiet thought," not a load-bearing UI element. */}
+          <View style={{ marginTop: 28 }}>
+            <Text
+              style={{
+                color: tokens.textMute,
+                fontFamily: fonts.body,
+                fontSize: 13,
+                letterSpacing: 1.6,
+                textTransform: "uppercase",
+                marginBottom: 10,
+              }}
+            >
+              {t("home.thoughtLabel")}
+            </Text>
+            <Text
+              style={{
+                color: tokens.text,
+                fontFamily: fonts.body,
+                fontSize: 17,
+                lineHeight: 26,
+                opacity: 0.85,
+              }}
+            >
+              {affirmation}
+            </Text>
+          </View>
+
           {/* Sessions-completed counter — the only progress surface we ship
               in v1.1.0. Trend/streak/minutes are backlog. */}
-          <View style={{ marginTop: 36 }}>
+          <View style={{ marginTop: 32 }}>
             <Text
               style={{
                 color: tokens.textMute,
@@ -148,37 +185,10 @@ export default function Home() {
             </Pressable>
           </View>
 
-          <Pressable
-            onPress={() => router.push("/calming")}
-            hitSlop={8}
-            style={{ alignSelf: "center", paddingTop: 8, paddingBottom: 4 }}
-          >
-            <Text
-              style={{
-                color: tokens.textMute,
-                fontFamily: fonts.body,
-                fontSize: 14,
-              }}
-            >
-              {t("home.needAMoment")}
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => router.push("/setup")}
-            hitSlop={8}
-            style={{ alignSelf: "center", paddingVertical: 14 }}
-          >
-            <Text
-              style={{
-                color: tokens.textMute,
-                fontFamily: fonts.body,
-                fontSize: 14,
-              }}
-            >
-              {t("home.change")}
-            </Text>
-          </Pressable>
+          {/* "Change what's planned" intentionally NOT shown on Home — Setup
+              is part of the Begin-a-session flow now, not a preferences side
+              trip. The link stays on /ready for users mid-flow who want to
+              reconfigure before starting. */}
         </View>
       </GestureDetector>
     </SafeAreaView>

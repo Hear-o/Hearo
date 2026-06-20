@@ -1,12 +1,10 @@
 # HearO audio + scene asset deliverables
 
-Single source of truth for what we have, what we need, and what to send to Roy (scene visuals + ambient sourcing) and to Dudi (voice narration). Edit this file as the canonical request — link it in the Slack/email when sending out.
+Single source of truth for what we have, what we need, and what to send to Roy. Edit this file as the canonical request — link it in the Slack/email when sending out.
 
-Owners:
-- **Roy** — scene visuals (stills, scene-card images), background ambient tracks per scenario, calming overlay track.
-- **Dudi** — voice narration recordings in EN + HE following the scripts below.
+Owner: **Roy** runs the full asset pipeline — scene visuals (stills + card crops), ambient soundscapes per scenario, trigger sound effects, voice narration recordings (EN + HE), and the calming overlay tracks.
 
-Last updated: 2026-06-19 (v1.0.10 planning).
+Last updated: 2026-06-20 (v1.1.x — Roy delivered new triggers + calming tracks).
 
 ---
 
@@ -37,7 +35,7 @@ Last updated: 2026-06-19 (v1.0.10 planning).
 
 ---
 
-## 2. v1.0.9 scripts (reference — Dudi already recorded these, here for reuse with new scenes)
+## 2. v1.0.9 scripts (reference — Roy already recorded these, here for reuse with new scenes)
 
 Each scene has the same 3-stanza structure:
 - **Opening** — sets the scene, calms breath
@@ -55,7 +53,7 @@ beach.calming   EN  "That sound is part of the day. / You're still by the water.
 
 (Park, cafe, road follow the same pattern — see `src/lib/content/content.ts` for the full text.)
 
-The recordings Dudi delivered are 30 s long per clip, used as the disclaimer/mid-session/wind-down voice. New scenes below follow the **exact same pattern** so the recording cadence and timing matches.
+The recordings Roy delivered are 30 s long per clip, used as the disclaimer/mid-session/wind-down voice. New scenes below follow the **exact same pattern** so the recording cadence and timing matches.
 
 ---
 
@@ -64,7 +62,7 @@ The recordings Dudi delivered are 30 s long per clip, used as the disclaimer/mid
 For each scenario we need:
 - **Visuals** (Roy) — one full-bleed scene still (the background on `/session` + `/preparing`), preferably warm and slightly abstract — soft focus, not photo-real.
 - **Ambient track** (Roy) — 4 variations, 30 s loops, seamless start/end. Tone: lived-in but not overwhelming, matches the existing 4 scenes' "soundscape, not music" feel.
-- **Voice narration** (Dudi) — 3 stanzas × EN+HE, scripts below.
+- **Voice narration** (Roy) — 3 stanzas × EN+HE, scripts below.
 
 ### 3a. `party` — House party, evening
 - **Label**: Party, evening / מסיבה, ערב
@@ -177,7 +175,7 @@ When the user taps "Need a moment", the session pauses and a soothing audio + bo
 
 After each trigger burst plays, we want to walk the user through a quick grounding step (box-breathing or 5-4-3-2-1). Two delivery options, undecided:
 
-### Option (a) — Voice narration (needs Dudi)
+### Option (a) — Voice narration (needs Roy)
 Short scripts (~10 s each) played after each trigger. Scene-agnostic.
 
 ```
@@ -217,18 +215,24 @@ If Roy delivers the scene stills as transparent PNGs with both full-bleed + fram
 
 ---
 
-## 9. Recap of asks (one-pager for sending)
+## 9. Recap of asks — current state of the world
 
-**To Roy:**
-1. 5 new scene stills (party, bar, train, bus, supermarket) — full-bleed + framed versions.
-2. 4 ambient variations × 5 scenes = 20 ambient tracks.
-3. 9 new trigger sound assets (party-shout, glass-breaking, train-horn, brake-squeal, station-announcement, bus-horn, brake-hiss, checkout-beep, pa-announcement) — 3–4 variations each.
-4. 1 calming-overlay soothing track.
+**Delivered by Roy so far (v1.1.x):**
+1. ✅ 9 new trigger sounds wired (party-shout, glass-breaking, train-horn, brake-squeal, station-announcement, bus-horn, brake-hiss, checkout-beep, pa-announcement) — variation counts 1–4 per sound.
+2. ✅ Trigger illustrations for all 15 wired sounds (the 6 originals + the 9 new).
+3. ✅ Additional variation takes for the 6 original triggers (motorcycle, helicopter, fireworks, siren, car-horn, door-slam) — appended as 5+ to existing.
+4. ✅ Audio for previously-on-disk-but-unwired sounds (baby-crying, dog, restaurant) — wired alongside Roy's new takes.
+5. ✅ 5 calming-overlay tracks in `assets/sounds/calming/` (warm-piano, floating-pads, neo-classical, distant-water-air, soft-grounding-wash). **`neo-classical` is now wired** as the background loop under the "Need a moment" screen (v1.1.x).
 
-**To Dudi:**
-1. 5 scenarios × 3 stanzas × 2 languages = 30 voice clips (scripts in §3 above).
-2. (Pending Omer's call) 4 grounding stanzas × 2 languages = 8 voice clips for post-trigger narration (scripts in §6a).
+**Still owed by Roy:**
+1. **5 new scene stills** (party, bar, train, bus, supermarket) — full-bleed + framed-card versions.
+2. **20 ambient soundscape tracks** = 4 variations × 5 new scenes (party, bar, train, bus, supermarket). 30 s seamless loops each.
+3. **30 voice narration recordings** = 5 new scenarios × 3 stanzas (opening/during/calming) × 2 languages (EN + HE). Scripts already drafted in §3 above.
+4. **Trigger illustrations for baby-crying / dog / restaurant** — the 3 sounds we wired but don't have Roy art for yet.
+5. **Variations of the calming tracks** — currently 1 file each for warm-piano + floating-pads (Roy's scene-mapped picks). Need 3–4 variations of each so the calming overlay loop has variety. Same spec as the originals.
+6. **Calming-protocol voice narration** — 3 narrative steps (validation / body-grounding / close) × EN + HE = 6 clips. The 5-step protocol on the "Need a moment" screen is text-only today; with the neo-classical loop now playing underneath, voice on top closes the loop. Scripts in §7a of the Roy brief. Box-breathing + 5-4-3-2-1 stay text-only by design.
+7. **(Pending Omer's call) Post-trigger grounding voice clips** — 4 short stanzas × EN + HE = 8 clips. Scripts in §6a. Engine hook is wired; we just need the audio.
 
-**Pending product decisions before sending:**
-- §6: voice or visual for post-trigger grounding?
-- §7: how much more in-session narration to commission?
+**Pending product decisions:**
+- §6: voice or visual-only for post-trigger grounding? (If voice → adds #6 above to Roy's queue.)
+- §7: how much more in-session narration to commission beyond the standard intro/mid/end per scene?

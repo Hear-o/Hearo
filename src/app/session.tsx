@@ -24,18 +24,19 @@ import { ensureAssets, AssetManifest } from "@/lib/audio/asset-cache";
 
 const VALID_SCENES: SceneKey[] = ["beach", "park", "cafe", "road"];
 
-// Duration of AMBIENT_FADE_IN before advancing to ADAPTIVE_LOOP.
+// AMBIENT_FADE_IN is the first 20% of the session — long enough at every
+// duration (≥36s at 3 min) for the pulse monitor to collect a stable baseline
+// (sampling every 250ms = ≥144 samples). ADAPTIVE_LOOP is the remaining 80%.
+// This 1:4 split preserves the ratio from the pre-picker default (2 min : 8 min).
 // TODO(supabase): session_programs table — per-scene timing config.
-const AMBIENT_FADE_IN_MS = 2 * 60 * 1000; // 2 minutes
+const AMBIENT_FADE_IN_RATIO = 0.2;
 
-// Total ADAPTIVE_LOOP duration.
-const ADAPTIVE_LOOP_MS = 8 * 60 * 1000; // 8 minutes
-
-// Used by the in-session progress bar (elapsed / TOTAL_SESSION_MS).
-// WIND_DOWN is a few seconds and not user-facing, so we don't include it
-// in the progress bar — by the time the bar would visually fill the last
-// 1%, the session has already routed to /after.
-const TOTAL_SESSION_MS = AMBIENT_FADE_IN_MS + ADAPTIVE_LOOP_MS;
+function deriveSessionTiming(durationMinutes: number) {
+  const totalMs = durationMinutes * 60 * 1000;
+  const ambientMs = Math.round(totalMs * AMBIENT_FADE_IN_RATIO);
+  const adaptiveMs = totalMs - ambientMs;
+  return { totalMs, ambientMs, adaptiveMs };
+}
 
 function formatElapsed(ms: number) {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -148,6 +149,16 @@ export default function Session() {
   const consentedSounds = useSessionStore((s) => s.sounds);
   const setLastEndedBy = useSessionStore((s) => s.setLastEndedBy);
   const isCrisisOpen = useCrisisStore((s) => s.isOpen);
+
+  // Lock the duration once at mount — a Setup change mid-session must not
+  // retroactively shorten/lengthen the timers. useRef captures the live store
+  // value at mount and never re-reads.
+  const sessionTimingRef = useRef(
+    deriveSessionTiming(useSessionStore.getState().durationMinutes),
+  );
+  const AMBIENT_FADE_IN_MS = sessionTimingRef.current.ambientMs;
+  const ADAPTIVE_LOOP_MS = sessionTimingRef.current.adaptiveMs;
+  const TOTAL_SESSION_MS = sessionTimingRef.current.totalMs;
 
   // ── Machine state ──────────────────────────────────────────────────────
 

@@ -11,12 +11,24 @@ export type { SceneKey, SoundKey };
  *  row in a session-records table. */
 export type SessionEndedBy = "natural" | "manual-exit" | "calming-protocol";
 
+/** Total session length in minutes. 3/5/7 are the only valid choices today —
+ *  picked at Setup, scaled proportionally across AMBIENT_FADE_IN + ADAPTIVE_LOOP.
+ *  See session.tsx for the split math. */
+export type SessionDurationMinutes = 3 | 5 | 7;
+
+/** Default length when the user lands at Setup without picking. 5 was chosen
+ *  as the middle option — long enough for baseline lock-in + meaningful
+ *  exposure, short enough not to feel like a commitment. */
+const DEFAULT_DURATION_MINUTES: SessionDurationMinutes = 5;
+
 type SessionState = {
   scene: SceneKey;
   sounds: SoundKey[];
+  durationMinutes: SessionDurationMinutes;
   lastEndedBy: SessionEndedBy | null;
   setScene: (scene: SceneKey) => void;
   toggleSound: (sound: SoundKey) => void;
+  setDurationMinutes: (minutes: SessionDurationMinutes) => void;
   setLastEndedBy: (endedBy: SessionEndedBy) => void;
 };
 
@@ -25,6 +37,7 @@ const defaults = getDefaultPreferences();
 export const useSessionStore = create<SessionState>((set) => ({
   scene: defaults.scene,
   sounds: defaults.sounds,
+  durationMinutes: DEFAULT_DURATION_MINUTES,
   lastEndedBy: null,
   // v1.1.x: when the scene changes, drop any selected sounds that no longer
   // fit the new scene's triggerCandidates list. Keeps Setup's selection in
@@ -44,5 +57,6 @@ export const useSessionStore = create<SessionState>((set) => ({
         ? state.sounds.filter((s) => s !== sound)
         : [...state.sounds, sound],
     })),
+  setDurationMinutes: (minutes) => set({ durationMinutes: minutes }),
   setLastEndedBy: (endedBy) => set({ lastEndedBy: endedBy }),
 }));

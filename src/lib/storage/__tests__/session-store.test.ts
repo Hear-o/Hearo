@@ -12,6 +12,7 @@ describe("session-store", () => {
     useSessionStore.setState({
       scene: defaults.scene,
       sounds: defaults.sounds,
+      durationMinutes: 5,
       lastEndedBy: null,
     });
   });
@@ -43,6 +44,20 @@ describe("session-store", () => {
     useSessionStore.setState({ sounds: ["siren", "motorcycle"] });
     useSessionStore.getState().toggleSound("siren");
     expect(useSessionStore.getState().sounds).toEqual(["motorcycle"]);
+  });
+
+  describe("durationMinutes", () => {
+    it("defaults to 5 minutes (middle of 3/5/7)", () => {
+      expect(useSessionStore.getState().durationMinutes).toBe(5);
+    });
+
+    it("setDurationMinutes updates the value", () => {
+      useSessionStore.getState().setDurationMinutes(7);
+      expect(useSessionStore.getState().durationMinutes).toBe(7);
+
+      useSessionStore.getState().setDurationMinutes(3);
+      expect(useSessionStore.getState().durationMinutes).toBe(3);
+    });
   });
 
   // B-03: telemetry seam for session-end pathway distinction. Today this

@@ -8,8 +8,16 @@ jest.mock("@/lib/integrations/pulse", () => ({
 import { usePulse } from "@/lib/integrations/pulse";
 const mockUsePulse = jest.mocked(usePulse);
 
-function setPulse(value: number) {
-  mockUsePulse.mockReturnValue({ value, source: "mock" });
+function setPulse(value: number, source: "mock" | "real" = "mock") {
+  mockUsePulse.mockReturnValue({ value, source });
+}
+
+// Spike-detection tests must run against a "real" pulse source. With "mock"
+// (the default), usePulseMonitor short-circuits the spike-detection effect —
+// see usePulseMonitor.ts for the why (mock generator parks the user above
+// the spike threshold permanently and there's no normalize path).
+function setRealPulse(value: number) {
+  setPulse(value, "real");
 }
 
 interface HookOptions {
@@ -106,7 +114,7 @@ describe("usePulseMonitor", () => {
   });
 
   it("emits spike after 8 s of sustained elevation", () => {
-    setPulse(80);
+    setRealPulse(80);
     const opts = makeOptions("AMBIENT_FADE_IN");
 
     const { result, rerender } = renderHook<PulseMonitorResult, HookOptions>(
@@ -118,13 +126,13 @@ describe("usePulseMonitor", () => {
     rerender({ ...opts, sessionState: "ADAPTIVE_LOOP" });
 
     // Raise HR above threshold — effect fires, records spikeStartedAt.
-    setPulse(92);
+    setRealPulse(92);
     rerender({ ...opts, sessionState: "ADAPTIVE_LOOP" });
 
     // Advance 8 s, then deliver a new BPM tick (jitter as in production) so
     // the effect re-runs and can observe that 8 s have elapsed.
     act(() => { jest.advanceTimersByTime(8000); });
-    setPulse(93);
+    setRealPulse(93);
     rerender({ ...opts, sessionState: "ADAPTIVE_LOOP" });
 
     expect(opts.onSpike).toHaveBeenCalledTimes(1);
@@ -132,7 +140,7 @@ describe("usePulseMonitor", () => {
   });
 
   it("normalization clears isSpiked and calls onNormalized", () => {
-    setPulse(80);
+    setRealPulse(80);
     const opts = makeOptions("AMBIENT_FADE_IN");
 
     const { result, rerender } = renderHook<PulseMonitorResult, HookOptions>(
@@ -144,15 +152,15 @@ describe("usePulseMonitor", () => {
     rerender({ ...opts, sessionState: "ADAPTIVE_LOOP" });
 
     // Trigger spike (need a BPM tick after 8 s to re-run the effect).
-    setPulse(92);
+    setRealPulse(92);
     rerender({ ...opts, sessionState: "ADAPTIVE_LOOP" });
     act(() => { jest.advanceTimersByTime(8000); });
-    setPulse(93);
+    setRealPulse(93);
     rerender({ ...opts, sessionState: "ADAPTIVE_LOOP" });
     expect(opts.onSpike).toHaveBeenCalledTimes(1);
 
     // Drop below normalize threshold: 80 * 0.90 = 72.
-    setPulse(71);
+    setRealPulse(71);
     rerender({ ...opts, sessionState: "ADAPTIVE_LOOP" });
 
     expect(opts.onNormalized).toHaveBeenCalledTimes(1);
@@ -160,7 +168,7 @@ describe("usePulseMonitor", () => {
   });
 
   it("re-emits spike after normalization if HR elevates again for 8 s", () => {
-    setPulse(80);
+    setRealPulse(80);
     const opts = makeOptions("AMBIENT_FADE_IN");
 
     const { rerender } = renderHook<PulseMonitorResult, HookOptions>(
@@ -172,21 +180,21 @@ describe("usePulseMonitor", () => {
     rerender({ ...opts, sessionState: "ADAPTIVE_LOOP" });
 
     // First spike cycle.
-    setPulse(92);
+    setRealPulse(92);
     rerender({ ...opts, sessionState: "ADAPTIVE_LOOP" });
     act(() => { jest.advanceTimersByTime(8000); });
-    setPulse(93);
+    setRealPulse(93);
     rerender({ ...opts, sessionState: "ADAPTIVE_LOOP" });
 
     // Normalize.
-    setPulse(71);
+    setRealPulse(71);
     rerender({ ...opts, sessionState: "ADAPTIVE_LOOP" });
 
     // Second spike cycle.
-    setPulse(92);
+    setRealPulse(92);
     rerender({ ...opts, sessionState: "ADAPTIVE_LOOP" });
     act(() => { jest.advanceTimersByTime(8000); });
-    setPulse(93);
+    setRealPulse(93);
     rerender({ ...opts, sessionState: "ADAPTIVE_LOOP" });
 
     expect(opts.onSpike).toHaveBeenCalledTimes(2);
@@ -218,7 +226,7 @@ describe("usePulseMonitor", () => {
   });
 
   it("spikes for chronic high baseline when reportManualDistress is also called", () => {
-    setPulse(95);
+    setRealPulse(95);
     const opts = makeOptions("AMBIENT_FADE_IN");
 
     const { result, rerender } = renderHook<PulseMonitorResult, HookOptions>(
@@ -230,17 +238,17 @@ describe("usePulseMonitor", () => {
     rerender({ ...opts, sessionState: "ADAPTIVE_LOOP" });
 
     // HR above threshold.
-    setPulse(110);
+    setRealPulse(110);
     rerender({ ...opts, sessionState: "ADAPTIVE_LOOP" });
     act(() => { jest.advanceTimersByTime(8000); });
-    setPulse(111);
+    setRealPulse(111);
     rerender({ ...opts, sessionState: "ADAPTIVE_LOOP" });
     expect(opts.onSpike).not.toHaveBeenCalled();
 
     // Manual distress provides the second source.
     act(() => { result.current.reportManualDistress(); });
     // New BPM tick causes the spike-detection effect to re-run and complete the dual-source check.
-    setPulse(112);
+    setRealPulse(112);
     rerender({ ...opts, sessionState: "ADAPTIVE_LOOP" });
 
     expect(opts.onSpike).toHaveBeenCalledTimes(1);

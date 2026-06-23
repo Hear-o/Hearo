@@ -141,6 +141,88 @@ describe("AudioEngine / burst scheduler", () => {
     });
     expect(() => engine.stopTriggerScheduler()).not.toThrow();
   });
+
+  // v1.1.3: pre-burst heads-up callback.
+  it("fires onBurstApproaching leadInMs before each burst", async () => {
+    const engine = await loadedEngine();
+    const onBurstApproaching = jest.fn();
+    engine.startTriggerScheduler({ ...CFG, leadInMs: 400, onBurstApproaching });
+
+    // Lead-in should fire at (intervalMinMs - leadInMs) = 600ms in.
+    jest.advanceTimersByTime(600);
+    expect(onBurstApproaching).toHaveBeenCalledTimes(1);
+    expect(engine.isBurstActive).toBe(false);
+
+    // Burst still fires at the original delay (400ms later).
+    jest.advanceTimersByTime(400);
+    expect(engine.isBurstActive).toBe(true);
+  });
+
+  it("fires onBurstApproaching immediately when interval is shorter than leadInMs", async () => {
+    const engine = await loadedEngine();
+    const onBurstApproaching = jest.fn();
+    // leadInMs > intervalMinMs → clamped to delay-0, fires at t=0.
+    engine.startTriggerScheduler({ ...CFG, leadInMs: 5000, onBurstApproaching });
+
+    jest.advanceTimersByTime(0);
+    expect(onBurstApproaching).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not fire onBurstApproaching when leadInMs is 0 or omitted", async () => {
+    const engine = await loadedEngine();
+    const onBurstApproaching = jest.fn();
+    engine.startTriggerScheduler({ ...CFG, leadInMs: 0, onBurstApproaching });
+    jest.advanceTimersByTime(CFG.intervalMinMs + 50);
+    expect(onBurstApproaching).not.toHaveBeenCalled();
+  });
+
+  it("clears the lead-in timer on stopTriggerScheduler", async () => {
+    const engine = await loadedEngine();
+    const onBurstApproaching = jest.fn();
+    engine.startTriggerScheduler({ ...CFG, leadInMs: 400, onBurstApproaching });
+    engine.stopTriggerScheduler();
+    jest.advanceTimersByTime(2_000);
+    expect(onBurstApproaching).not.toHaveBeenCalled();
+  });
+});
+
+// v1.1.3: ambient duck during burst — keeps the scene audibly present
+// underneath each practice-moment instead of being drowned by it.
+describe("AudioEngine / ambient duck during burst", () => {
+  it("ducks ambient on burst start and restores on burst end", async () => {
+    const engine = await loadedEngine();
+    const ambientGain = ctx().gains[0];
+    // Lock pre-duck level (default is 1.0 from ctor — but explicit setAmbientGain
+    // gives us a ramp call we can inspect cleanly).
+    engine.setAmbientGain(1.0);
+    ambientGain.gain.linearRampToValueAtTime.mockClear();
+
+    engine.startTriggerScheduler(CFG);
+    jest.advanceTimersByTime(CFG.intervalMinMs); // burst fires → ambient should duck
+
+    // Last ambient ramp should target the ducked level (1.0 × -3 dB ≈ 0.708).
+    const duckedTarget = ambientGain.gain.linearRampToValueAtTime.mock.calls.at(-1)?.[0];
+    expect(duckedTarget).toBeCloseTo(dBToGain(-3), 5);
+
+    // Burst ends — ambient should ramp back up to the pre-duck level.
+    jest.advanceTimersByTime(CFG.fadeInMs + CFG.burstDurationMs);
+    const restoredTarget = ambientGain.gain.linearRampToValueAtTime.mock.calls.at(-1)?.[0];
+    expect(restoredTarget).toBe(1.0);
+  });
+
+  it("restores ambient gain when a burst is hard-stopped", async () => {
+    const engine = await loadedEngine();
+    const ambientGain = ctx().gains[0];
+    engine.setAmbientGain(1.0);
+
+    engine.startTriggerScheduler(CFG);
+    jest.advanceTimersByTime(CFG.intervalMinMs); // burst fires → ducked
+    ambientGain.gain.linearRampToValueAtTime.mockClear();
+
+    engine.stopTriggerScheduler(); // hard-stop path
+    const restoredTarget = ambientGain.gain.linearRampToValueAtTime.mock.calls.at(-1)?.[0];
+    expect(restoredTarget).toBe(1.0);
+  });
 });
 
 describe("AudioEngine / live config setters", () => {

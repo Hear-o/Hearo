@@ -47,31 +47,36 @@ function formatElapsed(ms: number) {
 
 // dB gain ceiling per trigger sound type (applied at slider=1.0).
 // 0 dB = gain 1.0 = play at recorded level. Negative values attenuate.
-// TODO(supabase): calibrate per sound key once clinical review is complete.
+//
+// v1.1.3: the default ceiling moved from 0 dB to -9 dB after on-device
+// reports that bursts at recorded peak were drowning the ambient bed —
+// the practice-moment felt like a stadium PA cutting through silence
+// instead of a real-world surprise inside the scene. -9 dB roughly
+// halves perceived loudness; combined with the new ambient-duck during
+// burst, the trigger still pops as the event-of-the-moment but the scene
+// stays present underneath. Per-sound calibration TBD with clinical
+// review; until then everything is uniform.
 const TRIGGER_CEILING_DB: Record<string, number> = {
-  motorcycle: 0,
-  helicopter: 0,
-  fireworks: 0,
-  siren: 0,
-  "car-horn": 0,
-  "door-slam": 0,
-  // v1.1.x — new triggers default to 0 dB (no attenuation) until clinical
-  // review tunes per-sound ceilings. Roy delivery is loudness-normalized to
-  // similar levels as the originals; if any feels too hot we'll dial in.
-  "party-shout": 0,
-  "glass-breaking": 0,
-  "train-horn": 0,
-  "brake-squeal": 0,
-  "station-announcement": 0,
-  "bus-horn": 0,
-  "brake-hiss": 0,
-  "checkout-beep": 0,
-  "pa-announcement": 0,
-  "baby-crying": 0,
-  dog: 0,
-  restaurant: 0,
+  motorcycle: -9,
+  helicopter: -9,
+  fireworks: -9,
+  siren: -9,
+  "car-horn": -9,
+  "door-slam": -9,
+  "party-shout": -9,
+  "glass-breaking": -9,
+  "train-horn": -9,
+  "brake-squeal": -9,
+  "station-announcement": -9,
+  "bus-horn": -9,
+  "brake-hiss": -9,
+  "checkout-beep": -9,
+  "pa-announcement": -9,
+  "baby-crying": -9,
+  dog: -9,
+  restaurant: -9,
 };
-const DEFAULT_CEILING_DB = 0;
+const DEFAULT_CEILING_DB = -9;
 
 // Burst scheduler defaults.
 // TODO(supabase): session_programs table — per-scene/per-sound timing config.
@@ -83,6 +88,10 @@ const TRIGGER_INTERVAL_MAX_MS = 30_000; // maximum gap (randomized)
 const TRIGGER_BURST_DURATION_MS = 8_000; // time at peak gain per burst
 const TRIGGER_FADE_IN_MS = 1_500;        // onset ramp
 const TRIGGER_FADE_OUT_MS = 1_500;       // offset ramp
+// How far before each burst the lead-in heads-up caption should appear.
+// v1.1.3: gives the brain a beat to anticipate the practice-moment instead
+// of being startled by it cold.
+const TRIGGER_LEAD_IN_MS = 4_000;
 
 // How long the "back to the moment" caption stays on screen after a burst
 // fades out. Tuned so the user finishes one breath cycle while reading it,
@@ -180,6 +189,11 @@ export default function Session() {
   // the "back to the moment" caption for POST_TRIGGER_CAPTION_MS afterwards.
   // Set from the engine's onBurstEnd callback in the ADAPTIVE_LOOP effect.
   const [lastBurstEndedAt, setLastBurstEndedAt] = useState<number | null>(null);
+  // Timestamp of the most recent burst lead-in. Drives the pre-burst grounding
+  // caption: from this moment until the burst actually starts (~TRIGGER_LEAD_IN_MS
+  // later) the screen shows the calming/heads-up text instead of the "during" line.
+  // Cleared on burst end so subsequent bursts get a fresh window.
+  const [lastBurstApproachingAt, setLastBurstApproachingAt] = useState<number | null>(null);
   // Manual distress countdown (seconds remaining, null when not active).
   const [manualCountdown, setManualCountdown] = useState<number | null>(null);
 
@@ -380,11 +394,20 @@ export default function Session() {
           fadeInMs: TRIGGER_FADE_IN_MS,
           fadeOutMs: TRIGGER_FADE_OUT_MS,
           peakGain: dBToGain(minCeilingDb),
+          leadInMs: TRIGGER_LEAD_IN_MS,
+          onBurstApproaching: () => {
+            // Surface the pre-burst grounding caption a few seconds before
+            // the trigger fades in — gives the user time to anticipate.
+            // Voice narration for this moment is TODO(roy).
+            setLastBurstApproachingAt(Date.now());
+          },
           onBurstEnd: () => {
             // Surface the post-trigger grounding caption for ~10s. Voice
             // narration for this moment is TODO(roy) — when those clips
             // land we'll also queue an audio play here.
             setLastBurstEndedAt(Date.now());
+            // Close the lead-in window — the post-burst caption takes over.
+            setLastBurstApproachingAt(null);
           },
         });
         timerId = setTimeout(() => {
@@ -572,16 +595,21 @@ export default function Session() {
   const isPostTrigger =
     lastBurstEndedAt !== null &&
     Date.now() - lastBurstEndedAt < POST_TRIGGER_CAPTION_MS;
+  // v1.1.3: pre-burst grounding window — open from onBurstApproaching until
+  // onBurstEnd clears it. We don't use a duration timeout here because the
+  // engine guarantees the window closes when the burst's fade-out completes.
+  const isApproachingTrigger = lastBurstApproachingAt !== null;
 
   const voiceText = useMemo(() => {
     if (machineState === "AMBIENT_FADE_IN" || machineState === "LOADING" || machineState === "DISCLAIMER") {
       return getVoiceScript(scene, "opening", i18n.language);
     }
     if (machineState === "ADAPTIVE_LOOP") {
-      // v1.1.0: show the "calming" grounding script in two cases — when the
-      // pulse spiked (existing behavior) OR for ~10s after every burst (new
-      // post-trigger caption). Otherwise the normal in-session "during" line.
-      if (isSpiked || isPostTrigger) {
+      // v1.1.0/1.1.3: show the "calming" grounding script in three cases —
+      // pulse spiked (existing), ~4s before each burst (new lead-in window),
+      // or ~10s after each burst (post-trigger caption). Otherwise the normal
+      // in-session "during" line.
+      if (isSpiked || isApproachingTrigger || isPostTrigger) {
         return getVoiceScript(scene, "calming", i18n.language);
       }
       return getVoiceScript(scene, "during", i18n.language);
@@ -590,7 +618,7 @@ export default function Session() {
     // elapsed is intentionally in the dep list — it's the heartbeat that
     // re-evaluates `isPostTrigger` each tick.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [machineState, scene, i18n.language, isSpiked, isPostTrigger, elapsed]);
+  }, [machineState, scene, i18n.language, isSpiked, isApproachingTrigger, isPostTrigger, elapsed]);
 
   const slow = machineState === "WIND_DOWN" || isSpiked;
   const sceneLabel = localize(getScene(scene).label, i18n.language);

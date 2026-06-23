@@ -33,6 +33,14 @@ export function dBToGain(dB: number): number {
   return Math.pow(10, dB / 20);
 }
 
+// v1.1.3: how much we duck the ambient bed while a trigger burst is playing.
+// -3 dB halves power without halving perceived loudness — the scene stays
+// audibly present so the trigger feels like an event INSIDE the scene rather
+// than a replacement for it. Combined with the lower trigger ceiling
+// (session.tsx DEFAULT_CEILING_DB = -9 dB), this gets us to a mix where the
+// burst pops above the scene without drowning it.
+const AMBIENT_DUCK_GAIN = dBToGain(-3);
+
 // Cancel any scheduled gain automation and freeze at the current instantaneous
 // value. cancelScheduledValues alone does NOT stop a mid-flight curve; we need
 // cancelAndHoldAtTime (or the setValueAtTime workaround if unavailable).
@@ -65,6 +73,15 @@ export interface TriggerSchedulerConfig {
   fadeOutMs: number;
   /** Peak linear gain for the trigger during a burst. Use dBToGain() from content. */
   peakGain: number;
+  /** How long before each burst starts the lead-in heads-up should fire (ms).
+   *  v1.1.3: gives the screen layer a window to switch its caption from the
+   *  in-session "during" text to a grounding heads-up like "a moment is
+   *  coming — stay with your breath". Default 4000ms. Set to 0 to disable. */
+  leadInMs?: number;
+  /** Optional: fired ~leadInMs before each burst's fade-in begins (v1.1.3).
+   *  Lets the screen layer present a heads-up caption / queue a lead-in voice
+   *  clip once Roy delivers those. */
+  onBurstApproaching?: () => void;
   /** Optional: fired when a burst's fade-out ramp completes (v1.1.0).
    *  Lets the screen layer present a "back to the moment" caption (and,
    *  once Roy delivers the grounding voice clip, queue it for playback). */
@@ -103,12 +120,16 @@ export class AudioEngine {
 
   private _config: TriggerSchedulerConfig | null = null;
   private _schedulerTimer: ReturnType<typeof setTimeout> | null = null;
+  private _leadInTimer: ReturnType<typeof setTimeout> | null = null;
   private _burstEndTimer: ReturnType<typeof setTimeout> | null = null;
   private _burstCleanupTimer: ReturnType<typeof setTimeout> | null = null;
   private _burstSource: AudioBufferSourceNode | null = null;
   private _burstActive = false;
   private _schedulerPaused = false;
   private _graceTimer: ReturnType<typeof setTimeout> | null = null;
+  // The ambient gain we duck DOWN from at burst start, restored at burst end.
+  // Captured per-burst so a user adjustment mid-session (rare) isn't clobbered.
+  private _ambientGainPreDuck: number | null = null;
 
   constructor() {
     this.ctx = new AudioContext();
@@ -274,6 +295,21 @@ export class AudioEngine {
   private _scheduleNextBurst(): void {
     if (this._schedulerPaused || !this._config) return;
     const delay = randomBetween(this._config.intervalMinMs, this._config.intervalMaxMs);
+
+    // Lead-in heads-up: fire `leadInMs` before the burst, so the screen layer
+    // gets a window to switch its caption / queue a pre-burst voice clip. If
+    // the random interval came in smaller than the lead-in window, fire the
+    // heads-up immediately (still better than no anticipation phase).
+    const leadInMs = this._config.leadInMs ?? 0;
+    if (leadInMs > 0 && this._config.onBurstApproaching) {
+      const leadInDelay = Math.max(0, delay - leadInMs);
+      const cb = this._config.onBurstApproaching;
+      this._leadInTimer = setTimeout(() => {
+        this._leadInTimer = null;
+        cb();
+      }, leadInDelay);
+    }
+
     this._schedulerTimer = setTimeout(() => this._fireBurst(), delay);
   }
 
@@ -307,6 +343,17 @@ export class AudioEngine {
     this.triggerGain.gain.setValueAtTime(SILENCE_GAIN, now);
     this.triggerGain.gain.linearRampToValueAtTime(cfg.peakGain, now + fadeInSec);
 
+    // Duck the ambient bed in parallel with the trigger ramp so the scene
+    // recedes (but stays audible) while the practice-moment plays. Restored
+    // on burst end. Capturing pre-duck value here means setAmbientGain calls
+    // between bursts don't get clobbered when we restore.
+    this._ambientGainPreDuck = this.ambientGain.gain.value;
+    freezeGain(this.ambientGain.gain, this.ctx);
+    this.ambientGain.gain.linearRampToValueAtTime(
+      this._ambientGainPreDuck * AMBIENT_DUCK_GAIN,
+      now + fadeInSec,
+    );
+
     src.start(now);
     this._burstSource = src;
     this._burstActive = true;
@@ -326,6 +373,19 @@ export class AudioEngine {
 
     freezeGain(this.triggerGain.gain, this.ctx);
     this.triggerGain.gain.linearRampToValueAtTime(SILENCE_GAIN, now + fadeOutSec);
+
+    // Restore the ambient bed in parallel with the trigger fade-out — the
+    // scene rises back as the practice-moment recedes. Falls back to the
+    // current value (no-op) if _fireBurst didn't capture a pre-duck reading
+    // (defensive — shouldn't happen in practice).
+    if (this._ambientGainPreDuck !== null) {
+      freezeGain(this.ambientGain.gain, this.ctx);
+      this.ambientGain.gain.linearRampToValueAtTime(
+        this._ambientGainPreDuck,
+        now + fadeOutSec,
+      );
+      this._ambientGainPreDuck = null;
+    }
 
     // Notify the screen layer that a burst just ended so it can show the
     // post-trigger grounding caption (v1.1.0). Fire AFTER the fade is
@@ -347,10 +407,20 @@ export class AudioEngine {
       this._burstSource = null;
     }
     this._burstActive = false;
+    // Restore the ambient duck if a burst was hard-stopped (spike, interrupt,
+    // scheduler stop). _endBurst already restores via its smooth ramp and
+    // clears _ambientGainPreDuck, so this is a no-op on the natural path.
+    if (this._ambientGainPreDuck !== null) {
+      const now = this.ctx.currentTime;
+      freezeGain(this.ambientGain.gain, this.ctx);
+      this.ambientGain.gain.linearRampToValueAtTime(this._ambientGainPreDuck, now + 0.3);
+      this._ambientGainPreDuck = null;
+    }
   }
 
   private _clearSchedulerTimers(): void {
     if (this._schedulerTimer) { clearTimeout(this._schedulerTimer); this._schedulerTimer = null; }
+    if (this._leadInTimer) { clearTimeout(this._leadInTimer); this._leadInTimer = null; }
     if (this._burstEndTimer) { clearTimeout(this._burstEndTimer); this._burstEndTimer = null; }
     if (this._burstCleanupTimer) { clearTimeout(this._burstCleanupTimer); this._burstCleanupTimer = null; }
   }

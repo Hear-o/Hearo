@@ -19,6 +19,8 @@ import {
   setOnboardedAt,
   getSessionsCompleted,
   incrementSessionsCompleted,
+  getLanguagePreference,
+  setLanguagePreference,
 } from "@/lib/storage/storage";
 
 // Tri-state semantics under test: `undefined` (never tried) vs `null` (tried,
@@ -310,5 +312,32 @@ describe("storage / sessions completed", () => {
   it("defends against a stored negative number (returns 0)", async () => {
     await AsyncStorage.setItem("hearo:sessionsCompleted", "-5");
     expect(await getSessionsCompleted()).toBe(0);
+  });
+});
+
+// HearO is Hebrew-first regardless of device locale — `null` means the user
+// has never explicitly chosen, the i18n init defaults to "he" in that case.
+describe("storage / language preference", () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it("returns null when no preference has been set (Hebrew default applies)", async () => {
+    expect(await getLanguagePreference()).toBeNull();
+  });
+
+  it("round-trips an explicit Hebrew choice", async () => {
+    await setLanguagePreference("he");
+    expect(await getLanguagePreference()).toBe("he");
+  });
+
+  it("round-trips an explicit English choice", async () => {
+    await setLanguagePreference("en");
+    expect(await getLanguagePreference()).toBe("en");
+  });
+
+  it("defends against a corrupt stored value (returns null)", async () => {
+    await AsyncStorage.setItem("hearo:languagePreference", "fr");
+    expect(await getLanguagePreference()).toBeNull();
   });
 });

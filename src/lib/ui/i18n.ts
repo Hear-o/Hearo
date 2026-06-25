@@ -1,6 +1,7 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
-import * as Localization from "expo-localization";
+
+import { getLanguagePreference } from "@/lib/storage/storage";
 
 const resources = {
   en: {
@@ -94,6 +95,10 @@ const resources = {
       settings: {
         title: "Settings",
         nameLabel: "Your name",
+        languageLabel: "Language",
+        languageHebrew: "עברית",
+        languageEnglish: "English",
+        languageRestartNote: "The app will restart to apply the new language.",
         open: "Open settings",
         dismiss: "Close settings",
       },
@@ -242,6 +247,10 @@ const resources = {
       settings: {
         title: "הגדרות",
         nameLabel: "השם שלך",
+        languageLabel: "שפה",
+        languageHebrew: "עברית",
+        languageEnglish: "English",
+        languageRestartNote: "האפליקציה תופעל מחדש כדי להחיל את השפה החדשה.",
         open: "פתח הגדרות",
         dismiss: "סגור הגדרות",
       },
@@ -298,16 +307,28 @@ const resources = {
   },
 } as const;
 
-const locales = Localization.getLocales();
-const deviceLanguage = locales[0]?.languageCode ?? "he";
-const initialLanguage = deviceLanguage === "en" ? "en" : "he";
-
+// HearO is Hebrew-first for Israeli combat veterans — the device locale is
+// intentionally NOT consulted here. Users on English-locale phones still get
+// Hebrew on launch; an opt-in toggle in Settings (storage.languagePreference)
+// applies any stored override at app start via applyStoredLanguage() below.
 i18n.use(initReactI18next).init({
   resources,
-  lng: initialLanguage,
+  lng: "he",
   fallbackLng: "he",
   interpolation: { escapeValue: false },
 });
 
 export const isRTL = () => i18n.language === "he";
+
+/** Read the persisted language preference and apply it if it differs from the
+ *  current language. No-op when the user has never explicitly switched — the
+ *  default "he" stays in place. Called once at app launch from _layout.tsx;
+ *  any subsequent Settings toggle reloads the app instead of relying on this. */
+export async function applyStoredLanguage(): Promise<void> {
+  const stored = await getLanguagePreference();
+  if (stored && stored !== i18n.language) {
+    await i18n.changeLanguage(stored);
+  }
+}
+
 export default i18n;

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Dimensions,
+  I18nManager,
   Platform,
   Pressable,
   ScrollView,
@@ -15,6 +16,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import * as Updates from "expo-updates";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -23,7 +25,11 @@ import {
   setSchedule,
 } from "@/lib/integrations/reminders";
 import { useSettingsSheetStore } from "@/lib/storage/settings-sheet-store";
-import { ReminderSchedule } from "@/lib/storage/storage";
+import {
+  LanguagePreference,
+  ReminderSchedule,
+  setLanguagePreference,
+} from "@/lib/storage/storage";
 import { persistDisplayName, useDisplayName } from "@/lib/ui/displayName";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
@@ -48,9 +54,34 @@ function formatTime(schedule: ReminderSchedule): string {
  *  useCrisisStore). The sheet is rendered globally from _layout.tsx so any
  *  screen can pop it open via the store's `open()` action. */
 export function SettingsSheet() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isOpen = useSettingsSheetStore((s) => s.isOpen);
   const close = useSettingsSheetStore((s) => s.close);
+  const [languageSwitching, setLanguageSwitching] = useState(false);
+
+  // Toggling the language requires a clean app restart: React Native's RTL
+  // layout direction (I18nManager.forceRTL) only takes effect on the next
+  // launch, and live-mixing LTR text with an RTL-laid-out screen produces
+  // glaringly broken UI. Persist the preference, flip the i18n + RTL flags,
+  // then reload via expo-updates so the app comes back up clean. In dev the
+  // reload may throw — we fall back to a stuck "restarting" state and ask
+  // the user to reopen the app manually via the system gesture.
+  async function handleLanguageChange(next: LanguagePreference) {
+    if (next === i18n.language || languageSwitching) return;
+    setLanguageSwitching(true);
+    try {
+      await setLanguagePreference(next);
+      await i18n.changeLanguage(next);
+      const shouldBeRTL = next === "he";
+      I18nManager.allowRTL(shouldBeRTL);
+      I18nManager.forceRTL(shouldBeRTL);
+      await Updates.reloadAsync();
+    } catch {
+      // Dev build (no Updates module wired) or reload race — leave the flag
+      // set so the next manual relaunch picks up the new preference.
+      setLanguageSwitching(false);
+    }
+  }
 
   const translateY = useSharedValue(SHEET_HEIGHT);
   const backdropOpacity = useSharedValue(0);
@@ -269,6 +300,80 @@ export function SettingsSheet() {
             }}
           >
             {t("setup.nameHint")}
+          </Text>
+
+          {/* Language */}
+          <View
+            style={{
+              width: 28,
+              height: 1,
+              backgroundColor: tokens.textMute,
+              opacity: 0.4,
+              marginTop: 28,
+              marginBottom: 20,
+            }}
+          />
+          <Text
+            style={{
+              color: tokens.textMute,
+              fontFamily: fonts.body,
+              fontSize: 13,
+              letterSpacing: 1.4,
+              textTransform: "uppercase",
+              marginBottom: 12,
+            }}
+          >
+            {t("settings.languageLabel")}
+          </Text>
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            {(["he", "en"] as const).map((lng) => {
+              const selected = i18n.language === lng;
+              const label =
+                lng === "he"
+                  ? t("settings.languageHebrew")
+                  : t("settings.languageEnglish");
+              return (
+                <Pressable
+                  key={lng}
+                  onPress={() => handleLanguageChange(lng)}
+                  disabled={languageSwitching}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected, disabled: languageSwitching }}
+                  accessibilityLabel={label}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 12,
+                    alignItems: "center",
+                    borderWidth: 1,
+                    borderColor: selected ? tokens.accent : tokens.textMute + "55",
+                    borderRadius: 999,
+                    backgroundColor: selected ? tokens.accent : "transparent",
+                    opacity: languageSwitching && !selected ? 0.5 : 1,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: selected ? tokens.bg : tokens.text,
+                      fontFamily: fonts.body,
+                      fontSize: 17,
+                    }}
+                  >
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Text
+            style={{
+              color: tokens.textMute,
+              fontFamily: fonts.body,
+              fontSize: 13,
+              lineHeight: 18,
+              marginTop: 8,
+            }}
+          >
+            {t("settings.languageRestartNote")}
           </Text>
 
           {/* Reminder */}

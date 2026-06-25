@@ -18,7 +18,24 @@ const KEYS = {
   clinicalScreeningResult: `${PREFIX}clinicalScreeningResult`,
   onboardedAt: `${PREFIX}onboardedAt`,
   sessionsCompleted: `${PREFIX}sessionsCompleted`,
+  languagePreference: `${PREFIX}languagePreference`,
 } as const;
+
+/** Persisted language preference. `null` means the user has never explicitly
+ *  chosen one — the app defaults to Hebrew regardless of device locale (this
+ *  is a Hebrew-first app for Israeli combat veterans). `"en"` is an opt-in
+ *  override set via Settings. */
+export type LanguagePreference = "he" | "en";
+
+export async function getLanguagePreference(): Promise<LanguagePreference | null> {
+  const raw = await AsyncStorage.getItem(KEYS.languagePreference);
+  if (raw === "he" || raw === "en") return raw;
+  return null;
+}
+
+export async function setLanguagePreference(value: LanguagePreference): Promise<void> {
+  await AsyncStorage.setItem(KEYS.languagePreference, value);
+}
 
 /** A name we've resolved (or explicitly determined we can't resolve) for the
  *  current device. `null` means we tried and got nothing usable — distinct

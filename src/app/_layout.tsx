@@ -14,7 +14,7 @@ import { Heebo_400Regular, Heebo_500Medium } from "@expo-google-fonts/heebo";
 
 import { CrisisSheet } from "@/components/features/crisis/CrisisSheet";
 import { SettingsSheet } from "@/components/features/settings/SettingsSheet";
-import { isRTL } from "@/lib/ui/i18n";
+import { applyStoredLanguage, isRTL } from "@/lib/ui/i18n";
 import { configureNotificationHandler, reassertSchedule } from "@/lib/integrations/reminders";
 // Import for its side effect: kicks off iOS audio-session configure+activate
 // at app launch. Consumers that start playback await `audioSessionReady`.
@@ -35,11 +35,16 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    const shouldBeRTL = isRTL();
-    if (I18nManager.isRTL !== shouldBeRTL) {
-      I18nManager.allowRTL(shouldBeRTL);
-      I18nManager.forceRTL(shouldBeRTL);
-    }
+    // Apply any user-stored language override before the RTL check fires.
+    // applyStoredLanguage() resolves quickly (single AsyncStorage read) and
+    // is a no-op when the user has never switched off the Hebrew default.
+    void applyStoredLanguage().then(() => {
+      const shouldBeRTL = isRTL();
+      if (I18nManager.isRTL !== shouldBeRTL) {
+        I18nManager.allowRTL(shouldBeRTL);
+        I18nManager.forceRTL(shouldBeRTL);
+      }
+    });
   }, []);
 
   useEffect(() => {

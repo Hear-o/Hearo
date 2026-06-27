@@ -27,7 +27,7 @@ import { fonts, tokens } from "@/lib/ui/tokens";
 export default function Ready() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
-  const { scene, sounds } = useSessionStore();
+  const { scene, sounds, durationMinutes } = useSessionStore();
   const { name } = useDisplayName();
   const band = getTimeOfDay();
 
@@ -155,7 +155,7 @@ export default function Ready() {
                 marginTop: 14,
               }}
             >
-              {t("home.durationHint")}
+              {t("home.durationHint", { count: durationMinutes })}
             </Text>
           </View>
 

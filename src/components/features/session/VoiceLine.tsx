@@ -35,7 +35,9 @@ export function VoiceLine({ text }: Props) {
           fontFamily: fonts.display,
           fontSize: 26,
           lineHeight: 36,
-          textAlign: "left",
+          // No hardcoded textAlign — let RN's RTL handling flip it
+          // automatically based on I18nManager. Forcing "left" here was
+          // the v1.1.x bug where Hebrew captions stayed LTR-aligned.
         },
         style,
       ]}

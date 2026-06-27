@@ -48,35 +48,34 @@ function formatElapsed(ms: number) {
 // dB gain ceiling per trigger sound type (applied at slider=1.0).
 // 0 dB = gain 1.0 = play at recorded level. Negative values attenuate.
 //
-// v1.1.3: the default ceiling moved from 0 dB to -9 dB after on-device
-// reports that bursts at recorded peak were drowning the ambient bed —
-// the practice-moment felt like a stadium PA cutting through silence
-// instead of a real-world surprise inside the scene. -9 dB roughly
-// halves perceived loudness; combined with the new ambient-duck during
-// burst, the trigger still pops as the event-of-the-moment but the scene
-// stays present underneath. Per-sound calibration TBD with clinical
-// review; until then everything is uniform.
+// v1.1.3 → v1.1.5: trigger ceiling has come down twice as on-device reports
+// kept describing bursts as too loud — first 0 dB → -9 dB (halve perceived
+// loudness), then -9 dB → -12 dB after testers said bursts still dominated
+// the scene. -12 dB plus the new ambient-duck during burst gives a mix
+// where the trigger pops as the event-of-the-moment without drowning the
+// ambient bed. Per-sound calibration TBD with clinical review; until then
+// everything is uniform.
 const TRIGGER_CEILING_DB: Record<string, number> = {
-  motorcycle: -9,
-  helicopter: -9,
-  fireworks: -9,
-  siren: -9,
-  "car-horn": -9,
-  "door-slam": -9,
-  "party-shout": -9,
-  "glass-breaking": -9,
-  "train-horn": -9,
-  "brake-squeal": -9,
-  "station-announcement": -9,
-  "bus-horn": -9,
-  "brake-hiss": -9,
-  "checkout-beep": -9,
-  "pa-announcement": -9,
-  "baby-crying": -9,
-  dog: -9,
-  restaurant: -9,
+  motorcycle: -12,
+  helicopter: -12,
+  fireworks: -12,
+  siren: -12,
+  "car-horn": -12,
+  "door-slam": -12,
+  "party-shout": -12,
+  "glass-breaking": -12,
+  "train-horn": -12,
+  "brake-squeal": -12,
+  "station-announcement": -12,
+  "bus-horn": -12,
+  "brake-hiss": -12,
+  "checkout-beep": -12,
+  "pa-announcement": -12,
+  "baby-crying": -12,
+  dog: -12,
+  restaurant: -12,
 };
-const DEFAULT_CEILING_DB = -9;
+const DEFAULT_CEILING_DB = -12;
 
 // Burst scheduler defaults.
 // TODO(supabase): session_programs table — per-scene/per-sound timing config.
@@ -194,6 +193,12 @@ export default function Session() {
   // later) the screen shows the calming/heads-up text instead of the "during" line.
   // Cleared on burst end so subsequent bursts get a fresh window.
   const [lastBurstApproachingAt, setLastBurstApproachingAt] = useState<number | null>(null);
+  // v1.1.5: true while a Roy-recorded voice clip is audibly playing. We hide
+  // the on-screen caption during voice playback because Roy's recordings are
+  // not verbatim reads of the scripts in content.ts (natural phrasing
+  // variation) — showing the script while the recording says different words
+  // creates cognitive dissonance for the listener. The audio is canonical.
+  const [isVoicePlaying, setIsVoicePlaying] = useState(false);
   // Manual distress countdown (seconds remaining, null when not active).
   const [manualCountdown, setManualCountdown] = useState<number | null>(null);
 
@@ -226,6 +231,19 @@ export default function Session() {
   const onWatchDisconnected = useCallback(() => {
     setWatchBanner("disconnected");
   }, []);
+
+  // v1.1.5: thin wrapper around engine.playVoiceClip that flips
+  // isVoicePlaying around the audio so the on-screen caption can hide while
+  // Roy's recording (which may differ slightly from the script) is audible.
+  const playVoice = useCallback(
+    (index: number): Promise<void> => {
+      setIsVoicePlaying(true);
+      return engine.playVoiceClip(index).finally(() => {
+        setIsVoicePlaying(false);
+      });
+    },
+    [engine],
+  );
 
   const onWatchReconnected = useCallback(() => {
     setWatchBanner(null);
@@ -338,7 +356,7 @@ export default function Session() {
           await engine.startAmbient();
         }
         if (!isPlaceholderSource(disclaimerClip.source)) {
-          return engine.playVoiceClip(0);
+          return playVoice(0);
         }
       })
       .then(() => dispatch({ type: "DISCLAIMER_DONE" }))
@@ -402,12 +420,24 @@ export default function Session() {
             setLastBurstApproachingAt(Date.now());
           },
           onBurstEnd: () => {
-            // Surface the post-trigger grounding caption for ~10s. Voice
-            // narration for this moment is TODO(roy) — when those clips
-            // land we'll also queue an audio play here.
+            // Surface the post-trigger grounding caption for ~10s.
             setLastBurstEndedAt(Date.now());
             // Close the lead-in window — the post-burst caption takes over.
             setLastBurstApproachingAt(null);
+            // v1.1.5: play the calming/end voice clip after the burst so the
+            // user actually HEARS the grounding line, not just reads it. Roy
+            // hasn't shipped dedicated post-burst clips yet; the wind-down
+            // ("end") recording is the closest thematic match we have today.
+            // The engine's playVoiceClip path (a) fades out any active burst
+            // first and (b) clears + reschedules the burst timers, so this
+            // safely arbitrates against the next burst's lead-in firing on
+            // top of the voice. Voice-clip-out-of-range is a no-op.
+            const voiceClips = getVoiceClips(scene, i18n.language);
+            if (voiceClips[2] && !isPlaceholderSource(voiceClips[2].source)) {
+              playVoice(2).catch((e) => {
+                audioWarn("session: post-burst playVoice(2) REJECTED", e);
+              });
+            }
           },
         });
         timerId = setTimeout(() => {
@@ -445,8 +475,8 @@ export default function Session() {
       midSessionFiredRef.current = true;
       const voiceClips = getVoiceClips(scene, i18n.language);
       if (!isPlaceholderSource(voiceClips[1].source)) {
-        engine.playVoiceClip(1).catch((e) => {
-          audioWarn("session MID_SESSION: playVoiceClip(1) REJECTED", e);
+        playVoice(1).catch((e) => {
+          audioWarn("session MID_SESSION: playVoice(1) REJECTED", e);
         });
       }
     }, halfMs);
@@ -595,10 +625,18 @@ export default function Session() {
   const isPostTrigger =
     lastBurstEndedAt !== null &&
     Date.now() - lastBurstEndedAt < POST_TRIGGER_CAPTION_MS;
-  // v1.1.3: pre-burst grounding window — open from onBurstApproaching until
-  // onBurstEnd clears it. We don't use a duration timeout here because the
-  // engine guarantees the window closes when the burst's fade-out completes.
-  const isApproachingTrigger = lastBurstApproachingAt !== null;
+  // v1.1.3 → v1.1.5: the lead-in window auto-expires after the maximum time
+  // a burst's lifecycle could take — leadIn + burst + fade-out. Earlier we
+  // relied on onBurstEnd to clear the flag, but when a mid-session voice clip
+  // interrupts a burst (engine._interruptBurst clears scheduler timers but
+  // never fires onBurstEnd), the flag got stuck and the "calming" caption
+  // overlapped with the mid-session voice audio. Time-based expiry is the
+  // simpler invariant: the window can't outlive the audio it's framing.
+  const LEAD_IN_WINDOW_MS =
+    TRIGGER_LEAD_IN_MS + TRIGGER_FADE_IN_MS + TRIGGER_BURST_DURATION_MS + TRIGGER_FADE_OUT_MS;
+  const isApproachingTrigger =
+    lastBurstApproachingAt !== null &&
+    Date.now() - lastBurstApproachingAt < LEAD_IN_WINDOW_MS;
 
   const voiceText = useMemo(() => {
     if (machineState === "AMBIENT_FADE_IN" || machineState === "LOADING" || machineState === "DISCLAIMER") {
@@ -703,9 +741,11 @@ export default function Session() {
             </Text>
           </View>
 
-          {/* Voice caption */}
+          {/* Voice caption. Hidden while a voice clip is audibly playing —
+              Roy's recordings aren't verbatim reads of the script and showing
+              the script during playback creates a read/listen mismatch. */}
           <View className="pt-16">
-            <VoiceLine text={voiceText} />
+            {!isVoicePlaying ? <VoiceLine text={voiceText} /> : null}
           </View>
 
           {/* Breathing circle */}

@@ -42,9 +42,11 @@ describe("CrisisSheet", () => {
 
     await renderOpenSheet();
 
-    // "Call ERAN" + "1201" render as sibling text segments in one Text node;
-    // match the composite content with a regex so the split children resolve.
-    fireEvent.press(screen.getByText(/Call ERAN/));
+    // v1.1.7: "Call ERAN" + "1201" is now the ERAN brand logo (image) with
+    // the number rendered below. The whole block is one Pressable with an
+    // accessibility label of "Call <number>" — match by label so the test
+    // doesn't depend on which child Text is tapped.
+    fireEvent.press(screen.getByLabelText(`Call ERAN ${CRISIS_NUMBER}`));
 
     expect(openURL).toHaveBeenCalledTimes(1);
     expect(openURL).toHaveBeenCalledWith(`tel:${CRISIS_NUMBER}`);
@@ -135,7 +137,9 @@ describe("CrisisSheet", () => {
 
     render(<CrisisSheet />);
     // The hotline is always reachable...
-    await waitFor(() => expect(screen.getByText(/Call ERAN/)).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByLabelText(`Call ERAN ${CRISIS_NUMBER}`)).toBeTruthy(),
+    );
     // ...but with contacts denied, the picker affordance is hidden.
     expect(screen.queryByText("Add someone  +")).toBeNull();
   });

@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Dimensions, Linking, Pressable, Text, View } from "react-native";
+import { Image } from "expo-image";
+
+const ERAN_LOGO = require("@/../assets/images/eran-logo.webp");
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -194,16 +197,33 @@ function MainView({
         {t("crisis.title")}
       </Text>
 
-      <Pressable onPress={onCallEran} hitSlop={8} style={{ marginTop: 36 }}>
+      {/* v1.1.7: ERAN's brand logo replaces the "Call ERAN 1201" text.
+          Number stays visible below the logo because safety-critical info
+          (what am I about to dial?) should never be hidden behind iconography
+          alone. Tapping anywhere in this block still dials tel:1201. */}
+      <Pressable
+        onPress={onCallEran}
+        hitSlop={8}
+        style={{ marginTop: 28, alignItems: "flex-start" }}
+        accessibilityRole="button"
+        accessibilityLabel={`${t("crisis.call")} ${t("crisis.number")}`}
+      >
+        <Image
+          source={ERAN_LOGO}
+          style={{ width: 168, height: 112 }}
+          contentFit="contain"
+          accessible={false}
+        />
         <Text
           style={{
             color: tokens.accent,
             fontFamily: fonts.displayMedium,
             fontSize: 30,
             lineHeight: 40,
+            marginTop: 4,
           }}
         >
-          {t("crisis.call")} {t("crisis.number")}
+          {t("crisis.number")}
         </Text>
         <Text
           style={{
@@ -211,7 +231,7 @@ function MainView({
             fontFamily: fonts.body,
             fontSize: 14,
             lineHeight: 20,
-            marginTop: 8,
+            marginTop: 4,
           }}
         >
           {t("crisis.free")}

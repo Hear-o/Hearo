@@ -42,7 +42,10 @@ describe("SettingsSheet", () => {
     expect(screen.getByText("Settings")).toBeTruthy();
   });
 
-  it("shows 'Off' when no reminder is set, and opens the picker on Change", async () => {
+  // v1.1.6: reminder UI redesigned as a Switch + inline time picker. The
+  // Switch is the headline on/off control; the previous Change/Turn-off pair
+  // is gone (Android still has a Change link inside the picker block).
+  it("shows 'Off' when no reminder is set, and the toggle is off", async () => {
     mockGetSchedule.mockResolvedValue(null);
     act(() => {
       useSettingsSheetStore.setState({ isOpen: true });
@@ -50,18 +53,26 @@ describe("SettingsSheet", () => {
     render(<SettingsSheet />);
     await waitFor(() => expect(screen.getByText(/Off/)).toBeTruthy());
 
-    // No "Turn off" button when reminder is null.
-    expect(screen.queryByText("Turn off")).toBeNull();
-
-    fireEvent.press(screen.getByText("Change time"));
-    // After Change is tapped, the iOS picker UI shows Done + Cancel buttons.
-    await waitFor(() => {
-      expect(screen.getByText("Done")).toBeTruthy();
-      expect(screen.getByText("Cancel")).toBeTruthy();
-    });
+    const toggle = screen.getByLabelText("Toggle daily reminder");
+    expect(toggle.props.value).toBe(false);
   });
 
-  it("shows the existing reminder and turns it off", async () => {
+  it("turning the switch on schedules a default time and shows it", async () => {
+    mockGetSchedule.mockResolvedValue(null);
+    act(() => {
+      useSettingsSheetStore.setState({ isOpen: true });
+    });
+    render(<SettingsSheet />);
+    await waitFor(() => expect(screen.getByLabelText("Toggle daily reminder")).toBeTruthy());
+
+    fireEvent(screen.getByLabelText("Toggle daily reminder"), "valueChange", true);
+    await waitFor(() => {
+      expect(mockSetSchedule).toHaveBeenCalledWith({ hour: 9, minute: 0 });
+    });
+    await waitFor(() => expect(screen.getByText(/09:00/)).toBeTruthy());
+  });
+
+  it("turning the switch off clears the schedule", async () => {
     mockGetSchedule.mockResolvedValue({ hour: 9, minute: 30 });
     act(() => {
       useSettingsSheetStore.setState({ isOpen: true });
@@ -69,8 +80,8 @@ describe("SettingsSheet", () => {
     render(<SettingsSheet />);
     await waitFor(() => expect(screen.getByText(/09:30/)).toBeTruthy());
 
-    fireEvent.press(screen.getByText("Turn off"));
+    fireEvent(screen.getByLabelText("Toggle daily reminder"), "valueChange", false);
     await waitFor(() => expect(mockClearSchedule).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(screen.queryByText("Turn off")).toBeNull());
+    await waitFor(() => expect(screen.getByText(/Off/)).toBeTruthy());
   });
 });

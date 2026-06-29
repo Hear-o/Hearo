@@ -800,7 +800,7 @@ const PSYCHO_EDUCATION: PsychoEducationContent = {
   body: [
     {
       en: "Your body has a built-in alarm. Racing heart, shallow breath, tense muscles — that's the amygdala doing its job. It kept you alive.",
-      he: "לגוף שלך יש אזעקה מובנית. דופק מהיר, נשימה שטחית, שרירים דרוכים — זו האמיגדלה עושה את עבודתה. היא שמרה עליך.",
+      he: "לגוף שלך יש אזעקה מובנית. דופק מהיר, נשימה שטחית, שרירים דרוכים — זה המוח עושה את עבודתו. הוא שמר עליך.",
     },
     {
       en: "After the danger passes, the alarm stays sensitive. A sound, a smell, a place can still set it off. That's not broken — it's a protection system that adapted.",
@@ -808,7 +808,7 @@ const PSYCHO_EDUCATION: PsychoEducationContent = {
     },
     {
       en: "Here, gradually and in a safe space, we'll teach the system that the danger has passed.",
-      he: "כאן, בהדרגה ובמרחב מוגן, נלמד את המערכת שהסכנה חלפה.",
+      he: "כאן, בהדרגה ובמרחב בטוח, נלמד את המערכת שהסכנה חלפה.",
     },
   ],
   continueLabel: {

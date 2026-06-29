@@ -7,7 +7,11 @@ import { getScenes, localize, Scene, SceneKey } from "@/lib/content/content";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.74, 320);
+// v1.1.6: widened from 0.74 → 0.86 (and cap 320 → 380) after tester feedback
+// that the scene illustration felt cropped to the middle. Pushes more of the
+// art into view while still leaving a small parallax peek on neighboring
+// cards (offset math below accounts for the new width).
+const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.86, 380);
 const CARD_HEIGHT = Math.round(CARD_WIDTH * 0.78);
 
 const SCENES = getScenes();

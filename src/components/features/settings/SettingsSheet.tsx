@@ -5,6 +5,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Switch,
   Text,
   TextInput,
   View,
@@ -101,9 +102,14 @@ export function SettingsSheet() {
   }
 
   // Reminder state — read on open, refreshed when picker saves or turns off.
+  // v1.1.6: redesigned as a Switch + always-visible iOS spinner. Previous
+  // change/turn-off link pair + on-demand modal felt buried; the Switch
+  // makes on/off the headline control and the inline scroller lets the user
+  // dial the time without opening a separate modal step.
   const [reminder, setReminder] = useState<ReminderSchedule | null>(null);
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [pendingTime, setPendingTime] = useState<Date | null>(null);
+  // Android-only: the legacy modal flow is preserved behind a press handler
+  // since RN's DateTimePicker on Android has no inline display mode.
+  const [androidPickerOpen, setAndroidPickerOpen] = useState(false);
   useEffect(() => {
     if (isOpen) {
       void getSchedule().then(setReminder);
@@ -116,45 +122,46 @@ export function SettingsSheet() {
     setReminder(next);
   }
 
-  async function handleReminderChange(event: DateTimePickerEvent, date?: Date) {
-    if (Platform.OS === "android") {
-      setShowTimePicker(false);
-      if (event.type === "dismissed" || !date) return;
-      await commitTime(date);
-      return;
-    }
-    if (event.type === "dismissed") {
-      setShowTimePicker(false);
-      setPendingTime(null);
-      return;
-    }
-    if (date) setPendingTime(date);
+  // Default time when the Switch is first turned on — 9:00 AM is a generally
+  // safe waking-hour default for a wellness reminder. The user can scroll to
+  // anything they want immediately afterward.
+  function defaultReminderTime(): ReminderSchedule {
+    return { hour: 9, minute: 0 };
   }
 
-  async function handleReminderDone() {
-    const date = pendingTime ?? defaultPickerValue();
-    setShowTimePicker(false);
-    setPendingTime(null);
+  async function handleReminderToggle(next: boolean) {
+    if (next) {
+      const initial = reminder ?? defaultReminderTime();
+      await setSchedule(initial);
+      setReminder(initial);
+    } else {
+      await clearSchedule();
+      setReminder(null);
+    }
+  }
+
+  // iOS spinner fires onChange continuously as the user scrolls. Committing
+  // on every tick is fine — setSchedule cancels + reschedules the OS
+  // notification atomically; AsyncStorage writes are cheap.
+  async function handleInlinePickerChange(_event: DateTimePickerEvent, date?: Date) {
+    if (!date) return;
     await commitTime(date);
   }
 
-  function handleReminderCancel() {
-    setShowTimePicker(false);
-    setPendingTime(null);
+  async function handleAndroidPickerChange(event: DateTimePickerEvent, date?: Date) {
+    setAndroidPickerOpen(false);
+    if (event.type === "dismissed" || !date) return;
+    await commitTime(date);
   }
 
-  async function handleReminderTurnOff() {
-    await clearSchedule();
-    setReminder(null);
-  }
-
-  function defaultPickerValue() {
+  function pickerValue(): Date {
+    const d = new Date();
     if (reminder) {
-      const d = new Date();
       d.setHours(reminder.hour, reminder.minute, 0, 0);
-      return d;
+    } else {
+      d.setHours(9, 0, 0, 0);
     }
-    return new Date();
+    return d;
   }
 
   // Slide-up + backdrop-fade animation, paired with the store's isOpen flag.
@@ -171,9 +178,9 @@ export function SettingsSheet() {
         easing: Easing.out(Easing.cubic),
       });
       backdropOpacity.value = withTiming(0, { duration: SLIDE_MS });
-      // Drop any in-flight picker state so the sheet re-opens clean.
-      setShowTimePicker(false);
-      setPendingTime(null);
+      // Close the Android time-picker modal on sheet dismiss so it doesn't
+      // reappear orphaned the next time the sheet opens.
+      setAndroidPickerOpen(false);
     }
   }, [isOpen, translateY, backdropOpacity]);
 
@@ -399,56 +406,57 @@ export function SettingsSheet() {
           >
             {t("reminders.sectionLabel")}
           </Text>
-          <Text
+
+          {/* On/off switch — the headline control. Time scroller appears
+              below when the switch is on. */}
+          <View
             style={{
-              color: tokens.text,
-              fontFamily: fonts.body,
-              fontSize: 18,
-              marginBottom: 12,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 4,
             }}
           >
-            {reminder
-              ? t("reminders.currentlySet", { time: formatTime(reminder) })
-              : t("reminders.notSet")}
-          </Text>
-          <View style={{ flexDirection: "row", gap: 24 }}>
-            <Pressable onPress={() => setShowTimePicker(true)} hitSlop={8}>
-              <Text style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 15 }}>
-                {t("reminders.change")}
-              </Text>
-            </Pressable>
-            {reminder ? (
-              <Pressable onPress={handleReminderTurnOff} hitSlop={8}>
-                <Text style={{ color: tokens.textMute, fontFamily: fonts.body, fontSize: 15 }}>
-                  {t("reminders.turnOff")}
-                </Text>
-              </Pressable>
-            ) : null}
+            <Text style={{ color: tokens.text, fontFamily: fonts.body, fontSize: 17 }}>
+              {reminder
+                ? t("reminders.currentlySet", { time: formatTime(reminder) })
+                : t("reminders.notSet")}
+            </Text>
+            <Switch
+              value={reminder !== null}
+              onValueChange={(v) => void handleReminderToggle(v)}
+              trackColor={{ false: tokens.textMute + "55", true: tokens.accent }}
+              accessibilityLabel={t("reminders.toggleLabel")}
+            />
           </View>
 
-          {showTimePicker ? (
-            <View style={{ marginTop: 12 }}>
-              <DateTimePicker
-                value={pendingTime ?? defaultPickerValue()}
-                mode="time"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                onChange={handleReminderChange}
-              />
-              {Platform.OS === "ios" ? (
-                <View style={{ flexDirection: "row", gap: 24, marginTop: 8 }}>
-                  <Pressable onPress={handleReminderDone} hitSlop={8}>
-                    <Text style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 15 }}>
-                      {t("reminders.done")}
-                    </Text>
-                  </Pressable>
-                  <Pressable onPress={handleReminderCancel} hitSlop={8}>
-                    <Text style={{ color: tokens.textMute, fontFamily: fonts.body, fontSize: 15 }}>
-                      {t("reminders.cancel")}
-                    </Text>
-                  </Pressable>
-                </View>
-              ) : null}
-            </View>
+          {reminder ? (
+            Platform.OS === "ios" ? (
+              <View style={{ marginTop: 8, alignItems: "center" }}>
+                <DateTimePicker
+                  value={pickerValue()}
+                  mode="time"
+                  display="spinner"
+                  onChange={handleInlinePickerChange}
+                />
+              </View>
+            ) : (
+              <View style={{ marginTop: 12 }}>
+                <Pressable onPress={() => setAndroidPickerOpen(true)} hitSlop={8}>
+                  <Text style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 15 }}>
+                    {t("reminders.change")}
+                  </Text>
+                </Pressable>
+                {androidPickerOpen ? (
+                  <DateTimePicker
+                    value={pickerValue()}
+                    mode="time"
+                    display="default"
+                    onChange={handleAndroidPickerChange}
+                  />
+                ) : null}
+              </View>
+            )
           ) : null}
         </ScrollView>
       </Animated.View>

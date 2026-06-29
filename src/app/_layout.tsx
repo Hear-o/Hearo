@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
+import * as Updates from "expo-updates";
 import {
   FrankRuhlLibre_400Regular,
   FrankRuhlLibre_500Medium,
@@ -41,8 +42,21 @@ export default function RootLayout() {
     void applyStoredLanguage().then(() => {
       const shouldBeRTL = isRTL();
       if (I18nManager.isRTL !== shouldBeRTL) {
+        // I18nManager.forceRTL persists to native UserDefaults but the layout
+        // direction only flips on the NEXT app launch on iOS. Setting it
+        // without reloading leaves the user looking at Hebrew text inside an
+        // LTR-laid-out screen — the v1.1.5 bug ("RTL not fixed across the
+        // app"). expo-updates' reloadAsync triggers a clean restart so the
+        // persisted direction takes effect immediately. Reload fires only
+        // when the flag actually changes (first launch after 1.1.4 update,
+        // or after the Settings toggle), so steady-state launches don't
+        // re-reload. In dev, Updates may not be wired — we swallow that
+        // error and accept that dev RTL-toggle requires a manual reload.
         I18nManager.allowRTL(shouldBeRTL);
         I18nManager.forceRTL(shouldBeRTL);
+        Updates.reloadAsync().catch(() => {
+          /* dev build or Updates unavailable — manual reload required */
+        });
       }
     });
   }, []);

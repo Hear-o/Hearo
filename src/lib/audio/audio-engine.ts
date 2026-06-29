@@ -41,6 +41,13 @@ export function dBToGain(dB: number): number {
 // burst pops above the scene without drowning it.
 const AMBIENT_DUCK_GAIN = dBToGain(-3);
 
+// v1.1.6: how much we duck the ambient bed while a voice clip is playing.
+// Heavier than the burst duck (-6 dB vs -3 dB) because the voice IS meant
+// to be the focal audio at that moment — the user should be listening to
+// the narration, not the scene underneath. -6 dB halves perceived loudness
+// and lets the voice sit clearly above the ambient bed.
+const AMBIENT_DUCK_GAIN_VOICE = dBToGain(-6);
+
 // Cancel any scheduled gain automation and freeze at the current instantaneous
 // value. cancelScheduledValues alone does NOT stop a mid-flight curve; we need
 // cancelAndHoldAtTime (or the setValueAtTime workaround if unavailable).
@@ -130,6 +137,10 @@ export class AudioEngine {
   // The ambient gain we duck DOWN from at burst start, restored at burst end.
   // Captured per-burst so a user adjustment mid-session (rare) isn't clobbered.
   private _ambientGainPreDuck: number | null = null;
+  // Same idea for voice playback. Captured at the first voice clip start;
+  // overlapping/chained voice clips share the same captured value so a
+  // back-to-back voice sequence doesn't accumulate duck-on-ducked-on-ducked.
+  private _ambientGainPreVoiceDuck: number | null = null;
 
   constructor() {
     this.ctx = new AudioContext();
@@ -502,12 +513,34 @@ export class AudioEngine {
       "ctx.state=", this.ctx.state);
     if (!buffer) return Promise.resolve();
 
+    // v1.1.6: cut any in-flight voice clip BEFORE starting a new one. Without
+    // this, post-burst calming voice could overlap with mid-session voice if
+    // they fire close together — two narrators talking at once.
+    if (this._voiceSource) {
+      try { this._voiceSource.stop(); } catch { /* already stopped */ }
+      this._voiceSource = null;
+    }
+
     // Stop any active burst with a fast fade before starting voice.
     this._interruptBurst();
 
     return new Promise<void>((resolve) => {
       // Small delay to let the burst interrupt fade settle.
       setTimeout(() => {
+        // v1.1.6: duck ambient for the voice clip so the narration sits
+        // clearly above the scene bed. Capture pre-duck value only on the
+        // FIRST voice in a chain — overlapping clips share the same capture
+        // so we don't duck-on-already-ducked and restore to a stale midpoint.
+        if (this._ambientGainPreVoiceDuck === null) {
+          this._ambientGainPreVoiceDuck = this.ambientGain.gain.value;
+        }
+        const duckNow = this.ctx.currentTime;
+        freezeGain(this.ambientGain.gain, this.ctx);
+        this.ambientGain.gain.linearRampToValueAtTime(
+          this._ambientGainPreVoiceDuck * AMBIENT_DUCK_GAIN_VOICE,
+          duckNow + 0.3,
+        );
+
         const src = this.ctx.createBufferSource();
         src.buffer = buffer;
         src.connect(this.voiceGain);
@@ -516,9 +549,22 @@ export class AudioEngine {
         const finish = () => {
           if (resolved) return;
           resolved = true;
-          // Clear tracker so a later stopVoice() doesn't try to stop an
-          // already-ended source (some platforms throw on that).
-          if (this._voiceSource === src) this._voiceSource = null;
+          // Restore the ambient duck — but ONLY if we're still the active
+          // voice. A later playVoiceClip would have replaced _voiceSource;
+          // in that case the new clip is keeping the ambient ducked and
+          // will restore at its own end. This is the chained-voice guard.
+          if (this._voiceSource === src) {
+            this._voiceSource = null;
+            if (this._ambientGainPreVoiceDuck !== null) {
+              const restoreNow = this.ctx.currentTime;
+              freezeGain(this.ambientGain.gain, this.ctx);
+              this.ambientGain.gain.linearRampToValueAtTime(
+                this._ambientGainPreVoiceDuck,
+                restoreNow + 0.3,
+              );
+              this._ambientGainPreVoiceDuck = null;
+            }
+          }
           // Resume scheduler after voice clip finishes (if not paused by spike).
           if (!this._schedulerPaused) this._scheduleNextBurst();
           resolve();
@@ -543,6 +589,19 @@ export class AudioEngine {
       /* already stopped — harmless */
     }
     this._voiceSource = null;
+    // v1.1.6: external stopVoice bypasses the finish() restore-ambient path
+    // (it sets _voiceSource = null, so finish's "still the active voice"
+    // guard fails). Restore here directly so the ambient bed comes back up
+    // when the user pauses the session mid-narration.
+    if (this._ambientGainPreVoiceDuck !== null) {
+      const now = this.ctx.currentTime;
+      freezeGain(this.ambientGain.gain, this.ctx);
+      this.ambientGain.gain.linearRampToValueAtTime(
+        this._ambientGainPreVoiceDuck,
+        now + 0.3,
+      );
+      this._ambientGainPreVoiceDuck = null;
+    }
   }
 
   // ── Pause / resume (crisis sheet) ───────────────────────────────────────

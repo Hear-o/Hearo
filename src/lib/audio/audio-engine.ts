@@ -41,12 +41,13 @@ export function dBToGain(dB: number): number {
 // burst pops above the scene without drowning it.
 const AMBIENT_DUCK_GAIN = dBToGain(-3);
 
-// v1.1.6: how much we duck the ambient bed while a voice clip is playing.
-// Heavier than the burst duck (-6 dB vs -3 dB) because the voice IS meant
-// to be the focal audio at that moment — the user should be listening to
-// the narration, not the scene underneath. -6 dB halves perceived loudness
-// and lets the voice sit clearly above the ambient bed.
-const AMBIENT_DUCK_GAIN_VOICE = dBToGain(-6);
+// v1.1.6 → v1.1.8: ambient duck during voice. Hili's UX review (2026-06-29)
+// flagged that narration still competed audibly with the ambient bed at the
+// initial -6 dB setting. Push to -9 dB — roughly quarter power — so the
+// voice sits clearly above the scene without the user straining to parse
+// the words. Trigger duck stays at -3 dB; voice is the only audio that gets
+// this much priority over the ambient.
+const AMBIENT_DUCK_GAIN_VOICE = dBToGain(-9);
 
 // Cancel any scheduled gain automation and freeze at the current instantaneous
 // value. cancelScheduledValues alone does NOT stop a mid-flight curve; we need

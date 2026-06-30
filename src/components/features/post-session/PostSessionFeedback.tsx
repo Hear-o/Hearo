@@ -129,11 +129,22 @@ export function PostSessionFeedback({ onSubmit, onSkip }: Props) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<FeedbackAnswers>(INITIAL);
 
-  const next = useCallback(() => setStep((s) => s + 1), []);
-
-  const handleSubmit = useCallback(() => {
-    onSubmit(answers);
-  }, [answers, onSubmit]);
+  // v1.1.8: auto-advance on selection. Hili's UX review flagged that the
+  // question timing was unclear — users didn't realize they had to tap Next.
+  // 600ms gives the user a beat to register that their tap landed (the
+  // accent border flips on the selected option) before the screen moves on,
+  // and on the last step we submit the form directly instead of asking for a
+  // separate Done tap.
+  const ADVANCE_DELAY_MS = 600;
+  const advanceAfterPick = useCallback(
+    (nextAnswers: FeedbackAnswers, isLastStep: boolean) => {
+      setTimeout(() => {
+        if (isLastStep) onSubmit(nextAnswers);
+        else setStep((s) => s + 1);
+      }, ADVANCE_DELAY_MS);
+    },
+    [onSubmit],
+  );
 
   const stepContent = [
     // Step 0 — difficulty
@@ -142,7 +153,9 @@ export function PostSessionFeedback({ onSubmit, onSkip }: Props) {
       <ScaleRow
         selected={answers.difficulty}
         onSelect={(v) => {
-          setAnswers((a) => ({ ...a, difficulty: v as FeedbackAnswers["difficulty"] }));
+          const next = { ...answers, difficulty: v as FeedbackAnswers["difficulty"] };
+          setAnswers(next);
+          advanceAfterPick(next, false);
         }}
       />
     </View>,
@@ -152,7 +165,11 @@ export function PostSessionFeedback({ onSubmit, onSkip }: Props) {
       <Question label={t("postSession.impactQuestion")} />
       <OptionRow
         selected={answers.triggerImpact}
-        onSelect={(v) => setAnswers((a) => ({ ...a, triggerImpact: v as FeedbackAnswers["triggerImpact"] }))}
+        onSelect={(v) => {
+          const next = { ...answers, triggerImpact: v as FeedbackAnswers["triggerImpact"] };
+          setAnswers(next);
+          advanceAfterPick(next, false);
+        }}
         options={[
           { value: "yes", label: t("postSession.impactYes") },
           { value: "a-little", label: t("postSession.impactALittle") },
@@ -168,7 +185,11 @@ export function PostSessionFeedback({ onSubmit, onSkip }: Props) {
       <Question label={t("postSession.moodQuestion")} />
       <OptionRow
         selected={answers.moodChange}
-        onSelect={(v) => setAnswers((a) => ({ ...a, moodChange: v as FeedbackAnswers["moodChange"] }))}
+        onSelect={(v) => {
+          const next = { ...answers, moodChange: v as FeedbackAnswers["moodChange"] };
+          setAnswers(next);
+          advanceAfterPick(next, true);
+        }}
         options={[
           { value: "better", label: t("postSession.moodBetter") },
           { value: "same", label: t("postSession.moodSame") },
@@ -177,12 +198,6 @@ export function PostSessionFeedback({ onSubmit, onSkip }: Props) {
       />
     </View>,
   ];
-
-  const isLast = step === stepContent.length - 1;
-  const canAdvance =
-    (step === 0 && answers.difficulty !== null) ||
-    (step === 1 && answers.triggerImpact !== null) ||
-    (step === 2 && answers.moodChange !== null);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: tokens.bg }}>
@@ -205,34 +220,18 @@ export function PostSessionFeedback({ onSubmit, onSkip }: Props) {
         {/* Question */}
         <View style={{ flex: 1 }}>{stepContent[step]}</View>
 
-        {/* Actions */}
+        {/* Skip — Next/Done removed in v1.1.8 since selections now auto-advance
+            (Hili UX review: questions didn't auto-advance, users scrolled
+            looking for Next). Skip stays as the single secondary action. */}
         <View
           style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
+            alignItems: "flex-start",
             paddingBottom: 24,
           }}
         >
           <Pressable hitSlop={12} onPress={onSkip}>
             <Text style={{ color: tokens.text, fontFamily: fonts.body, fontSize: 14, opacity: 0.5 }}>
               {t("postSession.skip")}
-            </Text>
-          </Pressable>
-
-          <Pressable
-            hitSlop={12}
-            onPress={isLast ? handleSubmit : next}
-            disabled={!canAdvance}
-          >
-            <Text
-              style={{
-                color: canAdvance ? tokens.accent : tokens.text + "44",
-                fontFamily: fonts.body,
-                fontSize: 16,
-              }}
-            >
-              {isLast ? t("postSession.done") : t("postSession.next")}
             </Text>
           </Pressable>
         </View>

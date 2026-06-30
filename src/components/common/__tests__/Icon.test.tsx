@@ -52,6 +52,31 @@ describe("Icon", () => {
     expect(wrapperStyle.transform).toBeUndefined();
   });
 
+  // v1.1.8: in RTL the flip flips. arrow-right (forward) gets scaleX:-1 so
+  // the visual arrow points LEFT (correct for "forward" in Hebrew), and
+  // arrow-left (back) renders without the flip so it points RIGHT.
+  describe("RTL", () => {
+    const I18nManager = require("react-native").I18nManager;
+    let originalIsRTL: boolean;
+    beforeEach(() => {
+      originalIsRTL = I18nManager.isRTL;
+      I18nManager.isRTL = true;
+    });
+    afterEach(() => {
+      I18nManager.isRTL = originalIsRTL;
+    });
+
+    it("flips arrow-right in RTL so 'forward' visually points left", () => {
+      const { wrapperStyle } = tree(render(<Icon name="arrow-right" />).toJSON());
+      expect(wrapperStyle.transform).toEqual([{ scaleX: -1 }]);
+    });
+
+    it("does NOT flip arrow-left in RTL so 'back' visually points right", () => {
+      const { wrapperStyle } = tree(render(<Icon name="arrow-left" />).toJSON());
+      expect(wrapperStyle.transform).toBeUndefined();
+    });
+  });
+
   it("forwards size to both the wrapper box and the svg", () => {
     const { wrapperStyle, svgProps } = tree(
       render(<Icon name="close" size={40} />).toJSON(),

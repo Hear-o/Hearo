@@ -8,7 +8,7 @@ import { Icon } from "@/components/common/Icon";
 import { SceneCarousel } from "@/components/features/setup/SceneCarousel";
 import { getScene, getSound, localize } from "@/lib/content/content";
 import { useSessionStore, SessionDurationMinutes } from "@/lib/storage/session-store";
-import { fonts, tokens } from "@/lib/ui/tokens";
+import { fonts, tokens, type as typeScale } from "@/lib/ui/tokens";
 
 const DURATION_CHOICES: SessionDurationMinutes[] = [3, 5, 7];
 
@@ -91,8 +91,7 @@ export default function Setup() {
           style={{
             color: tokens.text,
             fontFamily: fonts.display,
-            fontSize: 28,
-            lineHeight: 38,
+            ...typeScale.hero,
             marginTop: 24,
             marginBottom: 24,
             paddingHorizontal: 32,
@@ -111,8 +110,7 @@ export default function Setup() {
           style={{
             color: tokens.text,
             fontFamily: fonts.display,
-            fontSize: 28,
-            lineHeight: 38,
+            ...typeScale.hero,
             marginTop: 24,
             marginBottom: 8,
             paddingHorizontal: 32,
@@ -125,8 +123,7 @@ export default function Setup() {
           style={{
             color: tokens.textMute,
             fontFamily: fonts.body,
-            fontSize: 15,
-            lineHeight: 22,
+            ...typeScale.body,
             paddingHorizontal: 32,
             marginBottom: 16,
           }}
@@ -210,8 +207,7 @@ export default function Setup() {
           style={{
             color: tokens.text,
             fontFamily: fonts.display,
-            fontSize: 28,
-            lineHeight: 38,
+            ...typeScale.hero,
             marginTop: 24,
             marginBottom: 8,
             paddingHorizontal: 32,
@@ -224,8 +220,7 @@ export default function Setup() {
           style={{
             color: tokens.textMute,
             fontFamily: fonts.body,
-            fontSize: 15,
-            lineHeight: 22,
+            ...typeScale.body,
             paddingHorizontal: 32,
             marginBottom: 16,
           }}

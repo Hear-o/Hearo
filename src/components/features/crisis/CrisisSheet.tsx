@@ -12,7 +12,7 @@ import Animated, {
 import { useTranslation } from "react-i18next";
 
 import { CRISIS_NUMBER, useCrisisStore } from "@/lib/storage/crisis-store";
-import { fonts, tokens } from "@/lib/ui/tokens";
+import { fonts, tokens, type as typeScale } from "@/lib/ui/tokens";
 import {
   addTrustedContact,
   getPermissionState,
@@ -190,8 +190,7 @@ function MainView({
         style={{
           color: tokens.text,
           fontFamily: fonts.display,
-          fontSize: 28,
-          lineHeight: 38,
+          ...typeScale.hero,
         }}
       >
         {t("crisis.title")}
@@ -210,7 +209,7 @@ function MainView({
       >
         <Image
           source={ERAN_LOGO}
-          style={{ width: 168, height: 112 }}
+          style={{ width: 192, height: 128 }}
           contentFit="contain"
           accessible={false}
         />
@@ -218,8 +217,7 @@ function MainView({
           style={{
             color: tokens.accent,
             fontFamily: fonts.displayMedium,
-            fontSize: 30,
-            lineHeight: 40,
+            ...typeScale.hero,
             marginTop: 4,
           }}
         >
@@ -229,8 +227,7 @@ function MainView({
           style={{
             color: tokens.textMute,
             fontFamily: fonts.body,
-            fontSize: 14,
-            lineHeight: 20,
+            ...typeScale.body,
             marginTop: 4,
           }}
         >

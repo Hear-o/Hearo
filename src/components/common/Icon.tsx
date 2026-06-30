@@ -1,4 +1,4 @@
-import { View } from "react-native";
+import { I18nManager, View } from "react-native";
 
 import ArrowRightSvg from "@/assets/icons/arrow-right.svg";
 import CloseSvg from "@/assets/icons/close.svg";
@@ -34,7 +34,16 @@ const COMPONENTS = {
 
 export function Icon({ name, size = 22, color = "currentColor" }: Props) {
   const Svg = COMPONENTS[name];
-  const flip = name === "arrow-left";
+
+  // v1.1.8: arrows now flip in RTL. Callers name icons by *intent*
+  // ("arrow-right" = forward, "arrow-left" = back) and we map intent to
+  // visual direction here. In LTR, forward is the right-pointing SVG and
+  // back gets a scaleX flip; in RTL, the roles swap so the visual arrow
+  // still matches the user's expectation of "forward = where I'm going."
+  // Without this, Hebrew users saw the back arrow on Setup pointing the
+  // wrong way — Hili's UX review flagged it as a "feels disabled / wrong"
+  // signal.
+  const flip = (name === "arrow-left") !== I18nManager.isRTL;
 
   // Wrapper View carries the flip transform so the SVG itself can stay
   // as a single source file. RN's I18nManager does not auto-flip SVGs.

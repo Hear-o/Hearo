@@ -13,7 +13,7 @@ import { useDisplayName } from "@/lib/ui/displayName";
 import { useSettingsSheetStore } from "@/lib/storage/settings-sheet-store";
 import { getSessionsCompleted, setOnboardedAt } from "@/lib/storage/storage";
 import { getTimeOfDay } from "@/lib/ui/timeOfDay";
-import { fonts, tokens } from "@/lib/ui/tokens";
+import { fonts, tokens, type as typeScale } from "@/lib/ui/tokens";
 
 /** Real home / landing surface for returning users.
  *
@@ -91,8 +91,7 @@ export default function Home() {
             style={{
               color: tokens.text,
               fontFamily: fonts.display,
-              fontSize: 32,
-              lineHeight: 44,
+              ...typeScale.hero,
               marginTop: 24,
             }}
           >
@@ -121,8 +120,7 @@ export default function Home() {
               style={{
                 color: tokens.text,
                 fontFamily: fonts.body,
-                fontSize: 17,
-                lineHeight: 26,
+                ...typeScale.body,
                 opacity: 0.85,
               }}
             >
@@ -177,7 +175,7 @@ export default function Home() {
                 style={{
                   color: tokens.accent,
                   fontFamily: fonts.body,
-                  fontSize: 18,
+                  ...typeScale.body,
                 }}
               >
                 {t("home.beginSession")}

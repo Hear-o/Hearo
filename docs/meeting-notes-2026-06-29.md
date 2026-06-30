@@ -152,6 +152,74 @@ After the meeting-notes draft, we shipped a tactical pass on existing rough edge
 - **Broader Hebrew copy review.** Tester feedback called out that Hebrew across the app "isn't sensitive enough, not how we talk." Four specific strings were edited; the rest of `he:` strings in `src/lib/ui/i18n.ts` and `src/lib/content/content.ts` likely have the same drift. Needs a native-speaker pass (Roy or other reviewer) — implement after review.
 - **Voice script transcripts.** Roy's recordings don't read the content.ts scripts verbatim. We worked around it by hiding the on-screen caption while voice plays (1.1.5), but the real fix is to update `content.ts` to match what was actually recorded. Blocked on Roy delivering transcripts.
 
-### UX/UI review — placeholder
+### UX/UI review — Hili Ringel, 2026-06-29
 
-_(Awaiting comments from Omer's UX/UI reviewer. To be folded in here.)_
+Hili Ringel (trauma specialist) ran a full UX review focused on language, accessibility, emotional sensitivity, and the PTSD-user experience. Verbatim notes folded in below. Items where we've already shipped a partial fix are marked ✓; items still owed are surfaced as carry-forward work below this section.
+
+**Display + RTL**
+
+- RTL not fully fixed across all screens (despite 1.1.5/1.1.6 reload fix) — gaps remain
+- Sensory training screen scrolls against Hebrew reading direction — creates confusion
+- Some buttons read as disabled, critical for PTSD users to be able to identify actionable controls
+
+**Accessibility + visual design**
+
+- 4 different font sizes feels overwhelming and exhausting — recommend collapsing to 2–3 sizes
+- Sensitive moments (trigger picker, training descriptions) need larger fonts
+- Contrast between text and background needs improvement
+- ERAN screen: text needs to be larger; logo improvement for credibility ✓ (logo shipped in 1.1.7)
+
+**Copy / sensitive writing**
+
+- "נתאמן" reads as plural / pressure-inducing. Recommend: "בחר/י משך תרגול"
+- "מוכנה" reads as a command. Recommend: "אפשר להתחיל" or "מוכנה להתחיל" (Hili to defer to MidSin therapist for the final pick)
+- ✓ "מרחב מוגן" → "מרחב בטוח" — "מרחב מוגן" is a trigger word in Israel (shipped in 1.1.5)
+- ✓ "אמיגדלה" — too technical for general users, replace with comprehensible word (shipped in 1.1.5: "המוח")
+- Alarm-system explanation text ("אחרי שהסכנה חולפת, האזעקה נשארת רגישה") — unclear and not therapeutically accurate, needs rewrite with a clinician
+- "נלמד את המערכת" — phrasing unnatural, needs rethinking
+
+**Sensory training experience**
+
+- Audio balance: narration voice (Yai) and ambient (sea) compete with each other — needs rebalancing
+- Breathing animation works well — positive feedback
+- Full-screen image with opacity overlay works great as UX
+- Bug: training doesn't gracefully stop when the user is mid-scroll as the timer ends — produces an unnatural cut
+
+**Feedback + closing**
+
+- Feedback screen has a residual scroll (leftover from deleted pages) — should be removed
+- Question-advance timing in feedback is unclear; questions don't auto-advance
+- Closing screen: "זאת התקדמות. הגעת, התמודדת עם משהו קשה ונשארת איתו" — good copy but needs professional sign-off from a clinician
+
+**Daily reminder**
+
+- ✓ Confusing UI: time picker showed even when reminder was off. Recommend toggle ON/OFF, with picker shown only when ON. (Shipped in 1.1.6.)
+
+**Support + contacts**
+
+- ✓ ERAN screen needs clearer logo presentation and larger text. (Logo shipped 1.1.7; text-size pass still owed.)
+- "איש שאתה סומך עליו" (trusted-contact picker) didn't appear on Hili's installed version — possible display bug needs investigation
+
+### TODO from Hili's review
+
+| # | Item | Owner | Status |
+|---|------|-------|--------|
+| 1 | RTL audit + fix across all screens | Omer | Partial (1.1.5/1.1.6) |
+| 2 | Reduce font-size scale from 4 → 2-3, improve contrast | Omer | Open |
+| 3 | Balance audio levels between narration and ambient | Omer | Partial (1.1.6 -6 dB voice duck) |
+| 4 | Remove residual scroll on feedback screen | Omer | Open |
+| 5 | Fix training-timer mid-scroll cut bug | Omer | Open |
+| 6 | Daily reminder ON/OFF toggle | Omer | ✓ Shipped (1.1.6) |
+| 7 | Send copy notes to MidSin mentor for professional wording | Omer | Open |
+| 8 | Investigate why trusted-contact picker didn't show for Hili | Omer | Open |
+| 9 | Update Omer when ready for next review | Hili | Open |
+
+### Open questions raised in the review
+
+| # | Question | Context | Owner |
+|---|----------|---------|-------|
+| 1 | Exact therapeutic phrasing for the begin button — "אפשר להתחיל" or "מוכנה להתחיל"? | Language must be precise and sensitive for PTSD users | MidSin therapist |
+| 2 | How to rewrite the entire alarm-system explanation text? | Current text isn't clear or therapeutically accurate | MidSin therapist |
+| 3 | How to handle gender settings for asexual / non-binary users? | Current language settings are masculine/feminine only | Dev team |
+| 4 | Should the daily reminder be ON by default? | Affects new-user first-run experience | Omer |
+| 5 | When will user-facing session history be available? | Users will want to see a record of their practice | Dev team |

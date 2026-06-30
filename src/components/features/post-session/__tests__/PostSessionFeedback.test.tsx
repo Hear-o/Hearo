@@ -1,15 +1,20 @@
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
 
 import { PostSessionFeedback } from "@/components/features/post-session";
 
+// v1.1.8: feedback no longer has a Next/Done button — selections auto-advance
+// after a 600ms confirmation delay (Hili UX review). Tests now flush the
+// delay with fake timers instead of pressing Next.
 describe("PostSessionFeedback", () => {
-  it("does not advance from required questions before an answer is selected", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it("renders the first question on mount", () => {
     render(<PostSessionFeedback onSubmit={() => {}} onSkip={() => {}} />);
-
-    expect(screen.getByText("How difficult was this session?")).toBeTruthy();
-
-    fireEvent.press(screen.getByText("Next"));
-
     expect(screen.getByText("How difficult was this session?")).toBeTruthy();
   });
 
@@ -25,19 +30,19 @@ describe("PostSessionFeedback", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it("submits selected answers after the final required step", () => {
+  it("auto-advances after each selection and submits the final answer", () => {
     const onSubmit = jest.fn();
 
     render(<PostSessionFeedback onSubmit={onSubmit} onSkip={() => {}} />);
 
     fireEvent.press(screen.getByText("3"));
-    fireEvent.press(screen.getByText("Next"));
+    act(() => { jest.advanceTimersByTime(700); });
 
     fireEvent.press(screen.getByText("A little"));
-    fireEvent.press(screen.getByText("Next"));
+    act(() => { jest.advanceTimersByTime(700); });
 
     fireEvent.press(screen.getByText("About the same"));
-    fireEvent.press(screen.getByText("Done"));
+    act(() => { jest.advanceTimersByTime(700); });
 
     expect(onSubmit).toHaveBeenCalledWith({
       difficulty: 3,

@@ -158,6 +158,24 @@ export default function Setup() {
                   backgroundColor: tokens.bgElev,
                 }}
               >
+                {/* v1.1.10: JSX order [check, text, image]. In LTR that
+                    renders as [check, text, image] left-to-right; in RTL
+                    (flex-row auto-flip to row-reverse) it renders as
+                    [image, text, check] right-to-left — i.e. image on
+                    LEFT, check on RIGHT. Matches Hili's request. */}
+                <Check selected={selected} />
+                <Text
+                  style={{
+                    color: selected ? tokens.text : tokens.textMute,
+                    fontFamily: fonts.body,
+                    fontSize: 17,
+                    flex: 1,
+                    textAlign: "left",
+                  }}
+                  numberOfLines={1}
+                >
+                  {localize(s.label, i18n.language)}
+                </Text>
                 {s.image ? (
                   <Image
                     source={s.image}
@@ -170,9 +188,6 @@ export default function Setup() {
                     resizeMode="cover"
                   />
                 ) : (
-                  // Placeholder block for sounds that don't have an image yet
-                  // (baby-crying, dog, restaurant). Same dimensions as the
-                  // thumbnail so rows stay even.
                   <View
                     style={{
                       width: 78,
@@ -182,18 +197,6 @@ export default function Setup() {
                     }}
                   />
                 )}
-                <Text
-                  style={{
-                    color: selected ? tokens.text : tokens.textMute,
-                    fontFamily: fonts.body,
-                    fontSize: 17,
-                    flex: 1,
-                  }}
-                  numberOfLines={1}
-                >
-                  {localize(s.label, i18n.language)}
-                </Text>
-                <Check selected={selected} />
               </Pressable>
             );
           })}
@@ -295,6 +298,7 @@ export default function Setup() {
                 color: tokens.textMute,
                 fontFamily: fonts.body,
                 fontSize: 14,
+                textAlign: "left",
               }}
             >
               {t("setup.rereadIntro")}

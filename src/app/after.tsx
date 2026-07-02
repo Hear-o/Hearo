@@ -56,6 +56,7 @@ export default function After() {
               fontSize: 36,
               lineHeight: 46,
               marginBottom: 24,
+              textAlign: "left",
             }}
           >
             {t("after.affirmationTitle")}
@@ -67,6 +68,7 @@ export default function After() {
               fontFamily: fonts.body,
               fontSize: 18,
               lineHeight: 28,
+              textAlign: "left",
             }}
           >
             {t("after.affirmationBody")}

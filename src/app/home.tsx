@@ -112,6 +112,7 @@ export default function Home() {
                 letterSpacing: 1.6,
                 textTransform: "uppercase",
                 marginBottom: 10,
+                textAlign: "left",
               }}
             >
               {t("home.thoughtLabel")}
@@ -139,6 +140,7 @@ export default function Home() {
                 letterSpacing: 1.6,
                 textTransform: "uppercase",
                 marginBottom: 8,
+                textAlign: "left",
               }}
             >
               {t("home.progress")}
@@ -149,6 +151,7 @@ export default function Home() {
                 fontFamily: fonts.display,
                 fontSize: 44,
                 lineHeight: 50,
+                textAlign: "left",
               }}
             >
               {sessionsLabel}

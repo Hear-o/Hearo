@@ -37,6 +37,7 @@ function Question({ label }: { label: string }) {
         fontSize: 22,
         lineHeight: 30,
         marginBottom: 28,
+        textAlign: "left",
       }}
     >
       {label}

@@ -124,6 +124,7 @@ function IntroStep({
           letterSpacing: 1.6,
           textTransform: "uppercase",
           marginBottom: 14,
+          textAlign: "left",
         }}
       >
         {localize(content.intro.eyebrow, lang)}
@@ -135,6 +136,7 @@ function IntroStep({
           fontSize: 28,
           lineHeight: 38,
           marginBottom: 16,
+          textAlign: "left",
         }}
       >
         {localize(content.intro.heading, lang)}
@@ -146,6 +148,7 @@ function IntroStep({
           fontSize: 15,
           lineHeight: 24,
           marginBottom: 32,
+          textAlign: "left",
         }}
       >
         {localize(content.intro.body, lang)}
@@ -158,6 +161,7 @@ function IntroStep({
           fontSize: 16,
           lineHeight: 26,
           marginBottom: 24,
+          textAlign: "left",
         }}
       >
         {localize(content.traumaExposure.prompt, lang)}

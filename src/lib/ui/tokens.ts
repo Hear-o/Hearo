@@ -39,9 +39,16 @@ export const fonts = {
 // and section titles, a body that's the default reading size, and a caption
 // for eyebrows / helpers / muted labels. lineHeight is paired with each
 // size and tuned for the Hebrew Frank Ruhl + Heebo metrics.
+//
+// v1.1.10: rtlBootstrap owns the app-wide default via Text.defaultProps.
+// Tokens also carry textAlign:"left" as suspenders — under Fabric,
+// defaultProps propagation is unreliable, so any Text that spreads a
+// type.* token gets the right value baked in either way. In RTL, "left"
+// auto-flips to visual right (which is the reading start for Hebrew).
+const baseAlign = { textAlign: "left" as const };
 export const type = {
-  hero:    { fontSize: 32, lineHeight: 44 },
-  display: { fontSize: 24, lineHeight: 32 },
-  body:    { fontSize: 17, lineHeight: 24 },
-  caption: { fontSize: 14, lineHeight: 20 },
+  hero:    { fontSize: 32, lineHeight: 44, ...baseAlign },
+  display: { fontSize: 24, lineHeight: 32, ...baseAlign },
+  body:    { fontSize: 17, lineHeight: 24, ...baseAlign },
+  caption: { fontSize: 14, lineHeight: 20, ...baseAlign },
 } as const;

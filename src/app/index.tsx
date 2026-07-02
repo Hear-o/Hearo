@@ -67,7 +67,7 @@ export default function Welcome() {
         <View className="flex-1 justify-center">
           <Text
             className="text-text font-display text-4xl leading-[44px]"
-            style={{ fontFamily: "FrankRuhlLibre_400Regular" }}
+            style={{ fontFamily: "FrankRuhlLibre_400Regular", textAlign: "left" }}
           >
             {t("welcome.line")}
           </Text>

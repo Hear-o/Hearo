@@ -43,6 +43,7 @@ function PermissionRow({
           fontFamily: fonts.display,
           fontSize: 22,
           marginBottom: 8,
+          textAlign: "left",
         }}
       >
         {title}
@@ -54,6 +55,7 @@ function PermissionRow({
           fontSize: 15,
           lineHeight: 22,
           marginBottom: 16,
+          textAlign: "left",
         }}
       >
         {why}
@@ -206,6 +208,7 @@ export default function Permissions() {
             lineHeight: 40,
             marginTop: 24,
             marginBottom: 40,
+            textAlign: "left",
           }}
         >
           {t("permissions.title")}
@@ -239,6 +242,7 @@ export default function Permissions() {
                 fontFamily: fonts.body,
                 fontSize: 13,
                 marginBottom: 8,
+                textAlign: "left",
               }}
             >
               {t("reminders.pickTime")}
@@ -260,6 +264,7 @@ export default function Permissions() {
             fontFamily: fonts.body,
             fontSize: 13,
             marginBottom: 24,
+            textAlign: "left",
           }}
         >
           {t("permissions.privacy")}

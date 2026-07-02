@@ -84,6 +84,7 @@ export default function Ready() {
               fontSize: 32,
               lineHeight: 44,
               marginTop: 24,
+              textAlign: "left",
             }}
           >
             {name
@@ -118,6 +119,7 @@ export default function Ready() {
                 letterSpacing: 1.6,
                 textTransform: "uppercase",
                 marginBottom: 10,
+                textAlign: "left",
               }}
             >
               {t("home.todaysExperience")}
@@ -129,6 +131,7 @@ export default function Ready() {
                 fontFamily: fonts.display,
                 fontSize: 26,
                 lineHeight: 34,
+                textAlign: "left",
               }}
             >
               {sceneActivity}
@@ -141,6 +144,7 @@ export default function Ready() {
                   fontFamily: fonts.body,
                   fontSize: 17,
                   marginTop: 4,
+                  textAlign: "left",
                 }}
               >
                 {withLine}
@@ -153,6 +157,7 @@ export default function Ready() {
                 fontFamily: fonts.body,
                 fontSize: 14,
                 marginTop: 14,
+                textAlign: "left",
               }}
             >
               {t("home.durationHint", { count: durationMinutes })}

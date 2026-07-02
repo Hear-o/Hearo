@@ -49,6 +49,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "./plugins/withRtl.js",
       "expo-router",
       [
         "expo-splash-screen",

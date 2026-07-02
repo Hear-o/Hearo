@@ -735,6 +735,7 @@ export default function Session() {
                 letterSpacing: 1.6,
                 textTransform: "uppercase",
                 opacity: 0.65,
+                textAlign: "left",
               }}
             >
               {sceneLabel}

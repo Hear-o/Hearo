@@ -72,13 +72,16 @@ describe("CrisisSheet", () => {
     expect(useCrisisStore.getState().isOpen).toBe(false);
   });
 
-  it("renders the title and 'free' copy while open", async () => {
+  it("renders the title and the ERAN affordance while open", async () => {
     await renderOpenSheet();
 
+    // v1.1.10: "Free, 24/7" subtitle removed with the logo-only redesign.
+    // Title + tappable ERAN logo (found by its accessibility label) are
+    // the load-bearing surfaces now.
     expect(
       screen.getByText("Need someone\nto talk to\nright now?"),
     ).toBeTruthy();
-    expect(screen.getByText("Free, 24/7,\nanonymous.")).toBeTruthy();
+    expect(screen.getByLabelText(`Call ERAN ${CRISIS_NUMBER}`)).toBeTruthy();
   });
 
   // ── Trusted-contact picker flow ──────────────────────────────────────────

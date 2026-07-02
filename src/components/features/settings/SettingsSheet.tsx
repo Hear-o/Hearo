@@ -64,9 +64,13 @@ export function SettingsSheet() {
   // layout direction (I18nManager.forceRTL) only takes effect on the next
   // launch, and live-mixing LTR text with an RTL-laid-out screen produces
   // glaringly broken UI. Persist the preference, flip the i18n + RTL flags,
-  // then reload via expo-updates so the app comes back up clean. In dev the
-  // reload may throw — we fall back to a stuck "restarting" state and ask
-  // the user to reopen the app manually via the system gesture.
+  // then reload via expo-updates so the app comes back up clean.
+  //
+  // v1.1.10: added a 500ms wait between forceRTL and reloadAsync.
+  // I18nManager.forceRTL only writes to NSUserDefaults via an async bridge
+  // call — reloading immediately can catch the stale value and leave the
+  // layout in the wrong direction. See AppDelegate.swift for the native
+  // side of this contract.
   async function handleLanguageChange(next: LanguagePreference) {
     if (next === i18n.language || languageSwitching) return;
     setLanguageSwitching(true);
@@ -76,6 +80,7 @@ export function SettingsSheet() {
       const shouldBeRTL = next === "he";
       I18nManager.allowRTL(shouldBeRTL);
       I18nManager.forceRTL(shouldBeRTL);
+      await new Promise((resolve) => setTimeout(resolve, 500));
       await Updates.reloadAsync();
     } catch {
       // Dev build (no Updates module wired) or reload race — leave the flag
@@ -260,6 +265,7 @@ export function SettingsSheet() {
               fontSize: 26,
               lineHeight: 34,
               marginBottom: 24,
+              textAlign: "left",
             }}
           >
             {t("settings.title")}
@@ -274,6 +280,7 @@ export function SettingsSheet() {
               letterSpacing: 1.4,
               textTransform: "uppercase",
               marginBottom: 10,
+              textAlign: "left",
             }}
           >
             {t("settings.nameLabel")}
@@ -304,6 +311,7 @@ export function SettingsSheet() {
               fontSize: 13,
               lineHeight: 18,
               marginTop: 6,
+              textAlign: "left",
             }}
           >
             {t("setup.nameHint")}
@@ -328,6 +336,7 @@ export function SettingsSheet() {
               letterSpacing: 1.4,
               textTransform: "uppercase",
               marginBottom: 12,
+              textAlign: "left",
             }}
           >
             {t("settings.languageLabel")}

@@ -55,6 +55,7 @@ export default function PsychoEducation() {
               letterSpacing: 1.6,
               textTransform: "uppercase",
               marginBottom: 14,
+              textAlign: "left",
             }}
           >
             {localize(content.eyebrow, lang)}
@@ -67,6 +68,7 @@ export default function PsychoEducation() {
               fontSize: 30,
               lineHeight: 40,
               marginBottom: 28,
+              textAlign: "left",
             }}
           >
             {localize(content.heading, lang)}
@@ -81,6 +83,7 @@ export default function PsychoEducation() {
                 fontSize: 16,
                 lineHeight: 26,
                 marginBottom: 18,
+                textAlign: "left",
               }}
             >
               {localize(paragraph, lang)}

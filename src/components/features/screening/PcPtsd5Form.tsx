@@ -52,6 +52,7 @@ export function PcPtsd5Form({ onSubmit }: Props) {
           letterSpacing: 1.6,
           textTransform: "uppercase",
           marginBottom: 14,
+          textAlign: "left",
         }}
       >
         {localize(content.items.instructions, lang)}
@@ -121,6 +122,7 @@ function QuestionRow({
           fontFamily: fonts.body,
           fontSize: 12,
           marginBottom: 6,
+          textAlign: "left",
         }}
       >
         {questionNumber} / 5
@@ -132,6 +134,7 @@ function QuestionRow({
           fontSize: 16,
           lineHeight: 24,
           marginBottom: 12,
+          textAlign: "left",
         }}
       >
         {questionText}

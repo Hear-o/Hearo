@@ -196,10 +196,12 @@ function MainView({
         {t("crisis.title")}
       </Text>
 
-      {/* v1.1.7: ERAN's brand logo replaces the "Call ERAN 1201" text.
-          Number stays visible below the logo because safety-critical info
-          (what am I about to dial?) should never be hidden behind iconography
-          alone. Tapping anywhere in this block still dials tel:1201. */}
+      {/* v1.1.10: logo-only. Number + "free 24/7" subtitle removed per UX
+          feedback — the ERAN brand mark alone is unambiguous in Israel and
+          the earlier stacked layout felt cluttered. Tap still dials tel:1201;
+          the accessibility label preserves the safety-critical context for
+          screen readers. Logo shrunk from 192×128 → 140×94 to sit lighter
+          in the sheet. */}
       <Pressable
         onPress={onCallEran}
         hitSlop={8}
@@ -209,30 +211,10 @@ function MainView({
       >
         <Image
           source={ERAN_LOGO}
-          style={{ width: 192, height: 128 }}
+          style={{ width: 140, height: 94 }}
           contentFit="contain"
           accessible={false}
         />
-        <Text
-          style={{
-            color: tokens.accent,
-            fontFamily: fonts.displayMedium,
-            ...typeScale.hero,
-            marginTop: 4,
-          }}
-        >
-          {t("crisis.number")}
-        </Text>
-        <Text
-          style={{
-            color: tokens.textMute,
-            fontFamily: fonts.body,
-            ...typeScale.body,
-            marginTop: 4,
-          }}
-        >
-          {t("crisis.free")}
-        </Text>
       </Pressable>
 
       <View
@@ -255,6 +237,7 @@ function MainView({
               letterSpacing: 1.4,
               textTransform: "uppercase",
               marginBottom: 12,
+              textAlign: "left",
             }}
           >
             {t("crisis.trusted")}
@@ -272,6 +255,7 @@ function MainView({
                   color: tokens.text,
                   fontFamily: fonts.body,
                   fontSize: 17,
+                  textAlign: "left",
                 }}
               >
                 {c.name}
@@ -286,6 +270,7 @@ function MainView({
                   color: tokens.accent,
                   fontFamily: fonts.body,
                   fontSize: 15,
+                  textAlign: "left",
                 }}
               >
                 {t("crisis.trustedContacts.addSomeone")}  +
@@ -300,6 +285,7 @@ function MainView({
                 fontFamily: fonts.body,
                 fontSize: 13,
                 marginTop: 8,
+                textAlign: "left",
               }}
             >
               {t("crisis.trustedContacts.listFull")}

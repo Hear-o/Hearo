@@ -97,6 +97,7 @@ function SceneCard({ scene, lang }: { scene: Scene; lang: string }) {
             fontFamily: fonts.display,
             fontSize: 22,
             lineHeight: 28,
+            textAlign: "left",
           }}
         >
           {localize(scene.label, lang)}

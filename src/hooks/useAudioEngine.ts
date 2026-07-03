@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useCallback } from 'react';
 import { AudioEngine, TriggerRampOptions } from '@/lib/audio-engine';
 
 export interface UseAudioEngineResult {
@@ -81,18 +81,39 @@ export function useAudioEngine(): UseAudioEngineResult {
     []
   );
 
-  return {
-    loadAmbientAndVoice,
-    loadTrigger,
-    startAmbient,
-    startTriggerRamp,
-    onSpike,
-    onNormalized,
-    playVoiceClip,
-    setTriggerCeiling,
-    pauseAll,
-    resumeAll,
-    fadeOutAll,
-    currentTriggerGain,
-  };
+  // Every callback above is stable for the component's lifetime (useCallback
+  // with empty deps), so this object is created once and never changes
+  // reference. Without useMemo, effects in session.tsx that depend on this
+  // hook's return value (e.g. the ADAPTIVE_LOOP auto-end timer) would tear
+  // down and re-run on every parent re-render.
+  return useMemo(
+    () => ({
+      loadAmbientAndVoice,
+      loadTrigger,
+      startAmbient,
+      startTriggerRamp,
+      onSpike,
+      onNormalized,
+      playVoiceClip,
+      setTriggerCeiling,
+      pauseAll,
+      resumeAll,
+      fadeOutAll,
+      currentTriggerGain,
+    }),
+    [
+      loadAmbientAndVoice,
+      loadTrigger,
+      startAmbient,
+      startTriggerRamp,
+      onSpike,
+      onNormalized,
+      playVoiceClip,
+      setTriggerCeiling,
+      pauseAll,
+      resumeAll,
+      fadeOutAll,
+      currentTriggerGain,
+    ]
+  );
 }

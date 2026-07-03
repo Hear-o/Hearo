@@ -13,6 +13,9 @@
     "icon": "./assets/images/icon.png",
     "scheme": "hearo",
     "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "com.techheal.hearo"
+    },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#161E33",

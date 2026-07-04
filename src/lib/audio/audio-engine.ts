@@ -194,9 +194,10 @@ export class AudioEngine {
       this.voiceBuffers = voiceBufs;
       audioTrace("engine: loadAmbientAndVoice done, ambientDuration=",
         ambientBuf.duration, "voiceCount=", voiceBufs.length);
-      /* istanbul ignore next — decodeAudioData failure path; on-device defense. */
-    } catch (e) {
+    } catch (/* istanbul ignore next — decodeAudioData failure; on-device */ e) {
+      /* istanbul ignore next */
       audioWarn("engine: loadAmbientAndVoice FAILED", e);
+      /* istanbul ignore next */
       throw e;
     }
   }
@@ -326,6 +327,9 @@ export class AudioEngine {
   }
 
   private _fireBurst(): void {
+    /* istanbul ignore if — defensive: _scheduleNextBurst gates on the same
+       conditions before setting the setTimeout, so this early return only
+       fires on races (scheduler stopped between schedule and fire). */
     if (
       this._schedulerPaused ||
       !this._config ||

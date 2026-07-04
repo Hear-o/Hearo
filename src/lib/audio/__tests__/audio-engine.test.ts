@@ -99,6 +99,18 @@ describe("AudioEngine / construction + loading", () => {
     }
     expect((err as Error)?.message).toMatch(/trigger buffer not loaded/);
   });
+
+  // v1.1.0 idempotency guard — re-calling loadTriggers with the same source
+  // list is a no-op (skips the decodeAudioData round trip). Covers the
+  // "same set already loaded" early-return branch.
+  it("loadTriggers is a no-op when called again with the same sources", async () => {
+    const engine = await loadedEngine();
+    const c = ctx();
+    const before = c.decodeAudioData.mock.calls.length;
+    await engine.loadTriggers([4]); // same source as loadedEngine's initial load
+    const after = c.decodeAudioData.mock.calls.length;
+    expect(after).toBe(before); // no extra decode calls
+  });
 });
 
 describe("AudioEngine / burst scheduler", () => {
@@ -352,6 +364,67 @@ describe("AudioEngine / voice overlay", () => {
       throw new Error("already stopped");
     });
     expect(() => engine.stopVoice()).not.toThrow();
+  });
+
+  // v1.1.6 branches — voice-on-voice cut + ambient duck + duck restore.
+  it("playVoiceClip cuts an in-flight voice clip when a new one starts", async () => {
+    const engine = await loadedEngine();
+    void engine.playVoiceClip(0);
+    jest.advanceTimersByTime(350);
+    const firstVoice = ctx().sources[ctx().sources.length - 1];
+    expect(firstVoice.stop).not.toHaveBeenCalled();
+    // Second playVoiceClip should stop the first source immediately.
+    void engine.playVoiceClip(1);
+    expect(firstVoice.stop).toHaveBeenCalledTimes(1);
+  });
+
+  it("playVoiceClip swallows a throw from the pre-existing voice source's stop()", async () => {
+    const engine = await loadedEngine();
+    void engine.playVoiceClip(0);
+    jest.advanceTimersByTime(350);
+    const firstVoice = ctx().sources[ctx().sources.length - 1];
+    firstVoice.stop.mockImplementation(() => {
+      throw new Error("already stopped");
+    });
+    // The second play call must not throw despite the first source's stop() throwing.
+    expect(() => void engine.playVoiceClip(1)).not.toThrow();
+  });
+
+  it("ducks ambient on voice start and restores on voice end", async () => {
+    const engine = await loadedEngine();
+    const ambientGain = ctx().gains[0];
+    // Baseline the ambient at 1.0 and clear the ramp history so we can inspect
+    // the voice-duck ramps in isolation.
+    engine.setAmbientGain(1.0);
+    ambientGain.gain.linearRampToValueAtTime.mockClear();
+
+    void engine.playVoiceClip(0);
+    jest.advanceTimersByTime(350); // settle delay → voice starts, ambient ducks
+
+    // Last ramp targets 1.0 * dBToGain(-9) ≈ 0.355.
+    const duckedTarget = ambientGain.gain.linearRampToValueAtTime.mock.calls.at(-1)?.[0];
+    expect(duckedTarget).toBeCloseTo(dBToGain(-9), 5);
+
+    // Play out the voice — buffer=1s → finish at +300ms after that.
+    jest.advanceTimersByTime(1 * 1000 + 300);
+    const restoredTarget = ambientGain.gain.linearRampToValueAtTime.mock.calls.at(-1)?.[0];
+    expect(restoredTarget).toBe(1.0);
+  });
+
+  it("stopVoice restores the ambient duck it would otherwise leak", async () => {
+    const engine = await loadedEngine();
+    const ambientGain = ctx().gains[0];
+    engine.setAmbientGain(1.0);
+
+    void engine.playVoiceClip(0);
+    jest.advanceTimersByTime(350); // voice active, ambient ducked
+    ambientGain.gain.linearRampToValueAtTime.mockClear();
+
+    engine.stopVoice();
+    // stopVoice bypasses the natural finish() restore — verify it restores
+    // ambient inline instead.
+    const restoredTarget = ambientGain.gain.linearRampToValueAtTime.mock.calls.at(-1)?.[0];
+    expect(restoredTarget).toBe(1.0);
   });
 });
 

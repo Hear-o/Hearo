@@ -3,9 +3,7 @@
 ## Purpose
 
 The core therapeutic loop of HearO. A user puts on headphones, taps **begin**, and is taken through a guided walk: an ambient soundscape, a voice narrating the scene, and after a calm opening period, a user-consented trigger sound layered into the ambient mix. The session monitors the user's pulse and the user's manual intensity setting throughout, and ends with a brief reflection.
-
 ## Requirements
-
 ### Requirement: Consent-bound trigger sounds
 The session MUST only play trigger sounds the user has previously consented to during setup. The session MUST NOT introduce a sound the user has not added to their consented list.
 
@@ -21,13 +19,12 @@ The session MUST only play trigger sounds the user has previously consented to d
 - AND ambient and voice continue uninterrupted, giving the user a rehearsal walk without exposure
 
 ### Requirement: Three named phases
-The session MUST progress through three named phases in order: opening (calm ambient + introductory voice), during (trigger sound enters), calming (voice script that explicitly acknowledges the trigger and re-grounds the user).
+The session MUST progress through five named states in order: `LOADING` (asset verification and download), `DISCLAIMER` (voice clip 1 plays), `AMBIENT_FADE_IN` (ambient establishes, HR baseline measured), `ADAPTIVE_LOOP` (trigger active, HR-driven), `WIND_DOWN` (all audio fades to zero, voice clip 3 plays). No state MAY be skipped or reordered.
 
-#### Scenario: Phase progression on time
-- GIVEN a session that has just started
-- WHEN 15 seconds have elapsed
-- THEN the session enters the during phase
-- AND the during voice script begins playing
+#### Scenario: Phase progression
+- **WHEN** a session begins
+- **THEN** the states occur in the order: LOADING, DISCLAIMER, AMBIENT_FADE_IN, ADAPTIVE_LOOP, WIND_DOWN
+- **AND** no state is bypassed
 
 ### Requirement: No visible warning before triggers
 The session MUST NOT display a popup, banner, countdown, or visible warning before a trigger sound plays. The only acceptable visual response to the trigger is a barely-perceptible accent flash on the breathing circle.
@@ -79,14 +76,13 @@ The session MUST display elapsed time as `m:ss` near the bottom of the screen. T
 - AND no countdown, progress bar toward completion, or remaining-time value is shown
 
 ### Requirement: Early exit routes to After
-The session MUST be exitable at any time via the × icon. Exiting MUST route the user to the After screen, not back to Home.
+The session MUST be exitable at any time via the × icon. Exiting MUST route the user to the After screen, not back to Home. Audio MUST fade to silence over 600ms on exit.
 
 #### Scenario: User taps × mid-session
-- GIVEN the session is in any phase
-- WHEN the user taps the × icon
-- THEN audio fades to silence over 600ms
-- AND the user lands on the After screen with the pulse curve so far and reflection options
-- AND the partial session is still recorded, not discarded
+- **WHEN** the user taps the × icon during any active state
+- **THEN** all audio fades to silence over 600ms
+- **AND** the user lands on the After screen
+- **AND** the partial session is recorded, not discarded
 
 ### Requirement: Crisis access from session
 The session MUST surface the crisis sheet via a small `i` glyph in the top-left, reachable in one tap from any phase.
@@ -98,3 +94,66 @@ The session MUST surface the crisis sheet via a small `i` glyph in the top-left,
 - AND the breathing circle freezes mid-cycle
 - AND the crisis sheet slides up from the bottom
 - AND the session is paused, not ended
+
+### Requirement: Ambient soundscape plays continuously throughout the session
+An ambient audio track MUST play from `AMBIENT_FADE_IN` through `WIND_DOWN`, looping without audible gap. The ambient layer MUST NOT be affected by HR events, the intensity slider, or crisis-sheet open/close.
+
+#### Scenario: Ambient unaffected by HR spike
+- **WHEN** `PulseSpiked` is emitted during `ADAPTIVE_LOOP`
+- **THEN** the ambient soundscape continues without change in volume or playback
+
+### Requirement: Post-session feedback form shown before After screen
+After `WIND_DOWN` completes, the session MUST present a short questionnaire (3-4 questions, maximum 4 screens) before routing to the After screen. The questionnaire MUST include: session difficulty (1-5 scale), trigger impact (yes / a little / no), mood change (better / same / harder), and an optional open-text field.
+
+#### Scenario: Feedback form appears after session
+- **WHEN** the `WIND_DOWN` state completes
+- **THEN** the post-session feedback form is displayed
+- **AND** the After screen is not shown until the form is submitted or skipped
+
+### Requirement: Session screen shows watch status
+The session screen MUST indicate whether a paired watch is connected. If no watch is paired at session start, the screen MUST show a message informing the user that the distress button controls trigger volume. If the watch disconnects during the session, a banner MUST appear within 8 seconds.
+
+#### Scenario: No watch at session start
+- **WHEN** the session starts and no watch is paired
+- **THEN** the session screen shows "No watch detected. Use the button on screen to lower trigger volume when needed."
+- **AND** the distress button is visible
+
+#### Scenario: Watch disconnects mid-session
+- **WHEN** the paired watch loses BLE connection for more than 8 seconds
+- **THEN** a banner appears: "Watch disconnected. Use the distress button to control trigger volume manually."
+
+### Requirement: Auto-soften is driven by actual pulse, not script timing
+The auto-soften behavior (voice softening, breathing-circle slowing, trigger-sound attenuation) during a session SHALL be triggered by the user's observed pulse crossing a configured threshold, not by the session script's phase clock. When real pulse is unavailable, the mocked phase-driven fallback MAY drive the behavior so the session is still runnable.
+
+#### Scenario: Real watch paired, pulse crosses threshold
+- **WHEN** the session is mid-trigger and the user's real heart rate crosses 105 bpm for two consecutive samples
+- **THEN** the session enters the slow state (voice script switches to calming, breathing slows to 5s/8s, trigger attenuates)
+- **AND** the transition is independent of the session's elapsed time
+
+#### Scenario: Real watch paired, pulse normalizes
+- **WHEN** the session is in the slow state and the user's heart rate stays below 90 bpm for three consecutive samples
+- **THEN** the session exits the slow state and returns the trigger to the user's manual ceiling
+
+#### Scenario: No watch paired
+- **WHEN** no Apple Watch is paired or HealthKit permission was denied
+- **THEN** the session falls back to the existing mock pulse generator
+- **AND** auto-soften is driven by the script's pulsePhase, identical to today's behavior
+- **AND** the session is otherwise unaffected (voice, breathing, audio all run normally)
+
+### Requirement: Watch disconnect mid-session
+If the Apple Watch disconnects during a session, the session SHALL continue without interruption by falling back to the mock pulse generator after a brief grace period.
+
+#### Scenario: Watch loses connection mid-session
+- **WHEN** the session has been receiving real heart-rate samples and no new samples arrive for 10 seconds
+- **THEN** the session silently switches to the mock pulse generator
+- **AND** the user sees a continuously updating pulse number (script-driven from this point)
+- **AND** no popup or alert appears
+
+### Requirement: Pulse stream stays on-device
+Real heart-rate samples consumed during a session MUST NOT leave the device. Only the per-session sparkline summary persisted at session end MAY be stored locally on-device. No backend SHALL receive real pulse samples.
+
+#### Scenario: Backend audit after a session with a real watch
+- **WHEN** a session completes with real Apple Watch pulse driving the behavior
+- **THEN** no record of individual heart-rate samples exists in any backend log, analytics event, or telemetry stream owned by the app
+- **AND** the sparkline summary saved to the device's local storage is the only persisted record
+

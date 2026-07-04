@@ -6,7 +6,7 @@ interface Props {
   description?: string;
 }
 
-const { title, description = "A quiet place to walk again. Gradual, consent-based sound exposure for veterans living with combat-related PTSD." } = Astro.props;
+const { title, description = "A quiet place to be again. Gradual, consent-based sound exposure for veterans living with combat-related PTSD." } = Astro.props;
 ---
 
 <!doctype html>
@@ -27,12 +27,17 @@ const { title, description = "A quiet place to walk again. Gradual, consent-base
   <body class="min-h-screen flex flex-col">
     <header class="px-6 sm:px-12 pt-8 pb-4">
       <nav class="max-w-5xl mx-auto flex items-center justify-between">
-        <a href="/" class="font-display text-xl tracking-tight">
-          hear<span class="text-accent">○</span>
+        <a href="/" class="font-display text-3xl sm:text-4xl tracking-tight leading-none">
+          Hear<span class="text-accent">O</span>
         </a>
-        <a href="/privacy" class="text-sm text-text-mute hover:text-text transition-colors">
-          Privacy
-        </a>
+        <div class="flex items-center gap-6">
+          <a href="/about" class="text-base text-text-mute hover:text-text transition-colors">
+            About
+          </a>
+          <a href="/privacy" class="text-base text-text-mute hover:text-text transition-colors">
+            Privacy
+          </a>
+        </div>
       </nav>
     </header>
 
@@ -44,10 +49,11 @@ const { title, description = "A quiet place to walk again. Gradual, consent-base
       <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-start justify-between gap-6 text-sm text-text-mute">
         <div>
           <p class="font-display text-base text-text mb-1">HearO</p>
-          <p>A quiet place to walk again.</p>
+          <p>A quiet place to be again.</p>
         </div>
         <div class="flex gap-6">
           <a href="/" class="hover:text-text transition-colors">Home</a>
+          <a href="/about" class="hover:text-text transition-colors">About</a>
           <a href="/privacy" class="hover:text-text transition-colors">Privacy</a>
         </div>
       </div>

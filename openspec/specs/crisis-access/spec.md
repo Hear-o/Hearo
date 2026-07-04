@@ -3,9 +3,7 @@
 ## Purpose
 
 A user in distress must be able to reach a human within one tap from anywhere in the app. The primary route is ERAN 1201 — Israel's free, 24/7, anonymous emotional first-aid hotline. The capability is a safety floor, not a feature: every other screen, animation, or pitch consideration must yield to this one working reliably. The UI for crisis access is deliberately quiet rather than alarming, because alarming UI in a crisis moment is itself activating for a traumatized user.
-
 ## Requirements
-
 ### Requirement: Crisis affordance on every screen
 Every screen in the app MUST surface a crisis affordance — a small `i` glyph in the top-left of the screen. The affordance MUST use the letter `i`. It MUST NOT use `!`, `?`, `SOS`, red icons, or any alarm imagery.
 
@@ -87,3 +85,78 @@ The crisis sheet MUST be dismissable without the user being forced to choose any
 - WHEN the user taps `close`
 - THEN the sheet slides down and disappears
 - AND the user returns to the screen they were on
+
+### Requirement: Trusted contacts source is the device address book
+The list of contacts shown under *a person you trust* SHALL be selected by the user from their device's address book via `expo-contacts`. The app MUST NOT collect contact data through any other channel (no manual entry of phone numbers, no import from external sources).
+
+#### Scenario: User adds first trusted contact
+- **WHEN** the user taps *a person you trust* with no configured contacts and selects "Add someone"
+- **THEN** the system Contacts permission prompt appears
+- **AND** on grant, a picker shows the user's address book entries
+- **AND** the selected contact's stable ID is persisted via the local storage seam
+
+#### Scenario: User opens crisis sheet with configured contacts
+- **WHEN** the user opens the crisis sheet and contacts are configured
+- **THEN** *a person you trust* expands to show the configured contacts, most-recently-added first
+- **AND** tapping a contact launches the system dialer via `tel:` with that contact's primary number
+- **AND** the app does not place the call itself
+
+### Requirement: Contacts cap and listing
+The configured-contacts list SHALL be capped at 5 entries and SHALL fit within the crisis sheet without scrolling.
+
+#### Scenario: User tries to add a sixth contact
+- **WHEN** the user has 5 contacts configured and attempts to add another
+- **THEN** the add flow shows a quiet message that the list is full and offers to remove an existing one
+
+### Requirement: Contact data stays on the device
+Contact identifiers and any cached display data SHALL be stored only on the device. The app MUST NOT transmit contact information to any backend or third party. The app MUST NOT log when a trusted-contact call is initiated.
+
+#### Scenario: Backend audit after a trusted-contact tap
+- **WHEN** the user taps a configured trusted contact and the call is initiated
+- **THEN** no record of the action exists in any backend log, analytics event, or telemetry stream owned by the app
+
+### Requirement: Permission denial does not break the sheet
+If the user denies the Contacts permission, the crisis sheet MUST continue to function with ERAN as the primary path, framed positively (not as a remaining option).
+
+#### Scenario: User denies Contacts permission
+- **WHEN** the user denies the Contacts prompt
+- **THEN** the crisis sheet shows a quiet message explaining ERAN's role ("ERAN's trained for this. They answer day and night.")
+- **AND** the *a person you trust* row is removed from the sheet
+- **AND** the user is not re-prompted on subsequent crisis-sheet opens (until they explicitly try to add a contact via Settings, when that exists)
+
+### Requirement: Bilingual parity
+The crisis sheet MUST render in the user's selected language (English or Hebrew). All copy — headline, primary action, secondary action, supporting text, dismiss link — MUST be translated. Layout MUST mirror correctly under RTL.
+
+#### Scenario: Sheet opens in Hebrew
+- **WHEN** the user's device language is Hebrew and the user taps the `i` glyph
+- **THEN** the sheet headline reads `צריך מישהו לדבר איתו עכשיו?` (or equivalent translated copy)
+- **AND** the primary action reads `התקשר לער"ן 1201` (or equivalent)
+- **AND** the layout flows right-to-left with the close link at the bottom-right margin
+
+### Requirement: Sheet animation
+The crisis sheet MUST slide up from the bottom of the screen on open and slide down on dismiss. The slide animation MUST complete within 600ms. The animation MUST NOT include bounce, overshoot, or any visual emphasis that reads as alarming.
+
+#### Scenario: Open animation
+- **WHEN** the user taps the `i` glyph
+- **THEN** the sheet begins sliding up from the bottom of the screen within 200ms of the tap
+- **AND** the sheet reaches its resting position within 600ms total
+- **AND** the easing curve is monotonic (no overshoot or bounce)
+
+#### Scenario: Dismiss animation
+- **WHEN** the user taps `close`
+- **THEN** the sheet slides down off the bottom of the screen within 600ms
+- **AND** the underlying screen becomes interactive again as soon as the sheet has fully dismissed
+
+### Requirement: Affordance z-index
+The `i` glyph MUST render above all other screen content, including scene background images and any session overlays. The affordance MUST remain visible and tappable even while modal animations or auto-attenuation transitions are in flight.
+
+#### Scenario: Affordance during scene image load
+- **WHEN** the Session screen is mounting and the scene background image is still loading
+- **THEN** the `i` glyph is already visible and tappable in the top-left
+- **AND** tapping it opens the crisis sheet regardless of the image load state
+
+#### Scenario: Affordance during automatic attenuation
+- **WHEN** the session is mid-animation, automatically lowering the trigger volume
+- **THEN** the `i` glyph remains tappable
+- **AND** tapping it pauses the session and opens the sheet without waiting for the in-flight animation to finish
+

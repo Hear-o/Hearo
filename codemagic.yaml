@@ -1,0 +1,206 @@
+workflows:
+  ios-app-store:
+    name: iOS App Store
+    instance_type: mac_mini_m2
+    max_build_duration: 120
+
+    integrations:
+      app_store_connect: "Mazilon NPO account"
+
+    environment:
+      groups:
+        - app_store_credentials
+      node: latest
+      xcode: latest
+      cocoapods: default
+      vars:
+        BUNDLE_ID: "com.techheal.hearo"
+        APP_NAME: "Hearo"
+        XCODE_WORKSPACE: "Hearo.xcworkspace"
+        XCODE_SCHEME: "Hearo"
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+      cancel_previous_builds: true
+
+    cache:
+      cache_paths:
+        - $HOME/.npm
+        - $HOME/Library/Caches/CocoaPods
+        - $HOME/Library/Developer/Xcode/DerivedData
+
+    scripts:
+      - name: Validate release configuration
+        script: |
+          : "${APP_STORE_APPLE_ID:?Set APP_STORE_APPLE_ID in the app_store_credentials Codemagic variable group.}"
+          : "${CERTIFICATE_PRIVATE_KEY:?Set CERTIFICATE_PRIVATE_KEY in the app_store_credentials Codemagic variable group.}"
+
+      - name: Install npm dependencies
+        script: |
+          npm ci
+
+      - name: Generate native iOS project
+        script: |
+          npx expo prebuild --platform ios --non-interactive --clean
+
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios
+          pod install
+
+      - name: Initialize keychain
+        script: |
+          keychain initialize
+
+      - name: Ensure Apple app capabilities
+        script: |
+          set -e
+
+          BUNDLE_RESOURCE_ID=$(app-store-connect bundle-ids list \
+            --bundle-id-identifier "$BUNDLE_ID" \
+            --strict-match-identifier \
+            --json | node -e '
+              const fs = require("fs");
+              const input = fs.readFileSync(0, "utf8").trim();
+              if (!input) process.exit(0);
+              const wanted = process.env.BUNDLE_ID;
+              const ids = [];
+              const visit = (value) => {
+                if (Array.isArray(value)) return value.forEach(visit);
+                if (!value || typeof value !== "object") return;
+
+                const attributes = value.attributes || {};
+                const identifier =
+                  value.identifier ||
+                  value.bundleIdIdentifier ||
+                  attributes.identifier ||
+                  attributes.bundleIdIdentifier;
+
+                if (value.id && (!wanted || identifier === wanted)) ids.push(value.id);
+                Object.values(value).forEach(visit);
+              };
+
+              visit(JSON.parse(input));
+              process.stdout.write(ids[0] || "");
+            ')
+
+          if [ -z "$BUNDLE_RESOURCE_ID" ]; then
+            BUNDLE_RESOURCE_ID=$(app-store-connect bundle-ids create "$BUNDLE_ID" \
+              --name "$APP_NAME" \
+              --platform IOS \
+              --json | node -e '
+                const fs = require("fs");
+                const input = fs.readFileSync(0, "utf8").trim();
+                if (!input) process.exit(0);
+                const ids = [];
+                const visit = (value) => {
+                  if (Array.isArray(value)) return value.forEach(visit);
+                  if (!value || typeof value !== "object") return;
+                  if (value.id) ids.push(value.id);
+                  Object.values(value).forEach(visit);
+                };
+                visit(JSON.parse(input));
+                process.stdout.write(ids[0] || "");
+              ')
+          fi
+
+          if [ -z "$BUNDLE_RESOURCE_ID" ]; then
+            echo "Unable to resolve Apple bundle identifier resource ID for $BUNDLE_ID."
+            exit 1
+          fi
+
+          app-store-connect bundle-ids enable-capabilities "$BUNDLE_RESOURCE_ID" \
+            --capability HealthKit || true
+
+          CAPABILITIES_JSON=$(app-store-connect bundle-ids capabilities "$BUNDLE_RESOURCE_ID" --json)
+          if ! echo "$CAPABILITIES_JSON" | grep -qi "healthkit"; then
+            echo "HealthKit is not enabled for $BUNDLE_ID. Enable it in Apple Developer or grant the Codemagic integration permission to manage identifiers."
+            echo "$CAPABILITIES_JSON"
+            exit 1
+          fi
+
+      - name: Fetch or create App Store signing files
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create \
+            --delete-stale-profiles
+
+      - name: Add signing certificates to keychain
+        script: |
+          keychain add-certificates
+
+      - name: Apply App Store provisioning profiles
+        script: |
+          xcode-project use-profiles \
+            --project "$CM_BUILD_DIR/ios/Hearo.xcodeproj"
+
+      - name: Set iOS build number
+        script: |
+          set -e
+
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-build-number "$APP_STORE_APPLE_ID" --platform IOS --all-versions)
+          LATEST_BUILD_NUMBER=$(printf "%s" "$LATEST_BUILD_NUMBER" | tr -d "[:space:]")
+          PROJECT_BUILD_NUMBER=$(printf "%s" "${PROJECT_BUILD_NUMBER:-}" | tr -d "[:space:]")
+
+          case "$LATEST_BUILD_NUMBER" in
+            "")
+              UPDATED_BUILD_NUMBER=${PROJECT_BUILD_NUMBER:-}
+              ;;
+            *[!0-9]*)
+              echo "App Store Connect returned a non-numeric build number: $LATEST_BUILD_NUMBER"
+              exit 1
+              ;;
+            *)
+              UPDATED_BUILD_NUMBER=$((LATEST_BUILD_NUMBER + 1))
+              ;;
+          esac
+
+          case "${PROJECT_BUILD_NUMBER:-}" in
+            "")
+              ;;
+            *[!0-9]*)
+              echo "Codemagic PROJECT_BUILD_NUMBER is not numeric: $PROJECT_BUILD_NUMBER"
+              exit 1
+              ;;
+            *)
+              if [ -z "${UPDATED_BUILD_NUMBER:-}" ] || [ "$PROJECT_BUILD_NUMBER" -gt "$UPDATED_BUILD_NUMBER" ]; then
+                UPDATED_BUILD_NUMBER=$PROJECT_BUILD_NUMBER
+              fi
+              ;;
+          esac
+
+          if [ -z "${UPDATED_BUILD_NUMBER:-}" ]; then
+            echo "Unable to determine an iOS build number."
+            exit 1
+          fi
+
+          echo "Setting iOS build number to $UPDATED_BUILD_NUMBER (latest App Store Connect build: ${LATEST_BUILD_NUMBER:-none}, Codemagic project build: ${PROJECT_BUILD_NUMBER:-unset})."
+
+          cd "$CM_BUILD_DIR/ios"
+          agvtool new-version -all "$UPDATED_BUILD_NUMBER"
+          agvtool what-version
+
+      - name: Build signed IPA
+        script: |
+          xcode-project build-ipa \
+            --workspace "$CM_BUILD_DIR/ios/$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        expire_build_submitted_for_review: true
+        submit_to_app_store: false

@@ -1,6 +1,6 @@
 # HearO
 
-A quiet place to walk again.
+A quiet place to be again.
 
 HearO is a mobile app for veterans living with combat-related PTSD. It uses gradual, consent-based sound exposure — ambient soundscapes layered with user-chosen trigger sounds — guided by a pre-recorded voice and watched over by the user's Apple Watch pulse. The user has two control layers: a manual intensity dial that's always reachable, and an automatic pulse-driven response that softens things when their body starts to spike. Both can only make things softer, never louder. No popups. No alarms. The app does the work the user shouldn't have to.
 
@@ -10,7 +10,7 @@ HearO is a mobile app for veterans living with combat-related PTSD. It uses grad
 > - [`docs/FRONTEND.md`](./docs/FRONTEND.md) — visual design system + screen specs.
 > - [`docs/CONVENTIONS.md`](./docs/CONVENTIONS.md) — frontend code conventions (stack, folder structure, hooks, naming).
 > - [`openspec/README.md`](./openspec/README.md) — capability requirements in [openspec.dev](https://openspec.dev) form.
-> - [`voice-scripts/`](./voice-scripts/) — source text for the in-session voice narration, per scene, EN + HE.
+> - [`docs/voice-scripts/`](./docs/voice-scripts/) — source text for the in-session voice narration, per scene, EN + HE.
 > - [`web/README.md`](./web/README.md) — marketing site (Astro + Tailwind), landing + privacy policy.
 
 ## The user we're designing for
@@ -27,7 +27,7 @@ A combat veteran. Possibly currently serving, possibly discharged. Knows their t
 
 ## The core loop (a session)
 
-1. User opens app. App shows today's prepared walk (scene + selected sounds).
+1. User opens app. App shows today's prepared moment (scene + selected sounds).
 2. User taps **begin**. Ambient soundscape plays through headphones (river, city, etc.).
 3. A pre-recorded voice narrates the scene in soft, second-person prose.
 4. After ~60–90 seconds, a user-consented trigger sound enters the soundscape (motorcycle, helicopter, etc.).
@@ -68,7 +68,7 @@ Applies to every surface — screen copy, notifications, marketing, pitch deck.
 
 ```
                        use                    do not use
-session             →  "today's walk"      ✗  "treatment"
+session             →  "today's moment"    ✗  "treatment"
 trigger sound       →  (do not name it)    ✗  "trigger"
 exposure            →  "practice"          ✗  "therapy"
 heart rate          →  "your pulse"        ✗  "biometrics"
@@ -99,7 +99,7 @@ The app is a **monolithic frontend** (React Native + Expo) talking directly to *
 This shifts a few things:
 
 - There's no REST API to document; the data contract lives in the Supabase schema.
-- The content-provisioning adapter ([`src/lib/content.ts`](./src/lib/content.ts)) is the seam where local fallback data gets replaced by Supabase reads when the schema lands. Every site we'll need to migrate is marked `TODO(supabase)` in code.
+- The content-provisioning adapter ([`src/lib/content/content.ts`](./src/lib/content/content.ts)) is the seam where local fallback data gets replaced by Supabase reads when the schema lands. Every site we'll need to migrate is marked `TODO(supabase)` in code.
 - The Apple Watch HealthKit stream stays on-device and is not posted to Supabase — pulse stays private unless the user explicitly shares a session.
 
 ## Android release CI

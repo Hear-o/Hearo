@@ -7,7 +7,6 @@ on:
       # Skip OTA on changes that don't affect the JS bundle.
       - "web/**"
       - "docs/**"
-      - "voice-scripts/**"
       - "openspec/**"
       - "**.md"
       - ".github/**"
@@ -23,6 +22,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    # Job-level env so every step (setup + eas update) inherits the token.
+    # The action's `with: token:` input doesn't reliably propagate to later
+    # steps; this pattern is what Expo's CI docs recommend.
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
     steps:
       - name: Checkout

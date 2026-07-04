@@ -1,7 +1,14 @@
 # Test Coverage Plan — Hearo
 
-**Status:** Phases 0–3 implemented · **Date:** 2026-06-02 · **Owner:** QE
+**Status:** Phases 0–3 implemented; native-module backfill complete (see
+`docs/TEST_BACKFILL_PLAN.md`) · **Date:** 2026-06-02 · **Owner:** QE
 **Companion decision:** see `docs/adr/ADR-001` on adopting Jest + RNTL.
+
+> **Update 2026-06-08:** the native-module wrappers previously excluded from
+> coverage (`trustedContacts`, `reminders`, `healthKit`/`healthKit.ios`,
+> `pulse`, `asset-cache`, `audio-engine`, `CrisisSheet`) are now mocked, tested,
+> and gated. `collectCoverageFrom` carries no native-module exclusions; the
+> suite is 211 tests / 24 suites. Details in `docs/TEST_BACKFILL_PLAN.md`.
 
 > Generated from an `/aqe-analyze` pass over `src/`. Originally greenfield (0
 > tests, no runner). **Phases 0–3 are now done:** `jest-expo` + RNTL wired up,
@@ -38,18 +45,18 @@ no native renderer needed, deterministic, and they encode the therapeutic rules.
 
 | Module | LOC | Why it's critical | What to assert |
 |---|---|---|---|
-| `src/lib/displayName.ts` | 88 | Most branch-dense pure logic in the app. Parses device names in EN + Hebrew (RTL), possessives, generic-model fallback. Bilingual heuristic = high bug surface. | EN possessive `"Omer's iPhone"→"Omer"`; curly vs straight apostrophe; Hebrew `"X של Y"` both orderings + ambiguous case; generic patterns (`iPhone`, `iPhone (2)`, `My Android`) → `null`; empty/whitespace/null → `null`; cache-hit short-circuit in `resolveDisplayName`. |
-| `src/lib/crisis-store.ts` | 22 | Crisis sheet + ERAN hotline (`1201`). Wrong state = a veteran in crisis can't reach help. | `open()` sets `isOpen:true` and resets `showingTrustedStub`; `close()` clears both; `showTrustedStub()` flips only the stub; `CRISIS_NUMBER` constant guard (regression tripwire on the hard-coded number). |
-| `src/lib/content.ts` | 261 | The content-provisioning seam every screen reads. `localize`, scene/sound getters, default prefs, ordering. | `localize` he/en + non-`he` fallback to en; `getScenes`/`getSounds` return in `SCENE_ORDER`/`SOUND_ORDER`; every `SceneKey`/`SoundKey` resolves; `getVoiceScript` for all `Phase`×lang; `getDefaultPreferences` shape; each sound has ≥1 audio variation. |
+| `src/lib/ui/displayName.ts` | 88 | Most branch-dense pure logic in the app. Parses device names in EN + Hebrew (RTL), possessives, generic-model fallback. Bilingual heuristic = high bug surface. | EN possessive `"Omer's iPhone"→"Omer"`; curly vs straight apostrophe; Hebrew `"X של Y"` both orderings + ambiguous case; generic patterns (`iPhone`, `iPhone (2)`, `My Android`) → `null`; empty/whitespace/null → `null`; cache-hit short-circuit in `resolveDisplayName`. |
+| `src/lib/storage/crisis-store.ts` | 22 | Crisis sheet + ERAN hotline (`1201`). Wrong state = a veteran in crisis can't reach help. | `open()` sets `isOpen:true` and resets `showingTrustedStub`; `close()` clears both; `showTrustedStub()` flips only the stub; `CRISIS_NUMBER` constant guard (regression tripwire on the hard-coded number). |
+| `src/lib/content/content.ts` | 261 | The content-provisioning seam every screen reads. `localize`, scene/sound getters, default prefs, ordering. | `localize` he/en + non-`he` fallback to en; `getScenes`/`getSounds` return in `SCENE_ORDER`/`SOUND_ORDER`; every `SceneKey`/`SoundKey` resolves; `getVoiceScript` for all `Phase`×lang; `getDefaultPreferences` shape; each sound has ≥1 audio variation. |
 | `src/lib/audio.ts` | 21 | Picks the exposure trigger clip. `undefined` key must yield the "rehearsal walk" (no exposure) path per the exposure-session spec. | `undefined` → `null`; empty variations → `null`; valid key → a member of that sound's `audioVariations` (seed/stub `Math.random`). |
 
 ### Tier 2 — High (target ≥85%)
 
 | Module | LOC | Why | What to assert |
 |---|---|---|---|
-| `src/lib/storage.ts` | 35 | Tri-state semantics: `undefined` (never tried) vs `null` (tried, nothing) vs string. Easy to collapse the two by accident. | `getDisplayName` returns `undefined` when `resolved!=="true"`; `null` round-trips; string round-trips; `setDisplayName(null)` removes the key but still marks resolved. Mock AsyncStorage. |
-| `src/lib/session-store.ts` | 26 | `toggleSound` add/remove + scene selection drive what the user is exposed to. | `setScene`; `toggleSound` adds when absent, removes when present; defaults come from `getDefaultPreferences`. |
-| `src/lib/pulse.ts` | 45 | `usePulse` hook — clamps to [58,130], steps toward phase target, jitter. | With faked timers + stubbed `Math.random`: clamps bounds; moves toward target by ≤STEP; `active:false` does nothing; cleanup clears interval. |
+| `src/lib/storage/storage.ts` | 35 | Tri-state semantics: `undefined` (never tried) vs `null` (tried, nothing) vs string. Easy to collapse the two by accident. | `getDisplayName` returns `undefined` when `resolved!=="true"`; `null` round-trips; string round-trips; `setDisplayName(null)` removes the key but still marks resolved. Mock AsyncStorage. |
+| `src/lib/storage/session-store.ts` | 26 | `toggleSound` add/remove + scene selection drive what the user is exposed to. | `setScene`; `toggleSound` adds when absent, removes when present; defaults come from `getDefaultPreferences`. |
+| `src/lib/integrations/pulse.ts` | 45 | `usePulse` hook — clamps to [58,130], steps toward phase target, jitter. | With faked timers + stubbed `Math.random`: clamps bounds; moves toward target by ≤STEP; `active:false` does nothing; cleanup clears interval. |
 
 ### Tier 3 — Components / screens (target ≥70%, smoke + interaction)
 
@@ -64,7 +71,7 @@ affordance → open → call `1201` is the one interaction that must never break
 
 ### Tier 4 — Excluded / low value
 
-`src/lib/tokens.ts` (constants), `src/lib/i18n.ts` (config), `src/app/_layout.tsx`,
+`src/lib/ui/tokens.ts` (constants), `src/lib/ui/i18n.ts` (config), `src/app/_layout.tsx`,
 `src/global.css`, asset re-exports. Cover incidentally, don't target.
 
 ---
@@ -103,7 +110,7 @@ Expo SDK 56 (`expo ~56.0.8`) → use `jest-expo`. There is no existing config to
 "jest": {
   "preset": "jest-expo",
   "collectCoverageFrom": ["src/lib/**/*.{ts,tsx}", "src/components/**/*.{ts,tsx}"],
-  "coveragePathIgnorePatterns": ["src/lib/tokens.ts", "src/lib/i18n.ts"]
+  "coveragePathIgnorePatterns": ["src/lib/ui/tokens.ts", "src/lib/ui/i18n.ts"]
 }
 ```
 

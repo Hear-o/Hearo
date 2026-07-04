@@ -1,0 +1,105 @@
+---
+import QRCode from "qrcode";
+import Base from "../layouts/Base.astro";
+
+// EAS Update channel "main" is published on every push to main by the
+// eas-update GitHub Action. Scanning this URL with the camera on iOS (or
+// the Expo Go scanner on Android) opens the app inside Expo Go using the
+// latest published JS bundle.
+const EXPO_PROJECT_ID = "28a06970-0528-4ec2-9a2d-aec8b75d8757";
+const expoGoUrl = `exp://u.expo.dev/${EXPO_PROJECT_ID}?channel-name=main`;
+const qrSvg = await QRCode.toString(expoGoUrl, {
+  type: "svg",
+  errorCorrectionLevel: "M",
+  margin: 1,
+  color: { dark: "#1F1A17", light: "#0000" }, // dark stamp on a transparent ground
+});
+---
+
+<Base
+  title="Try HearO on your phone"
+  description="Scan a QR code, run the latest HearO build inside Expo Go. Free, no install except Expo Go itself."
+>
+  <article class="px-6 sm:px-12 py-16 sm:py-20">
+    <div class="max-w-3xl mx-auto">
+      <p class="text-sm uppercase tracking-[0.18em] text-text-mute mb-4">Beta</p>
+      <h1 class="font-display text-3xl sm:text-4xl mb-6">Try HearO on your phone.</h1>
+      <p class="text-lg leading-relaxed text-text-mute mb-10 max-w-2xl">
+        The app is in active development. You can run the latest build right
+        now — no install except Expo Go itself. The session, scenes, audio,
+        breathing, and crisis sheet all work. Trusted-contacts and the live
+        Apple Watch pulse stay in rehearsal mode inside Expo Go (they need a
+        full native build to unlock).
+      </p>
+
+      <ol class="space-y-12 mb-16">
+        <li>
+          <p class="text-sm uppercase tracking-[0.16em] text-accent mb-2">Step 1</p>
+          <p class="font-display text-xl mb-3">Install Expo Go.</p>
+          <p class="text-text-mute mb-4 leading-relaxed">
+            Free app from Expo, used by developers and testers worldwide. Open
+            the store, install, then come back here.
+          </p>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <a
+              href="https://apps.apple.com/app/expo-go/id982107779"
+              class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full border border-accent text-accent hover:bg-accent hover:text-bg transition-colors"
+              target="_blank"
+              rel="noopener"
+            >
+              <span class="text-sm">Expo Go on App Store</span>
+            </a>
+            <a
+              href="https://play.google.com/store/apps/details?id=host.exp.exponent"
+              class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full border border-accent text-accent hover:bg-accent hover:text-bg transition-colors"
+              target="_blank"
+              rel="noopener"
+            >
+              <span class="text-sm">Expo Go on Google Play</span>
+            </a>
+          </div>
+        </li>
+
+        <li>
+          <p class="text-sm uppercase tracking-[0.16em] text-accent mb-2">Step 2</p>
+          <p class="font-display text-xl mb-3">Scan this code.</p>
+          <p class="text-text-mute mb-6 leading-relaxed">
+            On iOS, use your phone's built-in camera. On Android, open Expo Go
+            and tap "Scan QR code." HearO loads in a few seconds.
+          </p>
+
+          <div class="flex flex-col items-center sm:items-start gap-4">
+            <div class="p-6 rounded-2xl bg-bg-elev border border-text-mute/15 inline-block">
+              <div class="w-64 h-64 sm:w-72 sm:h-72" set:html={qrSvg} />
+            </div>
+            <p class="text-xs text-text-mute font-mono break-all max-w-md">
+              {expoGoUrl}
+            </p>
+          </div>
+        </li>
+
+        <li>
+          <p class="text-sm uppercase tracking-[0.16em] text-accent mb-2">Step 3</p>
+          <p class="font-display text-xl mb-3">Be here with us.</p>
+          <p class="text-text-mute leading-relaxed">
+            We're building this for combat veterans living with PTSD. If
+            something feels off — a sound that lands wrong, a moment that
+            should be softer, anything — we want to hear it. Email
+            <a class="text-accent hover:underline" href="mailto:omer.k@guardz.com"
+              >omer.k@guardz.com</a
+            >.
+          </p>
+        </li>
+      </ol>
+
+      <div class="border-t border-text-mute/15 pt-10">
+        <p class="text-sm uppercase tracking-[0.16em] text-text-mute mb-3">
+          What you'll see
+        </p>
+        <p class="text-text-mute leading-relaxed">
+          Every push to <code class="text-text bg-bg-elev px-1.5 py-0.5 rounded text-sm">main</code> rebuilds the bundle. The QR doesn't change — Expo Go fetches the latest JS each time you scan. If a feature is missing one day and back the next, that's expected.
+        </p>
+      </div>
+    </div>
+  </article>
+</Base>

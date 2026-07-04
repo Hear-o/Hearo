@@ -39,7 +39,7 @@ be the **Supabase-swap seam** (the ACL where local fallback becomes remote reads
 
 ## Today (code mapping)
 
-- `src/lib/content.ts` — the **ACL seam**; getters stay sync now, gain `await`
+- `src/lib/content/content.ts` — the **ACL seam**; getters stay sync now, gain `await`
   when Supabase lands (`migrate-content-to-api`). This is the behavioral contract
   the test suite locks down.
 

@@ -96,7 +96,7 @@ Six screens in the demo path. Settings/profile is post-demo polish.
 1. Welcome           single sentence + start
 2. Permissions       HealthKit + notifications, privacy-framed
 3. Setup             scene picker + consented sound list
-4. Home              today's walk, ready when you are
+4. Home              today's moment, ready when you are
 5. Session   ★HERO   ambient → voice → trigger → pulse loop
 6. After             pulse sparkline + three-option reflection
 ```
@@ -111,7 +111,7 @@ Six screens in the demo path. Settings/profile is post-demo polish.
 │   ─                     │
 │                         │
 │   a quiet place         │   serif, large
-│   to walk again.        │
+│   to be again.          │
 │                         │
 │                         │
 │                         │
@@ -159,7 +159,7 @@ The last line is load-bearing. Make it true: no analytics that ping home without
 │  ←                      │
 │                         │
 │  where would you        │
-│  like to walk?          │
+│  like to be?            │
 │                         │
 │  ●  river path          │
 │  ○  city, evening       │
@@ -200,7 +200,7 @@ Two distinct sections by design. Picking a scene is a *place* decision. Picking 
 │  good evening,          │
 │  shai.                  │
 │                         │
-│  today's walk           │
+│  today's moment         │
 │                         │
 │  river path             │
 │  with motorcycle        │
@@ -222,12 +222,12 @@ Note: "about six minutes" not "6:00". Duration is approximate, not a stopwatch �
 ┌─────────────────────────┐
 │  i                    × │
 │                         │
-│  river walk, evening    │
+│  beach, evening         │
 │                         │
 │                         │
 │   you're walking        │   voice line, serif,
-│   along the river.      │   fades in/out as voice
-│   the air is cool.      │   speaks. one line at a time.
+│   along the beach.      │   fades in/out as voice
+│   the waves are quiet.  │   speaks. one line at a time.
 │                         │
 │          ◯              │   breathing circle
 │        ◯   ◯            │   4s in / 6s out
@@ -321,7 +321,7 @@ Sheet style: `bg-elev`, rounded, no scrim flash. Slides in from bottom at defaul
 
 - Locale detected at launch via `expo-localization`. Hebrew device → Hebrew UI + RTL layout. Otherwise English.
 - Fallback for non-EN/non-HE devices: **Hebrew** (the demo audience is Israeli).
-- All copy in `lib/i18n.ts` with `en` and `he` keys.
+- All copy in `lib/ui/i18n.ts` with `en` and `he` keys.
 - Layout mirroring via React Native's `I18nManager.forceRTL` + NativeWind `rtl:` variants. Every margin/arrow/alignment flips automatically.
 - Wordmark is the one exception. It stays left-anchored in both layouts because it's a logo, not text.
 
@@ -336,7 +336,7 @@ State                Zustand
 Fonts                @expo-google-fonts/frank-ruhl-libre,
                      @expo-google-fonts/heebo
 Audio                expo-av
-Health data          react-native-health (HealthKit)
+Health data          @kingstinct/react-native-healthkit (HealthKit)
 i18n                 i18next + react-i18next
 Animation            react-native-reanimated
 Localization         expo-localization

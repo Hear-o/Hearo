@@ -1,55 +1,131 @@
-import { useEffect, useMemo, useRef, useCallback } from 'react';
-import { AudioEngine, TriggerRampOptions } from '@/lib/audio-engine';
+import { useMemo, useRef, useCallback } from 'react';
+import { AudioEngine, TriggerSchedulerConfig } from '@/lib/audio/audio-engine';
+import { getAudioEngine } from '@/lib/audio/audio-engine-host';
+import { audioTrace } from '@/lib/audio/audio-log';
+import { activateAudioSession } from '@/lib/audio/audio-session';
+
+export type { TriggerSchedulerConfig };
 
 export interface UseAudioEngineResult {
+  // ── Loading ──
   loadAmbientAndVoice: (
     ambientSource: number | string,
     voiceClipSources: (number | string)[]
   ) => Promise<void>;
   loadTrigger: (triggerSource: number | string) => Promise<void>;
-  startAmbient: () => void;
-  startTriggerRamp: (opts: TriggerRampOptions) => void;
+  loadTriggers: (triggerSources: (number | string)[]) => Promise<void>;
+
+  // ── Ambient ──
+  startAmbient: () => Promise<void>;
+  setAmbientGain: (gain: number) => void;
+
+  // ── Trigger scheduler ──
+  startTriggerScheduler: (config: TriggerSchedulerConfig) => void;
+  stopTriggerScheduler: () => void;
+
+  // ── Live config updates ──
+  setTriggerPeakGain: (gain: number) => void;
+  setIntervalRange: (minMs: number, maxMs: number) => void;
+  setBurstDuration: (ms: number) => void;
+
+  // ── HR spike integration ──
   onSpike: () => void;
   onNormalized: () => void;
+
+  // ── Voice ──
   playVoiceClip: (index: number) => Promise<void>;
-  setTriggerCeiling: (gain: number) => void;
+  stopVoice: () => void;
+
+  // ── Session lifecycle ──
   pauseAll: () => Promise<void>;
   resumeAll: () => Promise<void>;
   fadeOutAll: (durationSeconds?: number) => void;
+
+  // ── Observability ──
   currentTriggerGain: () => number;
+  isBurstActive: () => boolean;
 }
 
 export function useAudioEngine(): UseAudioEngineResult {
-  const engineRef = useRef<AudioEngine | null>(null);
+  // The engine is now a module-level singleton (audio-engine-host) so the
+  // /preparing screen and /session can share one instance — preloaded buffers
+  // survive the route transition. Destruction is explicit (releaseAudioEngine)
+  // and lives in /after's mount effect.
+  const engineRef = useRef<AudioEngine>(getAudioEngine());
 
-  if (!engineRef.current) {
-    engineRef.current = new AudioEngine();
-  }
-
-  useEffect(() => {
-    const engine = engineRef.current!;
-    return () => {
-      engine.destroy();
-      engineRef.current = null;
-    };
-  }, []);
-
+  // Gate the first I/O against the audio-session activation. The
+  // AudioContext is constructed in the engine ctor (cheap, doesn't play
+  // anything yet), but on iOS, starting playback before AVAudioSession
+  // setActive resolves leads to silent audio. On Android the call is a
+  // no-op so this just resolves immediately. Both load entry points are
+  // always called before startAmbient / playVoiceClip / scheduler ticks,
+  // so awaiting here covers every playback path.
   const loadAmbientAndVoice = useCallback(
-    (ambientSource: number | string, voiceClipSources: (number | string)[]) =>
-      engineRef.current!.loadAmbientAndVoice(ambientSource, voiceClipSources),
+    async (ambientSource: number | string, voiceClipSources: (number | string)[]) => {
+      // Activate the iOS audio session right before the first I/O. This is
+      // load-bearing for iOS — the module-init activation can fail and the
+      // same call succeeds once the user has navigated into a session.
+      // Idempotent: subsequent calls are cheap. See audio-session.ts.
+      audioTrace("hook: activating audio session before loadAmbientAndVoice");
+      await activateAudioSession();
+      audioTrace("hook: calling loadAmbientAndVoice", {
+        ambientSource: typeof ambientSource,
+        voiceCount: voiceClipSources.length,
+      });
+      return engineRef.current!.loadAmbientAndVoice(ambientSource, voiceClipSources);
+    },
     []
   );
 
   const loadTrigger = useCallback(
-    (triggerSource: number | string) =>
-      engineRef.current!.loadTrigger(triggerSource),
+    async (triggerSource: number | string) => {
+      audioTrace("hook: activating audio session before loadTrigger");
+      await activateAudioSession();
+      audioTrace("hook: calling loadTrigger");
+      return engineRef.current!.loadTrigger(triggerSource);
+    },
+    []
+  );
+
+  const loadTriggers = useCallback(
+    async (triggerSources: (number | string)[]) => {
+      audioTrace("hook: activating audio session before loadTriggers");
+      await activateAudioSession();
+      audioTrace("hook: calling loadTriggers, count=", triggerSources.length);
+      return engineRef.current!.loadTriggers(triggerSources);
+    },
     []
   );
 
   const startAmbient = useCallback(() => engineRef.current!.startAmbient(), []);
 
-  const startTriggerRamp = useCallback(
-    (opts: TriggerRampOptions) => engineRef.current!.startTriggerRamp(opts),
+  const setAmbientGain = useCallback(
+    (gain: number) => engineRef.current!.setAmbientGain(gain),
+    []
+  );
+
+  const startTriggerScheduler = useCallback(
+    (config: TriggerSchedulerConfig) => engineRef.current!.startTriggerScheduler(config),
+    []
+  );
+
+  const stopTriggerScheduler = useCallback(
+    () => engineRef.current!.stopTriggerScheduler(),
+    []
+  );
+
+  const setTriggerPeakGain = useCallback(
+    (gain: number) => engineRef.current!.setTriggerPeakGain(gain),
+    []
+  );
+
+  const setIntervalRange = useCallback(
+    (minMs: number, maxMs: number) => engineRef.current!.setIntervalRange(minMs, maxMs),
+    []
+  );
+
+  const setBurstDuration = useCallback(
+    (ms: number) => engineRef.current!.setBurstDuration(ms),
     []
   );
 
@@ -62,10 +138,7 @@ export function useAudioEngine(): UseAudioEngineResult {
     []
   );
 
-  const setTriggerCeiling = useCallback(
-    (gain: number) => engineRef.current!.setTriggerCeiling(gain),
-    []
-  );
+  const stopVoice = useCallback(() => engineRef.current!.stopVoice(), []);
 
   const pauseAll = useCallback(() => engineRef.current!.pauseAll(), []);
 
@@ -77,43 +150,46 @@ export function useAudioEngine(): UseAudioEngineResult {
   );
 
   const currentTriggerGain = useCallback(
-    () => engineRef.current?.currentTriggerGain ?? 0,
+    () => engineRef.current.currentTriggerGain,
     []
   );
 
-  // Every callback above is stable for the component's lifetime (useCallback
-  // with empty deps), so this object is created once and never changes
-  // reference. Without useMemo, effects in session.tsx that depend on this
-  // hook's return value (e.g. the ADAPTIVE_LOOP auto-end timer) would tear
-  // down and re-run on every parent re-render.
+  const isBurstActive = useCallback(
+    () => engineRef.current.isBurstActive,
+    []
+  );
+
+  // LOAD-BEARING: every callback above is useCallback([]) → stable identity
+  // across renders. The previous code returned a fresh object literal each
+  // render, which broke session.tsx's useEffect dep arrays — every render of
+  // Session would refire DISCLAIMER load + startTriggerScheduler + voice
+  // playback effects (4× per second via the elapsed timer). The empty deps
+  // array is correct: nothing in this object ever changes after first render.
+  // (PR #59 originally used a 17-element explicit dep list; this is the
+  // simpler equivalent — same effect, less to maintain.)
   return useMemo(
     () => ({
       loadAmbientAndVoice,
       loadTrigger,
+      loadTriggers,
       startAmbient,
-      startTriggerRamp,
+      setAmbientGain,
+      startTriggerScheduler,
+      stopTriggerScheduler,
+      setTriggerPeakGain,
+      setIntervalRange,
+      setBurstDuration,
       onSpike,
       onNormalized,
       playVoiceClip,
-      setTriggerCeiling,
+      stopVoice,
       pauseAll,
       resumeAll,
       fadeOutAll,
       currentTriggerGain,
+      isBurstActive,
     }),
-    [
-      loadAmbientAndVoice,
-      loadTrigger,
-      startAmbient,
-      startTriggerRamp,
-      onSpike,
-      onNormalized,
-      playVoiceClip,
-      setTriggerCeiling,
-      pauseAll,
-      resumeAll,
-      fadeOutAll,
-      currentTriggerGain,
-    ]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
   );
 }

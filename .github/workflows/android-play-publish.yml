@@ -16,6 +16,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    # Job-level env so every step (setup + eas build/submit) inherits the token.
+    # Same pattern as eas-update.yml — the action's `with: token:` input doesn't
+    # reliably propagate to later steps in expo-github-action@v8.
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
     steps:
       - name: Checkout

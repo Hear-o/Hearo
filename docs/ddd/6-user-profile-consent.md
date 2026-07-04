@@ -41,9 +41,9 @@ of the persistence aggregate.
 
 ## Today (code mapping)
 
-- `src/lib/storage.ts` (ACL for persistence → `user_preferences`)
-- `src/lib/displayName.ts`, `src/app/setup.tsx`, `src/app/permissions.tsx`
-- ⚠️ `src/lib/session-store.ts` holds the **pre-walk selection** (`scene`,
+- `src/lib/storage/storage.ts` (ACL for persistence → `user_preferences`)
+- `src/lib/ui/displayName.ts`, `src/app/setup.tsx`, `src/app/permissions.tsx`
+- ⚠️ `src/lib/storage/session-store.ts` holds the **pre-walk selection** (`scene`,
   `sounds`), **not** running-session state — the name is misleading; Exposure
   Session reads it at mount (`session.tsx` derives `consentedSounds[0]`). In-walk
   state lives in `session.tsx`'s local `useState`, not this store.

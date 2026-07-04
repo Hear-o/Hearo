@@ -1,0 +1,175 @@
+---
+import Base from "../layouts/Base.astro";
+---
+
+<Base
+  title="About HearO"
+  description="Who's behind HearO, what we're building, and what we're not."
+>
+  <article class="px-6 sm:px-12 py-16 sm:py-20">
+    <div class="max-w-3xl mx-auto">
+      <p class="text-sm uppercase tracking-[0.18em] text-text-mute mb-4">About</p>
+      <h1 class="font-display text-3xl sm:text-4xl mb-3">A quiet place,<br />made by people who care.</h1>
+
+      <div class="space-y-12 leading-relaxed text-text-mute mt-12">
+        <section>
+          <h2 class="font-display text-xl text-text mb-3">What HearO is</h2>
+          <p>
+            HearO is a mobile app for veterans living with combat-related PTSD. It delivers gradual, consent-based <strong class="text-text">sound exposure</strong>. An ambient soundscape layered with sounds you've chosen to encounter, guided by a calm voice and watched over by your Apple Watch pulse. When your body starts to spike, the app responds: the voice softens, breathing slows, intensity drops. No popups. No alarms. The app does the work you shouldn't have to.
+          </p>
+        </section>
+
+        <section>
+          <h2 class="font-display text-xl text-text mb-3">Why we built it</h2>
+          <p>
+            Combat triggers don't keep a schedule. A motorcycle backfire on the way to the supermarket, a helicopter overhead at a kid's birthday, fireworks on a Saturday night. Clinical Prolonged Exposure therapy is the most evidence-supported treatment for PTSD, and one of the hardest to access and stay in. HearO sits between imaginal and in-vivo exposure: concrete enough to engage the autonomic response that drives habituation, light enough to deliver through a phone.
+          </p>
+          <p class="mt-4">
+            The goal isn't to make sounds stop bothering you. The goal is to widen the window in which a trigger is <em>a sound</em>, not <em>a flashback trigger</em>, and to keep you demonstrably in control the whole time.
+          </p>
+        </section>
+
+        <section>
+          <h2 class="font-display text-xl text-text mb-3">What HearO is not</h2>
+          <ul class="list-disc list-outside pl-6 space-y-2">
+            <li><span class="text-text">Not a replacement for clinical therapy.</span> If you're working with a clinician, HearO complements that work; it doesn't replace it.</li>
+            <li><span class="text-text">Not a regulated medical device.</span> No FDA, CE, or AMAR clearance. Not diagnostic.</li>
+            <li><span class="text-text">Not for acute crisis.</span> Every screen carries a one-tap line to ERAN 1201, Israel's free, 24/7, anonymous emotional first-aid line. Crisis taps are never logged.</li>
+            <li><span class="text-text">Not surveillance.</span> Your pulse stays on your device. Your sessions belong to you.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 class="font-display text-xl text-text mb-3">Who we are</h2>
+          <p>
+            Four childhood friends who've known each other for fifteen years. We grew up together, and like so many in Israel the last two years brought reality close to us, and to the people we love, through post-trauma and anxiety. We decided to stop talking about it and combine what each of us has built professionally to take our angle and try to help.
+          </p>
+          <p class="mt-4">
+            HearO is built as part of <span class="text-text">techHeal</span>, a small project combining business experience, product, and engineering to ship something useful, not just talk.
+          </p>
+
+          <div class="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-10">
+            <div class="flex flex-col items-start">
+              <img
+                src="/team/roy-meir.jpeg"
+                alt="Roy Meir"
+                width="160"
+                height="160"
+                class="rounded-full w-32 h-32 sm:w-36 sm:h-36 object-cover mb-4"
+                loading="lazy"
+              />
+              <p class="font-display text-lg text-text">Roy Meir</p>
+              <p class="text-sm uppercase tracking-[0.14em] text-accent mt-1 mb-2">
+                Business &amp; Sales
+              </p>
+              <p class="text-sm">
+                VP Sales &amp; Business Development. Designs growth strategies, leads complex commercial processes, and builds partnerships across markets.
+              </p>
+            </div>
+
+            <div class="flex flex-col items-start">
+              <img
+                src="/team/omer.png"
+                alt="Omer Keinan"
+                width="160"
+                height="160"
+                class="rounded-full w-32 h-32 sm:w-36 sm:h-36 object-cover mb-4"
+                loading="lazy"
+              />
+              <p class="font-display text-lg text-text">Omer Keinan</p>
+              <p class="text-sm uppercase tracking-[0.14em] text-accent mt-1 mb-2">
+                Product &amp; Engineering
+              </p>
+              <p class="text-sm">
+                CTO Office at Guardz. Developer and product manager with a SIGINT and cyber background; takes projects from idea through code to working product in the field.
+              </p>
+            </div>
+
+            <div class="flex flex-col items-start">
+              <img
+                src="/team/ido.jpeg"
+                alt="Ido Hirschman"
+                width="160"
+                height="160"
+                class="rounded-full w-32 h-32 sm:w-36 sm:h-36 object-cover mb-4"
+                loading="lazy"
+              />
+              <p class="font-display text-lg text-text">Ido Hirschman</p>
+              <p class="text-sm uppercase tracking-[0.14em] text-accent mt-1 mb-2">
+                Engineering
+              </p>
+              <p class="text-sm">
+                Software engineer at Check Point. Specializes in designing and shipping complex, secure, high-performance systems.
+              </p>
+            </div>
+
+            <div class="flex flex-col items-start">
+              <img
+                src="/team/roy-davidovic.jpeg"
+                alt="Roy Davidovic"
+                width="160"
+                height="160"
+                class="rounded-full w-32 h-32 sm:w-36 sm:h-36 object-cover mb-4"
+                loading="lazy"
+              />
+              <p class="font-display text-lg text-text">Roy Davidovic</p>
+              <p class="text-sm uppercase tracking-[0.14em] text-accent mt-1 mb-2">
+                Engineering &amp; Integration
+              </p>
+              <p class="text-sm">
+                Third-year computer science student. Integration background from Innoviz Technologies; now moving into business-side automation and integration. Learning in the field, from the field.
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-12 pt-10 border-t border-text-mute/15">
+            <p class="text-sm uppercase tracking-[0.14em] text-text-mute mb-6">Mentor</p>
+            <div class="flex flex-col sm:flex-row gap-6">
+              <img
+                src="/team/dekel.jpeg"
+                alt="Dekel Assaf"
+                width="160"
+                height="160"
+                class="rounded-full w-32 h-32 sm:w-36 sm:h-36 object-cover shrink-0"
+                loading="lazy"
+              />
+              <div>
+                <p class="font-display text-lg text-text">Dekel Assaf</p>
+                <p class="text-sm uppercase tracking-[0.14em] text-accent mt-1 mb-2">
+                  R&amp;D &amp; AI Orchestration
+                </p>
+                <p class="text-sm">
+                  Senior R&amp;D director and technology strategist with ~20 years leading engineering organizations, system architecture, and AI Orchestration / agentic workflows. M.A. in Economics. Mentors the techHeal project, sharing what he's learned to lift up the next round of developers and leaders.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-10 pt-10 border-t border-text-mute/15">
+            <p class="text-sm uppercase tracking-[0.14em] text-text-mute mb-6">Clinical advisor</p>
+            <div class="flex flex-col sm:flex-row gap-6">
+              <img
+                src="/team/dudi.jpeg"
+                alt="Dudi Efrati"
+                width="160"
+                height="160"
+                class="rounded-full w-32 h-32 sm:w-36 sm:h-36 object-contain shrink-0 bg-bg-elev"
+                loading="lazy"
+              />
+              <div>
+                <p class="font-display text-lg text-text">Dudi Efrati</p>
+                <p class="text-sm uppercase tracking-[0.14em] text-accent mt-1 mb-2">
+                  Clinical psychology &amp; trauma research
+                </p>
+                <p class="text-sm">
+                  Director of research at the Mativ Institute. Clinical psychologist in specialization. Brings the exposure-therapy clinical lens to HearO.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </article>
+</Base>

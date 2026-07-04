@@ -39,7 +39,7 @@ offline, and **untracked**.
 
 ## Today (code mapping)
 
-- `src/lib/crisis-store.ts` (Zustand state — flips instantly)
+- `src/lib/storage/crisis-store.ts` (Zustand state — flips instantly)
 - `src/components/CrisisSheet.tsx`, `src/components/CrisisAffordance.tsx`
 - `CRISIS_NUMBER` is intentionally hard-coded region config, not content.
 

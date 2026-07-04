@@ -2,24 +2,43 @@
   "expo": {
     "name": "Hearo",
     "slug": "Hearo",
-    "version": "1.0.0",
+    "version": "1.1.10",
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "orientation": "portrait",
     "updates": {
       "url": "https://u.expo.dev/28a06970-0528-4ec2-9a2d-aec8b75d8757"
     },
     "runtimeVersion": {
-      "policy": "appVersion"
+      "policy": "sdkVersion"
     },
     "icon": "./assets/images/icon.png",
     "scheme": "hearo",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "bundleIdentifier": "com.techheal.hearo"
+      "supportsTablet": false,
+      "bundleIdentifier": "com.techheal.hearo",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSContactsUsageDescription": "We use this so you can quickly call someone you trust during a crisis moment. Your contacts stay on your device — we don't upload them.",
+        "NSHealthShareUsageDescription": "We read your heart rate from Apple Health so the app can soften the soundscape when your body needs it. Nothing about your heart rate leaves your device.",
+        "NSHealthUpdateUsageDescription": "Hearo reads heart rate data from Apple Health but does not write or update any health data.",
+        "NSMicrophoneUsageDescription": "Hearo never records or accesses your microphone. This message is required by Apple because the audio library bundled with the app includes recording APIs that we don't use — playback only.",
+        "UIBackgroundModes": ["audio"]
+      },
+      "entitlements": {
+        "com.apple.developer.healthkit": true,
+        "com.apple.developer.healthkit.access": []
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#161E33",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "foregroundImage": "./assets/images/icon.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
@@ -30,6 +49,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "./plugins/withRtl.js",
       "expo-router",
       [
         "expo-splash-screen",
@@ -41,13 +61,34 @@
           }
         }
       ],
-      "react-native-audio-api",
       "expo-font",
       "expo-image",
       "expo-localization",
       "expo-status-bar",
       "expo-web-browser",
-      "expo-asset"
+      "expo-asset",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#C17A45"
+        }
+      ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "We use this so you can quickly call someone you trust during a crisis moment. Your contacts stay on your device — we don't upload them."
+        }
+      ],
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "We read your heart rate from Apple Health so the app can soften the soundscape when your body needs it. Nothing about your heart rate leaves your device.",
+          "NSHealthUpdateUsageDescription": false,
+          "background": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

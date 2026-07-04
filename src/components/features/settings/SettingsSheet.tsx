@@ -1,0 +1,474 @@
+import { useEffect, useState } from "react";
+import {
+  Dimensions,
+  I18nManager,
+  Platform,
+  Pressable,
+  ScrollView,
+  Switch,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import * as Updates from "expo-updates";
+import { useTranslation } from "react-i18next";
+
+import {
+  clearSchedule,
+  getSchedule,
+  setSchedule,
+} from "@/lib/integrations/reminders";
+import { useSettingsSheetStore } from "@/lib/storage/settings-sheet-store";
+import {
+  LanguagePreference,
+  ReminderSchedule,
+  setLanguagePreference,
+} from "@/lib/storage/storage";
+import { persistDisplayName, useDisplayName } from "@/lib/ui/displayName";
+import { fonts, tokens } from "@/lib/ui/tokens";
+
+const SCREEN_HEIGHT = Dimensions.get("window").height;
+const SHEET_HEIGHT = Math.min(SCREEN_HEIGHT * 0.78, 600);
+const SLIDE_MS = 380;
+
+function formatTime(schedule: ReminderSchedule): string {
+  const h = schedule.hour.toString().padStart(2, "0");
+  const m = schedule.minute.toString().padStart(2, "0");
+  return `${h}:${m}`;
+}
+
+/** Bottom-sheet settings overlay.
+ *
+ *  Holds the two pieces of user preference that aren't tied to a single
+ *  session: the display name (used in greetings) and the daily reminder
+ *  schedule. Both used to live on Setup; v1.0.9 moved them here so Setup
+ *  stays focused on session content (scene + sounds).
+ *
+ *  Open/close state is driven by useSettingsSheetStore (parallel to
+ *  useCrisisStore). The sheet is rendered globally from _layout.tsx so any
+ *  screen can pop it open via the store's `open()` action. */
+export function SettingsSheet() {
+  const { t, i18n } = useTranslation();
+  const isOpen = useSettingsSheetStore((s) => s.isOpen);
+  const close = useSettingsSheetStore((s) => s.close);
+  const [languageSwitching, setLanguageSwitching] = useState(false);
+
+  // Toggling the language requires a clean app restart: React Native's RTL
+  // layout direction (I18nManager.forceRTL) only takes effect on the next
+  // launch, and live-mixing LTR text with an RTL-laid-out screen produces
+  // glaringly broken UI. Persist the preference, flip the i18n + RTL flags,
+  // then reload via expo-updates so the app comes back up clean.
+  //
+  // v1.1.10: added a 500ms wait between forceRTL and reloadAsync.
+  // I18nManager.forceRTL only writes to NSUserDefaults via an async bridge
+  // call — reloading immediately can catch the stale value and leave the
+  // layout in the wrong direction. See AppDelegate.swift for the native
+  // side of this contract.
+  async function handleLanguageChange(next: LanguagePreference) {
+    if (next === i18n.language || languageSwitching) return;
+    setLanguageSwitching(true);
+    try {
+      await setLanguagePreference(next);
+      await i18n.changeLanguage(next);
+      const shouldBeRTL = next === "he";
+      I18nManager.allowRTL(shouldBeRTL);
+      I18nManager.forceRTL(shouldBeRTL);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await Updates.reloadAsync();
+    } catch {
+      // Dev build (no Updates module wired) or reload race — leave the flag
+      // set so the next manual relaunch picks up the new preference.
+      setLanguageSwitching(false);
+    }
+  }
+
+  const translateY = useSharedValue(SHEET_HEIGHT);
+  const backdropOpacity = useSharedValue(0);
+
+  // Name input — persisted on blur. Mirrors the previous Setup logic.
+  const { name: storedName } = useDisplayName();
+  const [nameDraft, setNameDraft] = useState<string>(storedName ?? "");
+  useEffect(() => {
+    if (storedName !== null && storedName !== undefined && nameDraft === "") {
+      setNameDraft(storedName);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storedName]);
+
+  function handleNameBlur() {
+    void persistDisplayName(nameDraft);
+  }
+
+  // Reminder state — read on open, refreshed when picker saves or turns off.
+  // v1.1.6: redesigned as a Switch + always-visible iOS spinner. Previous
+  // change/turn-off link pair + on-demand modal felt buried; the Switch
+  // makes on/off the headline control and the inline scroller lets the user
+  // dial the time without opening a separate modal step.
+  const [reminder, setReminder] = useState<ReminderSchedule | null>(null);
+  // Android-only: the legacy modal flow is preserved behind a press handler
+  // since RN's DateTimePicker on Android has no inline display mode.
+  const [androidPickerOpen, setAndroidPickerOpen] = useState(false);
+  useEffect(() => {
+    if (isOpen) {
+      void getSchedule().then(setReminder);
+    }
+  }, [isOpen]);
+
+  async function commitTime(date: Date) {
+    const next: ReminderSchedule = { hour: date.getHours(), minute: date.getMinutes() };
+    await setSchedule(next);
+    setReminder(next);
+  }
+
+  // Default time when the Switch is first turned on — 9:00 AM is a generally
+  // safe waking-hour default for a wellness reminder. The user can scroll to
+  // anything they want immediately afterward.
+  function defaultReminderTime(): ReminderSchedule {
+    return { hour: 9, minute: 0 };
+  }
+
+  async function handleReminderToggle(next: boolean) {
+    if (next) {
+      const initial = reminder ?? defaultReminderTime();
+      await setSchedule(initial);
+      setReminder(initial);
+    } else {
+      await clearSchedule();
+      setReminder(null);
+    }
+  }
+
+  // iOS spinner fires onChange continuously as the user scrolls. Committing
+  // on every tick is fine — setSchedule cancels + reschedules the OS
+  // notification atomically; AsyncStorage writes are cheap.
+  async function handleInlinePickerChange(_event: DateTimePickerEvent, date?: Date) {
+    if (!date) return;
+    await commitTime(date);
+  }
+
+  async function handleAndroidPickerChange(event: DateTimePickerEvent, date?: Date) {
+    setAndroidPickerOpen(false);
+    if (event.type === "dismissed" || !date) return;
+    await commitTime(date);
+  }
+
+  function pickerValue(): Date {
+    const d = new Date();
+    if (reminder) {
+      d.setHours(reminder.hour, reminder.minute, 0, 0);
+    } else {
+      d.setHours(9, 0, 0, 0);
+    }
+    return d;
+  }
+
+  // Slide-up + backdrop-fade animation, paired with the store's isOpen flag.
+  useEffect(() => {
+    if (isOpen) {
+      translateY.value = withTiming(0, {
+        duration: SLIDE_MS,
+        easing: Easing.out(Easing.cubic),
+      });
+      backdropOpacity.value = withTiming(0.55, { duration: SLIDE_MS });
+    } else {
+      translateY.value = withTiming(SHEET_HEIGHT, {
+        duration: SLIDE_MS,
+        easing: Easing.out(Easing.cubic),
+      });
+      backdropOpacity.value = withTiming(0, { duration: SLIDE_MS });
+      // Close the Android time-picker modal on sheet dismiss so it doesn't
+      // reappear orphaned the next time the sheet opens.
+      setAndroidPickerOpen(false);
+    }
+  }, [isOpen, translateY, backdropOpacity]);
+
+  const sheetStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  return (
+    <View
+      pointerEvents={isOpen ? "auto" : "none"}
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 1000,
+        elevation: 1000,
+      }}
+    >
+      <Animated.View
+        style={[
+          { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "#000" },
+          backdropStyle,
+        ]}
+      >
+        <Pressable
+          onPress={close}
+          style={{ flex: 1 }}
+          accessibilityLabel={t("settings.dismiss")}
+        />
+      </Animated.View>
+
+      <Animated.View
+        style={[
+          {
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: SHEET_HEIGHT,
+            backgroundColor: tokens.bgElev,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            paddingHorizontal: 32,
+            paddingTop: 16,
+            paddingBottom: 28,
+          },
+          sheetStyle,
+        ]}
+      >
+        {/* Drag handle visual cue */}
+        <View style={{ alignItems: "center", marginBottom: 16 }}>
+          <View
+            style={{
+              width: 40,
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: tokens.textMute,
+              opacity: 0.35,
+            }}
+          />
+        </View>
+
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: 12 }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text
+            style={{
+              color: tokens.text,
+              fontFamily: fonts.display,
+              fontSize: 26,
+              lineHeight: 34,
+              marginBottom: 24,
+              textAlign: "left",
+            }}
+          >
+            {t("settings.title")}
+          </Text>
+
+          {/* Name */}
+          <Text
+            style={{
+              color: tokens.textMute,
+              fontFamily: fonts.body,
+              fontSize: 13,
+              letterSpacing: 1.4,
+              textTransform: "uppercase",
+              marginBottom: 10,
+              textAlign: "left",
+            }}
+          >
+            {t("settings.nameLabel")}
+          </Text>
+          <TextInput
+            value={nameDraft}
+            onChangeText={setNameDraft}
+            onBlur={handleNameBlur}
+            placeholder={t("setup.namePlaceholder")}
+            placeholderTextColor={tokens.textMute + "88"}
+            autoCapitalize="words"
+            autoCorrect={false}
+            returnKeyType="done"
+            onSubmitEditing={handleNameBlur}
+            style={{
+              color: tokens.text,
+              fontFamily: fonts.body,
+              fontSize: 18,
+              borderBottomWidth: 1,
+              borderBottomColor: tokens.textMute + "55",
+              paddingVertical: 8,
+            }}
+          />
+          <Text
+            style={{
+              color: tokens.textMute,
+              fontFamily: fonts.body,
+              fontSize: 13,
+              lineHeight: 18,
+              marginTop: 6,
+              textAlign: "left",
+            }}
+          >
+            {t("setup.nameHint")}
+          </Text>
+
+          {/* Language */}
+          <View
+            style={{
+              width: 28,
+              height: 1,
+              backgroundColor: tokens.textMute,
+              opacity: 0.4,
+              marginTop: 28,
+              marginBottom: 20,
+            }}
+          />
+          <Text
+            style={{
+              color: tokens.textMute,
+              fontFamily: fonts.body,
+              fontSize: 13,
+              letterSpacing: 1.4,
+              textTransform: "uppercase",
+              marginBottom: 12,
+              textAlign: "left",
+            }}
+          >
+            {t("settings.languageLabel")}
+          </Text>
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            {(["he", "en"] as const).map((lng) => {
+              const selected = i18n.language === lng;
+              const label =
+                lng === "he"
+                  ? t("settings.languageHebrew")
+                  : t("settings.languageEnglish");
+              return (
+                <Pressable
+                  key={lng}
+                  onPress={() => handleLanguageChange(lng)}
+                  disabled={languageSwitching}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected, disabled: languageSwitching }}
+                  accessibilityLabel={label}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 12,
+                    alignItems: "center",
+                    borderWidth: 1,
+                    borderColor: selected ? tokens.accent : tokens.textMute + "55",
+                    borderRadius: 999,
+                    backgroundColor: selected ? tokens.accent : "transparent",
+                    opacity: languageSwitching && !selected ? 0.5 : 1,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: selected ? tokens.bg : tokens.text,
+                      fontFamily: fonts.body,
+                      fontSize: 17,
+                    }}
+                  >
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Text
+            style={{
+              color: tokens.textMute,
+              fontFamily: fonts.body,
+              fontSize: 13,
+              lineHeight: 18,
+              marginTop: 8,
+            }}
+          >
+            {t("settings.languageRestartNote")}
+          </Text>
+
+          {/* Reminder */}
+          <View
+            style={{
+              width: 28,
+              height: 1,
+              backgroundColor: tokens.textMute,
+              opacity: 0.4,
+              marginTop: 28,
+              marginBottom: 20,
+            }}
+          />
+          <Text
+            style={{
+              color: tokens.textMute,
+              fontFamily: fonts.body,
+              fontSize: 13,
+              letterSpacing: 1.4,
+              textTransform: "uppercase",
+              marginBottom: 10,
+            }}
+          >
+            {t("reminders.sectionLabel")}
+          </Text>
+
+          {/* On/off switch — the headline control. Time scroller appears
+              below when the switch is on. */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 4,
+            }}
+          >
+            <Text style={{ color: tokens.text, fontFamily: fonts.body, fontSize: 17 }}>
+              {reminder
+                ? t("reminders.currentlySet", { time: formatTime(reminder) })
+                : t("reminders.notSet")}
+            </Text>
+            <Switch
+              value={reminder !== null}
+              onValueChange={(v) => void handleReminderToggle(v)}
+              trackColor={{ false: tokens.textMute + "55", true: tokens.accent }}
+              accessibilityLabel={t("reminders.toggleLabel")}
+            />
+          </View>
+
+          {reminder ? (
+            Platform.OS === "ios" ? (
+              <View style={{ marginTop: 8, alignItems: "center" }}>
+                <DateTimePicker
+                  value={pickerValue()}
+                  mode="time"
+                  display="spinner"
+                  onChange={handleInlinePickerChange}
+                />
+              </View>
+            ) : (
+              <View style={{ marginTop: 12 }}>
+                <Pressable onPress={() => setAndroidPickerOpen(true)} hitSlop={8}>
+                  <Text style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 15 }}>
+                    {t("reminders.change")}
+                  </Text>
+                </Pressable>
+                {androidPickerOpen ? (
+                  <DateTimePicker
+                    value={pickerValue()}
+                    mode="time"
+                    display="default"
+                    onChange={handleAndroidPickerChange}
+                  />
+                ) : null}
+              </View>
+            )
+          ) : null}
+        </ScrollView>
+      </Animated.View>
+    </View>
+  );
+}

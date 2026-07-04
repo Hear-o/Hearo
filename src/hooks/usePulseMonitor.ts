@@ -9,7 +9,7 @@
 //   - BLE disconnect: no readings for 8 s → watchConnected = false
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { usePulse, PulsePhase } from '@/lib/pulse';
+import { usePulse, PulsePhase } from '@/lib/integrations/pulse';
 
 export type SessionState =
   | 'LOADING'
@@ -62,10 +62,18 @@ export function usePulseMonitor({
   const mockPhase: PulsePhase =
     sessionState === 'ADAPTIVE_LOOP' ? ADAPTIVE_MOCK_PHASE : 'baseline';
 
-  const rawBpm = usePulse({
+  const pulseResult = usePulse({
     active: isSessionActive && sessionState !== 'LOADING',
     phase: mockPhase,
   });
+  const rawBpm = pulseResult.value;
+  // Pulse source — "real" when a watch is feeding HealthKit samples, "mock"
+  // otherwise. We skip spike detection on mock because the generator's
+  // ADAPTIVE_LOOP target (rising, ~96 BPM) sits permanently above the spike
+  // threshold (baseline × 1.15) and there's no normalize path — every mock
+  // session ended up pausing the trigger scheduler ~30 s in and never
+  // resuming. Spike detection is only meaningful with real HR data.
+  const pulseSource = pulseResult.source;
 
   // ── State ────────────────────────────────────────────────────────────────
 
@@ -140,8 +148,6 @@ export function usePulseMonitor({
   // ── BLE connectivity (reset timer on each rawBpm change) ─────────────────
 
   useEffect(() => {
-    lastReadingAt.current = Date.now();
-
     if (!watchConnectedRef.current) {
       watchConnectedRef.current = true;
       setWatchConnected(true);
@@ -164,7 +170,14 @@ export function usePulseMonitor({
 
   useEffect(() => {
     if (sessionState !== 'ADAPTIVE_LOOP') return;
+    // Spike detection is real-HR-only. With a mock source, the generator
+    // drives the session above the spike threshold and never below the
+    // normalize threshold, so detection would fire once and the engine
+    // would stay paused for the rest of the session. See pulse source
+    // comment in usePulse for the numbers.
+    if (pulseSource === 'mock') return;
     const baseline = sessionBaselineRef.current;
+    /* istanbul ignore next — baseline-locking effect runs before this one (same render); null is unreachable here */
     if (baseline === null) return;
 
     const isChronicHighBaseline = baseline > CHRONIC_HIGH_BPM;
@@ -199,7 +212,7 @@ export function usePulseMonitor({
         onNormalizedRef.current();
       }
     }
-  }, [rawBpm, sessionState]);
+  }, [rawBpm, sessionState, pulseSource]);
 
   // ── Manual distress (chronic high-baseline dual-source) ──────────────────
 
@@ -225,6 +238,3 @@ export function usePulseMonitor({
     reportManualDistress,
   };
 }
-
-// Internal — used by BLE effect.
-const lastReadingAt = { current: Date.now() };

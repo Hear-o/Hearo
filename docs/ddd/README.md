@@ -17,7 +17,7 @@ HearO is a **monolithic React Native frontend** talking directly to Supabase
 ([`../CONVENTIONS.md`](../CONVENTIONS.md) §1). There is no backend service layer,
 so the "bounded contexts" here are **logical domains inside one app**, not
 microservices. The Supabase schema is the data contract; today most domains read
-from local seams (`src/lib/content.ts`, `src/lib/storage.ts`) marked `TODO(supabase)`.
+from local seams (`src/lib/content/content.ts`, `src/lib/storage/storage.ts`) marked `TODO(supabase)`.
 
 The core domain is **Exposure Session**. Its load-bearing supporting domains, in
 the PRD's safety order, are **Crisis Access > Intensity Control > Exposure
@@ -161,9 +161,9 @@ named seams. Nothing in the domain imports Supabase/HealthKit types directly.
 
 | Seam (file) | Between | Today | Future |
 |---|---|---|---|
-| `src/lib/content.ts` | Content Provisioning ↔ Supabase | bundled local data | `supabase.from('scenes'/'sounds'/...)` reads; call sites gain `await` |
-| `src/lib/storage.ts` | User Profile ↔ device / Supabase | AsyncStorage | `user_preferences` row keyed by `auth.uid()` |
-| `src/lib/pulse.ts` (+ future HealthKit adapter) | Pulse Monitoring ↔ HealthKit | mocked generator | HealthKit stream, on-device |
+| `src/lib/content/content.ts` | Content Provisioning ↔ Supabase | bundled local data | `supabase.from('scenes'/'sounds'/...)` reads; call sites gain `await` |
+| `src/lib/storage/storage.ts` | User Profile ↔ device / Supabase | AsyncStorage | `user_preferences` row keyed by `auth.uid()` |
+| `src/lib/integrations/pulse.ts` (+ future HealthKit adapter) | Pulse Monitoring ↔ HealthKit | mocked generator | HealthKit stream, on-device |
 | `tel:1201` handoff | Crisis Access ↔ iOS dialer | implemented | unchanged (app never dials itself) |
 
 Supabase **Row-Level Security** is the real authorization boundary; client-side

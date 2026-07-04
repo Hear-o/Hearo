@@ -7,7 +7,7 @@ status: draft
 
 # HearO — Product Requirements Document
 
-> A quiet place to walk again.
+> A quiet place to be again.
 
 This PRD consolidates the existing HearO docs into a single product reference. It is a synthesis, not a new source of truth — where it states a behavioral rule, the authoritative contract is the [`openspec/specs/`](../openspec/) capability it cites. Companion docs: [`../README.md`](../README.md) (framing/brand), [`RATIONALE.md`](./RATIONALE.md) (clinical reasoning), [`FRONTEND.md`](./FRONTEND.md) (design system + screen specs), [`CONVENTIONS.md`](./CONVENTIONS.md) (code conventions).
 
@@ -56,7 +56,7 @@ First audience is the Israeli combat veteran (the team can build for them honest
 
 ## 5. Core experience (the session loop)
 
-1. User opens the app → sees today's prepared walk (scene + selected sounds).
+1. User opens the app → sees today's prepared moment (scene + selected sounds).
 2. Taps **begin** → ambient soundscape plays through headphones.
 3. A pre-recorded voice narrates the scene in soft, second-person prose.
 4. After ~60–90s of calm (≈15s in the demo build), a **user-consented** trigger sound enters the mix.
@@ -112,7 +112,7 @@ Six screens in the demo path (settings/profile is post-demo polish). Layout sket
 | 1 | Welcome | single sentence + start |
 | 2 | Permissions | HealthKit + notifications, privacy-framed |
 | 3 | Setup | scene picker + consented sound list (two distinct decisions: *place* vs *consent*) |
-| 4 | Home | today's walk, "ready when you are" |
+| 4 | Home | today's moment, "ready when you are" |
 | 5 | **Session** (hero) | ambient → voice → trigger → pulse loop |
 | 6 | After | pulse sparkline + three-option reflection (`still here` / `shaken` / `steady`) |
 
@@ -122,14 +122,14 @@ Six screens in the demo path (settings/profile is post-demo polish). Layout sket
 - **Type:** Frank Ruhl Libre (display serif) + Heebo (body), one family pair across EN and HE (no serif/sans split between languages).
 - **Motion:** default 600ms ease-out; scene crossfade 4–7s; trigger flash ~200ms (deliberately undramatic); breathing 4s in / 6s out.
 - **Brand / wordmark:** `hear◯` reads as **hear + O** (the O is the breathing circle), never "Hero." Wordmark stays **English-only** in both EN and HE — it is a logo, not a translated string.
-- **Words we use / don't:** "today's walk" not "treatment"; "practice" not "therapy"; "your pulse" not "biometrics"; "you" not "the patient/user"; never name the trigger as "trigger"; never mention "PTSD" or "disorder."
+- **Words we use / don't:** "today's moment" not "treatment"; "practice" not "therapy"; "your pulse" not "biometrics"; "you" not "the patient/user"; never name the trigger as "trigger"; never mention "PTSD" or "disorder."
 - **Bilingual & RTL:** locale detected at launch; Hebrew device → Hebrew UI + RTL; fallback for non-EN/HE devices is **Hebrew**. Full mirroring via `I18nManager.forceRTL` + NativeWind `rtl:` variants.
 
 ## 9. Architecture
 
 - **Monolithic frontend** (React Native + Expo SDK 54, managed) talking **directly to Supabase** for persistence/auth. No Node/Express service layer; there is no REST API — the **Supabase schema is the data contract**.
 - Persistent data (profile, scene selection, session history, intensity-ceiling memory) → Supabase client. Local-only (UI state, in-session pulse curve, audio engine, breathing animation) stays on device.
-- **Content seam:** [`src/lib/content.ts`](../src/lib/content.ts) is the adapter where local fallback data is replaced by Supabase reads when the schema lands. Migration sites marked `TODO(supabase)`.
+- **Content seam:** [`src/lib/content/content.ts`](../src/lib/content/content.ts) is the adapter where local fallback data is replaced by Supabase reads when the schema lands. Migration sites marked `TODO(supabase)`.
 - **Privacy boundary:** the HealthKit pulse stream stays on-device and is never posted to Supabase unless the user explicitly shares a session. Crisis taps are never logged. Row-Level Security is the auth boundary (client-side user-ID filters are UX hints, not security).
 - Stack details, folder structure, hooks/state/forms/i18n conventions, and current-state-vs-aspiration in [`CONVENTIONS.md`](./CONVENTIONS.md).
 
@@ -174,7 +174,7 @@ Longer-term product metrics (post-demo, currently aspirational): session complet
 Out of frontend scope to create, in scope to integrate (until they land, screens use silence stubs):
 - **Ambient loops** (~6 min): `river-path`, `city-evening`, `cafe-morning`, `quiet-road`.
 - **Trigger clips** (~3–5s): `motorcycle`, `helicopter`, `fireworks`, `siren`, `car-backfire`, `shouting`.
-- **Voice narration** (EN + HE): ~12–15 lines per scene, two scripts per scene (calm + post-trigger calming). Source text in [`../voice-scripts/`](../voice-scripts/).
+- **Voice narration** (EN + HE): ~12–15 lines per scene, two scripts per scene (calm + post-trigger calming). Source text in [`./voice-scripts/`](./voice-scripts/).
 - **Fonts:** Frank Ruhl Libre, Heebo.
 
 ---
@@ -186,5 +186,5 @@ Out of frontend scope to create, in scope to integrate (until they land, screens
 - [`FRONTEND.md`](./FRONTEND.md) — palette, type, motion, screen specs, RTL.
 - [`CONVENTIONS.md`](./CONVENTIONS.md) — tech stack, folder structure, code conventions.
 - [`../openspec/specs/`](../openspec/) — binding capability requirements (Given/When/Then).
-- [`../voice-scripts/`](../voice-scripts/) — per-scene voice narration source (EN + HE).
+- [`./voice-scripts/`](./voice-scripts/) — per-scene voice narration source (EN + HE).
 </content>

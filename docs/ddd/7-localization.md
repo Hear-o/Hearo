@@ -23,9 +23,9 @@ replaceable subdomain — no competitive advantage, but every context depends on
 
 ## Two distinct mechanisms (don't conflate them)
 
-- `src/lib/i18n.ts` — **react-i18next** for *UI strings* (buttons, labels), with
+- `src/lib/ui/i18n.ts` — **react-i18next** for *UI strings* (buttons, labels), with
   its own resource bundles.
-- `src/lib/content.ts#localize` — the **content-domain** bilingual accessor for
+- `src/lib/content/content.ts#localize` — the **content-domain** bilingual accessor for
   `LocalizedText` objects (scene labels, voice scripts). Different system,
   different failure modes.
 
@@ -37,7 +37,7 @@ replaceable subdomain — no competitive advantage, but every context depends on
 
 ## Today (code mapping)
 
-- `src/lib/i18n.ts` (UI strings), `src/lib/content.ts#localize` (content bilingual accessor).
+- `src/lib/ui/i18n.ts` (UI strings), `src/lib/content/content.ts#localize` (content bilingual accessor).
 
 ## Gaps
 

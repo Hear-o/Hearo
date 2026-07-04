@@ -1,0 +1,340 @@
+import i18n from "i18next";
+import { initReactI18next } from "react-i18next";
+
+import { getLanguagePreference } from "@/lib/storage/storage";
+
+const resources = {
+  en: {
+    translation: {
+      welcome: {
+        line: "A quiet place\nto be again.",
+        begin: "Begin",
+      },
+      permissions: {
+        title: "Two things\nthis app will need.",
+        pulseTitle: "Your pulse",
+        pulseWhy: "So it knows when to slow down for you.",
+        pulseAllow: "Connect heart rate",
+        pulseDeniedHint: "Without this, the soundscape won't follow your body.",
+        notifsTitle: "Reminders",
+        notifsWhy: "To be here when you said you would.",
+        notifsAllow: "Allow",
+        privacy: "Nothing leaves your phone unless you ask.",
+        continue: "Continue",
+      },
+      reminders: {
+        pickTime: "When would you like the daily reminder?",
+        confirm: "Save",
+        notificationTitle: "HearO",
+        notificationBody: "A quiet moment is ready when you are.",
+        enableInSettings: "Enable in Settings",
+        sectionLabel: "Daily reminder",
+        currentlySet: "Set for {{time}}",
+        notSet: "Off",
+        change: "Change time",
+        turnOff: "Turn off",
+        done: "Done",
+        cancel: "Cancel",
+        toggleLabel: "Toggle daily reminder",
+      },
+      setup: {
+        nameQuestion: "What should\nwe call you?",
+        namePlaceholder: "Your name",
+        nameHint: "Used in the greeting on the home screen. Optional.",
+        sceneQuestion: "Where would you\nlike to be?",
+        soundsQuestion: "Choose a trigger sound\nto practice with.",
+        soundsHint: "Pick what feels true. You can change this anytime.",
+        durationQuestion: "How long\nshould we practice?",
+        durationHint: "You can change this next time.",
+        durationMinutes_one: "{{count}} min",
+        durationMinutes_other: "{{count}} min",
+        ready: "Ready",
+        back: "Back",
+        rereadIntro: "Re-read the intro",
+      },
+      home: {
+        greeting: {
+          morning: "Good morning,\n{{name}}.",
+          afternoon: "Good afternoon,\n{{name}}.",
+          evening: "Good evening,\n{{name}}.",
+          night: "Good night,\n{{name}}.",
+        },
+        greetingNoName: {
+          morning: "Good morning.",
+          afternoon: "Good afternoon.",
+          evening: "Good evening.",
+          night: "Good night.",
+        },
+        todaysExperience: "Today's experience",
+        durationHint_one: "About {{count}} minute",
+        durationHint_other: "About {{count}} minutes",
+        begin: "Begin",
+        beginSession: "Begin a session",
+        change: "Change what's planned",
+        withSound: "with {{sound}}",
+        needAMoment: "Need a moment?",
+        progress: "Sessions completed",
+        sessionsCount_one: "{{count}} session",
+        sessionsCount_other: "{{count}} sessions",
+        thoughtLabel: "A thought for today",
+      },
+      calming: {
+        breatheIn: "Breathe in",
+        breatheOut: "Breathe out",
+        hold: "Hold",
+        seePrompt: "Notice {{count}} things\nyou can see.",
+        hearPrompt: "Notice {{count}} things\nyou can hear.",
+        touchPrompt: "Notice {{count}} thing\nyou can touch.",
+      },
+      preparing: {
+        eyebrow: "Preparing",
+        body: "A quiet moment\nto settle in.",
+        error: "Couldn't load the soundscape. Check your connection and try again.",
+      },
+      windingDown: {
+        eyebrow: "Winding down",
+      },
+      settings: {
+        title: "Settings",
+        nameLabel: "Your name",
+        languageLabel: "Language",
+        languageHebrew: "עברית",
+        languageEnglish: "English",
+        languageRestartNote: "The app will restart to apply the new language.",
+        open: "Open settings",
+        dismiss: "Close settings",
+      },
+      session: {
+        end: "End session",
+        pause: "Pause",
+        breatheIn: "Breathe in",
+        breatheOut: "Breathe out",
+        preparing: "Preparing session…",
+        goBack: "Go back",
+        noWatch: "No watch detected. Use the button on screen to lower trigger volume when needed.",
+        watchDisconnected: "Watch disconnected. Use the button to control trigger volume manually.",
+        triggerReturnsIn: "Sound returns in {{seconds}}s",
+        lowerSound: "Lower sound",
+        exitConfirmTitle: "Are you sure you want to leave early?",
+        exitConfirmYes: "Yes, end now",
+        exitConfirmCancel: "Keep going",
+      },
+      postSession: {
+        difficultyQuestion: "How difficult was this session?",
+        impactQuestion: "Did the trigger sound bother you?",
+        impactYes: "Yes",
+        impactALittle: "A little",
+        impactNo: "Not really",
+        moodQuestion: "How do you feel compared to before?",
+        moodBetter: "Better",
+        moodSame: "About the same",
+        moodHarder: "Harder",
+        skip: "Skip",
+        next: "Next",
+        done: "Done",
+      },
+      after: {
+        affirmationTitle: "That's progress.",
+        affirmationBody:
+          "You showed up. You faced something hard, and you stayed with it. The next time will be a little easier.",
+        done: "Done",
+      },
+      crisis: {
+        title: "Need someone\nto talk to\nright now?",
+        call: "Call ERAN",
+        number: "1201",
+        free: "Free, 24/7,\nanonymous.",
+        trusted: "A person you trust",
+        trustedContacts: {
+          addSomeone: "Add someone",
+          pickHeading: "Pick someone you trust",
+          listFull: "The list is full. Remove someone first to add another.",
+          denyExplanation: "ERAN's trained for this. They answer day and night.",
+        },
+        close: "Close",
+      },
+    },
+  },
+  he: {
+    translation: {
+      welcome: {
+        line: "מקום שקט\nלהיות בו שוב.",
+        begin: "התחל",
+      },
+      permissions: {
+        title: "שני דברים\nשהאפליקציה תזדקק להם.",
+        pulseTitle: "הדופק שלך",
+        pulseWhy: "כדי שתדע מתי להאט בשבילך.",
+        pulseAllow: "חבר מקור דופק",
+        pulseDeniedHint: "בלי זה, הצליל לא יעקוב אחרי הגוף שלך.",
+        notifsTitle: "תזכורות",
+        notifsWhy: "כדי להיות כאן כשאמרת שתהיה.",
+        notifsAllow: "אפשר",
+        privacy: "שום דבר לא עוזב את הטלפון שלך אלא אם תבקש.",
+        continue: "המשך",
+      },
+      reminders: {
+        pickTime: "מתי תרצה את התזכורת היומית?",
+        confirm: "שמור",
+        notificationTitle: "HearO",
+        notificationBody: "רגע שקט מחכה לך כשתהיה מוכן.",
+        enableInSettings: "הפעל בהגדרות",
+        sectionLabel: "תזכורת יומית",
+        currentlySet: "נקבעה לשעה {{time}}",
+        notSet: "כבויה",
+        change: "שנה שעה",
+        turnOff: "כבה",
+        done: "סיום",
+        cancel: "ביטול",
+        toggleLabel: "הפעלת תזכורת יומית",
+      },
+      setup: {
+        nameQuestion: "איך תרצה\nשנקרא לך?",
+        namePlaceholder: "השם שלך",
+        nameHint: "מופיע בברכה במסך הבית. אופציונלי.",
+        sceneQuestion: "איפה תרצה\nלהיות?",
+        soundsQuestion: "בחר צליל טריגר\nלאימון.",
+        soundsHint: "בחר את מה שמרגיש נכון. תוכל לשנות זאת בכל עת.",
+        durationQuestion: "מה יהיה אורך\nהתרגול?",
+        durationHint: "תוכל לשנות זאת בפעם הבאה.",
+        durationMinutes_one: "דקה {{count}}",
+        durationMinutes_two: "{{count}} דקות",
+        durationMinutes_many: "{{count}} דקות",
+        durationMinutes_other: "{{count}} דקות",
+        ready: "להתחיל",
+        back: "חזור",
+        rereadIntro: "קרא שוב את הפתיח",
+      },
+      home: {
+        greeting: {
+          morning: "בוקר טוב,\n{{name}}.",
+          afternoon: "צהריים טובים,\n{{name}}.",
+          evening: "ערב טוב,\n{{name}}.",
+          night: "לילה טוב,\n{{name}}.",
+        },
+        greetingNoName: {
+          morning: "בוקר טוב.",
+          afternoon: "צהריים טובים.",
+          evening: "ערב טוב.",
+          night: "לילה טוב.",
+        },
+        todaysExperience: "החוויה של היום",
+        durationHint_one: "בערך דקה {{count}}",
+        durationHint_two: "בערך {{count}} דקות",
+        durationHint_many: "בערך {{count}} דקות",
+        durationHint_other: "בערך {{count}} דקות",
+        begin: "התחל",
+        beginSession: "התחל סשן",
+        change: "שנה את התכנון",
+        withSound: "עם {{sound}}",
+        needAMoment: "צריך רגע?",
+        progress: "סשנים שהושלמו",
+        sessionsCount_one: "{{count}} סשן",
+        sessionsCount_two: "{{count}} סשנים",
+        sessionsCount_other: "{{count}} סשנים",
+        thoughtLabel: "מחשבה להיום",
+      },
+      calming: {
+        breatheIn: "שאיפה",
+        breatheOut: "נשיפה",
+        hold: "החזקה",
+        seePrompt: "שים לב ל-{{count}} דברים\nשאתה יכול לראות.",
+        hearPrompt: "שים לב ל-{{count}} צלילים\nשאתה יכול לשמוע.",
+        touchPrompt: "שים לב ל-{{count}} מרקם\nשאתה יכול לגעת בו.",
+      },
+      preparing: {
+        eyebrow: "מתכוננים",
+        body: "רגע של שקט\nכדי להתמקם.",
+        error: "לא הצלחנו לטעון את הצליל. בדוק את החיבור ונסה שוב.",
+      },
+      windingDown: {
+        eyebrow: "מסיימים",
+      },
+      settings: {
+        title: "הגדרות",
+        nameLabel: "השם שלך",
+        languageLabel: "שפה",
+        languageHebrew: "עברית",
+        languageEnglish: "English",
+        languageRestartNote: "האפליקציה תופעל מחדש כדי להחיל את השפה החדשה.",
+        open: "פתח הגדרות",
+        dismiss: "סגור הגדרות",
+      },
+      session: {
+        end: "סיים סשן",
+        pause: "השהה",
+        breatheIn: "שאיפה",
+        breatheOut: "נשיפה",
+        preparing: "מכין סשן…",
+        goBack: "חזרה",
+        noWatch: "לא זוהה שעון. השתמש בכפתור על המסך להנמכת הצליל.",
+        watchDisconnected: "השעון התנתק. השתמש בכפתור לשליטה ידנית בעוצמה.",
+        triggerReturnsIn: "הצליל חוזר בעוד {{seconds}} שניות",
+        lowerSound: "הנמך צליל",
+        exitConfirmTitle: "בטוח שתרצה לעזוב מוקדם?",
+        exitConfirmYes: "כן, סיים עכשיו",
+        exitConfirmCancel: "המשך",
+      },
+      postSession: {
+        difficultyQuestion: "עד כמה הסשן הזה היה קשה עבורך?",
+        impactQuestion: "האם הצליל המטריד הפריע לך?",
+        impactYes: "כן",
+        impactALittle: "קצת",
+        impactNo: "לא ממש",
+        moodQuestion: "איך אתה מרגיש בהשוואה לפני?",
+        moodBetter: "טוב יותר",
+        moodSame: "פחות או יותר אותו הדבר",
+        moodHarder: "קשה יותר",
+        skip: "דלג",
+        next: "הבא",
+        done: "סיום",
+      },
+      after: {
+        affirmationTitle: "זאת התקדמות.",
+        affirmationBody:
+          "הגעת. התמודדת עם משהו קשה, ונשארת איתו. בפעם הבאה יהיה קצת יותר קל.",
+        done: "סיום",
+      },
+      crisis: {
+        title: "צריך מישהו\nלדבר איתו\nעכשיו?",
+        call: 'התקשר לער"ן',
+        number: "1201",
+        free: "חינם, 24/7,\nאנונימי.",
+        trusted: "אדם שאתה סומך עליו",
+        trustedContacts: {
+          addSomeone: "הוסף מישהו",
+          pickHeading: "בחר מישהו שאתה סומך עליו",
+          listFull: "הרשימה מלאה. הסר מישהו כדי להוסיף עוד.",
+          denyExplanation: "ער\"ן מאומנים לזה. הם עונים יום ולילה.",
+        },
+        close: "סגור",
+      },
+    },
+  },
+} as const;
+
+// HearO is Hebrew-first for Israeli combat veterans — the device locale is
+// intentionally NOT consulted here. Users on English-locale phones still get
+// Hebrew on launch; an opt-in toggle in Settings (storage.languagePreference)
+// applies any stored override at app start via applyStoredLanguage() below.
+i18n.use(initReactI18next).init({
+  resources,
+  lng: "he",
+  fallbackLng: "he",
+  interpolation: { escapeValue: false },
+});
+
+export const isRTL = () => i18n.language === "he";
+
+/** Read the persisted language preference and apply it if it differs from the
+ *  current language. No-op when the user has never explicitly switched — the
+ *  default "he" stays in place. Called once at app launch from _layout.tsx;
+ *  any subsequent Settings toggle reloads the app instead of relying on this. */
+export async function applyStoredLanguage(): Promise<void> {
+  const stored = await getLanguagePreference();
+  if (stored && stored !== i18n.language) {
+    await i18n.changeLanguage(stored);
+  }
+}
+
+export default i18n;

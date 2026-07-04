@@ -38,14 +38,14 @@ ambient soundscape, HR-adaptive trigger exposure, wind-down, and post-session fe
 ## Today (code mapping)
 
 - `src/app/session.tsx` — five-state `useReducer` machine; `useAudioEngine` + `usePulseMonitor` wired here.
-- `src/lib/audio-engine.ts` — `AudioEngine` class (Web Audio Graph: Ambient/Trigger/Voice GainNodes).
+- `src/lib/audio/audio-engine.ts` — `AudioEngine` class (Web Audio Graph: Ambient/Trigger/Voice GainNodes).
 - `src/hooks/useAudioEngine.ts` — React hook owning `AudioEngine` lifetime.
 - `src/hooks/usePulseMonitor.ts` — HR baseline measurement, spike/normalize events, BLE disconnect.
-- `src/lib/asset-cache.ts` — CDN manifest check + `expo-file-system` download (used in LOADING).
-- `src/lib/content.ts` — `AmbientTrack`, `VoiceClip` types + getters.
+- `src/lib/audio/asset-cache.ts` — CDN manifest check + `expo-file-system` download (used in LOADING).
+- `src/lib/content/content.ts` — `AmbientTrack`, `VoiceClip` types + getters.
 - `src/components/features/post-session/` — `PostSessionFeedback` component (POST_SESSION state).
 - `src/app/after.tsx` — after-walk reflection screen.
-- `src/lib/session-store.ts` — pre-walk selection (scene, consented sounds) read at mount.
+- `src/lib/storage/session-store.ts` — pre-walk selection (scene, consented sounds) read at mount.
 
 ## Gaps & compliance flags
 

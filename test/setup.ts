@@ -12,11 +12,46 @@ jest.mock("react-native-reanimated", () =>
   require("react-native-reanimated/mock"),
 );
 
-// Initialize i18n once so useTranslation() resolves real keys. Device locale is
-// unavailable under jest-expo, so i18n falls back to "he"; pin to a known
-// language for deterministic copy assertions.
-import i18n from "@/lib/i18n";
-import { useCrisisStore } from "@/lib/crisis-store";
+// AsyncStorage's native module is null under jest. The package ships an
+// in-memory mock for tests — wire it up here so any test that touches storage
+// (directly or transitively, e.g. via lib/trustedContacts → lib/storage)
+// resolves without "NativeModule: AsyncStorage is null".
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
+
+// i18n imports expo-localization at module load. Mock it before importing i18n
+// so every Jest worker starts with the same deterministic device locale.
+jest.mock("expo-localization", () => ({
+  getLocales: jest.fn(() => [{ languageCode: "en" }]),
+}));
+
+// react-native-audio-api is now imported at module load by audio-session.ts
+// (which runs at app start to activate the iOS audio session). Wire the same
+// in-house mock here so every test that transitively imports it — not just
+// the audio-engine suite — resolves without the native module shim.
+// Per-test jest.mock() calls (e.g. in audio-engine.test.ts) still override
+// this with the same module; matching exports keep both paths consistent.
+jest.mock("react-native-audio-api", () =>
+  require("./mocks/react-native-audio-api"),
+);
+
+// useFocusEffect needs a navigation context to subscribe to focus events.
+// Logic-layer hooks (e.g. useDisplayName) that call it would fail in
+// renderHook tests otherwise. No-op the focus callback in tests — the
+// primary useEffect still runs and that's what the assertions assert.
+jest.mock("expo-router", () => {
+  const actual = jest.requireActual("expo-router");
+  return {
+    ...actual,
+    useFocusEffect: (_cb: unknown) => {},
+  };
+});
+
+// Initialize i18n once so useTranslation() resolves real keys. The mocked
+// device locale starts in English; keep it pinned there for copy assertions.
+import i18n from "@/lib/ui/i18n";
+import { useCrisisStore } from "@/lib/storage/crisis-store";
 
 beforeAll(async () => {
   await i18n.changeLanguage("en");
@@ -27,5 +62,5 @@ beforeAll(async () => {
 // beforeEach (not afterEach) so it runs after RNTL has already unmounted the
 // previous test's tree, avoiding an act() warning from re-rendering a live tree.
 beforeEach(() => {
-  useCrisisStore.setState({ isOpen: false, showingTrustedStub: false });
+  useCrisisStore.setState({ isOpen: false });
 });

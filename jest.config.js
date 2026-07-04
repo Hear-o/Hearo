@@ -19,13 +19,25 @@ module.exports = {
   },
   collectCoverageFrom: [
     "src/lib/**/*.{ts,tsx}",
+    "src/hooks/**/*.{ts,tsx}",
     "src/components/**/*.{ts,tsx}",
-    "!src/lib/tokens.ts",
-    "!src/lib/i18n.ts",
+    "!src/lib/ui/tokens.ts",
+    "!src/lib/ui/i18n.ts",
+    // All native-module wrappers are now backfilled and gated — see
+    // docs/TEST_BACKFILL_PLAN.md and test/mocks/ for the SDK mocks. No coverage
+    // exclusions remain beyond the config/constants files above.
   ],
   coverageThreshold: {
     // src/lib ratcheted to its ADR-001 final target. Glob key = per-file gate.
+    // healthKit.ios.ts clears this thanks to two `istanbul ignore` markers on
+    // provably-unreachable defensive branches (see that file for why). A
+    // per-file threshold key does NOT reliably override a `**` glob in this
+    // Jest version, so unreachable branches are annotated at the source instead.
     "./src/lib/**/*.{ts,tsx}": {
+      lines: 95,
+      branches: 90,
+    },
+    "./src/hooks/**/*.{ts,tsx}": {
       lines: 95,
       branches: 90,
     },

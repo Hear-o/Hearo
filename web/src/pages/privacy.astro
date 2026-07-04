@@ -5,7 +5,7 @@ const lastUpdated = "1 June 2026";
 ---
 
 <Base
-  title="Privacy policy — HearO"
+  title="Privacy policy. HearO"
   description="What HearO collects, what stays on your device, who we share with, and how to delete your data."
 >
   <article class="px-6 sm:px-12 py-16 sm:py-20">
@@ -38,18 +38,18 @@ const lastUpdated = "1 June 2026";
           <h2 class="font-display text-xl text-text mb-3">What data we collect</h2>
           <p class="mb-3">When you create an account and use the app, we store the following on our backend (Supabase, hosted in the EU):</p>
           <ul class="list-disc list-outside pl-6 space-y-2">
-            <li><span class="text-text">Account</span> — your email address (via Apple, Google, or email/password sign-in) and a display name. We use this to identify your account and nothing else.</li>
-            <li><span class="text-text">Preferences</span> — the scene you've chosen, the list of trigger sounds you've consented to hear, and the intensity-ceiling value you ended your last session on per sound. So the app remembers where you left off.</li>
-            <li><span class="text-text">Session records</span> — for each completed session: which scene, which sounds played, your pulse sampled at ~4 Hz across the session, and the three-option reflection you chose at the end. So you can see your own progress over time.</li>
-            <li><span class="text-text">Reminder schedule</span> — if you enable daily reminders, the time and timezone you chose. So we can send the push at the right hour.</li>
+            <li><span class="text-text">Account</span>: your email address (via Apple, Google, or email/password sign-in) and a display name. We use this to identify your account and nothing else.</li>
+            <li><span class="text-text">Preferences</span>: the scene you've chosen, the list of trigger sounds you've consented to hear, and the intensity-ceiling value you ended your last session on per sound. So the app remembers where you left off.</li>
+            <li><span class="text-text">Session records</span>: for each completed session: which scene, which sounds played, your pulse sampled at ~4 Hz across the session, and the three-option reflection you chose at the end. So you can see your own progress over time.</li>
+            <li><span class="text-text">Reminder schedule</span>: if you enable daily reminders, the time and timezone you chose. So we can send the push at the right hour.</li>
           </ul>
         </section>
 
         <section>
-          <h2 class="font-display text-xl text-text mb-3">What stays on your device — and never reaches us</h2>
+          <h2 class="font-display text-xl text-text mb-3">What stays on your device, and never reaches us</h2>
           <ul class="list-disc list-outside pl-6 space-y-2">
             <li><span class="text-text">Your real-time pulse from Apple Health.</span> The live heart-rate stream from your Apple Watch is read by the app on your device to drive the breathing animation and auto-soften logic. It is only ever transmitted to our backend as the sampled curve at session end, and only because that's how progress tracking works. If you don't want any pulse data leaving your device, turn off pulse permission and the rest of the app still works.</li>
-            <li><span class="text-text">Crisis sheet taps and calls to ERAN.</span> When you tap the <span class="font-mono">i</span> icon to open the crisis sheet, or when you tap "Call ERAN 1201", the app does not send a request to our backend. This is a deliberate privacy choice — you must be able to trust that asking for help is not surveilled.</li>
+            <li><span class="text-text">Crisis sheet taps and calls to ERAN.</span> When you tap the <span class="font-mono">i</span> icon to open the crisis sheet, or when you tap "Call ERAN 1201", the app does not send a request to our backend. This is a deliberate privacy choice. You must be able to trust that asking for help is not surveilled.</li>
             <li><span class="text-text">Audio playback.</span> The trigger sounds and voice narration play locally on your device. We don't track which sounds you encountered in real time; only the per-session record at the end carries that information.</li>
           </ul>
         </section>
@@ -69,7 +69,7 @@ const lastUpdated = "1 June 2026";
         <section>
           <h2 class="font-display text-xl text-text mb-3">Where your data lives</h2>
           <p>
-            Account and session data live in Supabase, hosted in the European Union. Apple Health data stays on your device. Audio assets and voice narration clips are bundled in the app — they don't sit on a server you talk to.
+            Account and session data live in Supabase, hosted in the European Union. Apple Health data stays on your device. Audio assets and voice narration clips are bundled in the app. They don't sit on a server you talk to.
           </p>
         </section>
 
@@ -84,11 +84,11 @@ const lastUpdated = "1 June 2026";
           <h2 class="font-display text-xl text-text mb-3">Your rights</h2>
           <p class="mb-3">Under GDPR (if you're in the EU/UK), Israel's Protection of Privacy Law, and most other modern privacy frameworks, you have the right to:</p>
           <ul class="list-disc list-outside pl-6 space-y-2">
-            <li><span class="text-text">Access</span> — see what we have on you. Email us and we'll send you a copy.</li>
-            <li><span class="text-text">Correct</span> — fix anything that's wrong. Most of it you can change in the app directly.</li>
-            <li><span class="text-text">Delete</span> — wipe your account and everything tied to it. In-app, or by email.</li>
-            <li><span class="text-text">Object / restrict</span> — tell us to stop processing some category of data. We'll figure out together what that means in your case.</li>
-            <li><span class="text-text">Portability</span> — get your data in a machine-readable format (JSON). Email us.</li>
+            <li><span class="text-text">Access</span>: see what we have on you. Email us and we'll send you a copy.</li>
+            <li><span class="text-text">Correct</span>: fix anything that's wrong. Most of it you can change in the app directly.</li>
+            <li><span class="text-text">Delete</span>: wipe your account and everything tied to it. In-app, or by email.</li>
+            <li><span class="text-text">Object / restrict</span>: tell us to stop processing some category of data. We'll figure out together what that means in your case.</li>
+            <li><span class="text-text">Portability</span>: get your data in a machine-readable format (JSON). Email us.</li>
           </ul>
           <p class="mt-4">
             Email <a class="text-accent hover:underline" href="mailto:privacy@hearo.app">privacy@hearo.app</a> for any of these. If we don't resolve your concern, you can complain to your local data protection authority.
@@ -98,7 +98,7 @@ const lastUpdated = "1 June 2026";
         <section>
           <h2 class="font-display text-xl text-text mb-3">Children</h2>
           <p>
-            HearO is built for adults — the persona is combat veterans. The app is not directed at children under 18, and we do not knowingly collect data from anyone under 18. If you believe a child has signed up, email us and we'll delete the account.
+            HearO is built for adults. The persona is combat veterans. The app is not directed at children under 18, and we do not knowingly collect data from anyone under 18. If you believe a child has signed up, email us and we'll delete the account.
           </p>
         </section>
 

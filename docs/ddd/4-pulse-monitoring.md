@@ -51,7 +51,7 @@ mocked phase-aware generator), measure per-session HR baseline, and publish
 
 ## Today (code mapping)
 
-- `src/lib/pulse.ts` — mock generator (`usePulse`) + `PulsePhase` type. Still the pulse source; HealthKit ACL pending.
+- `src/lib/integrations/pulse.ts` — mock generator (`usePulse`) + `PulsePhase` type. Still the pulse source; HealthKit ACL pending.
 - `src/hooks/usePulseMonitor.ts` — **real event seam is live**: wraps mock generator, measures baseline, detects spikes via threshold logic, tracks BLE connectivity, handles chronic high-baseline dual-source.
 
 ## Gaps

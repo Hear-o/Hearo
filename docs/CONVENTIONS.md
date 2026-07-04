@@ -32,7 +32,7 @@ The app is a **monolithic frontend** talking directly to **Supabase**. There is 
 | Charts | `victory-native` or `react-native-svg-charts` | only if we need them |
 | Linting | `eslint` + `@react-native/eslint-config` | planned |
 | Formatting | Prettier | planned |
-| Audio | `react-native-audio-api` (Software Mansion) | in use — requires dev build, Expo Go incompatible |
+| Audio | `react-native-audio-api` (Software Mansion) | in use — requires a native dev build (no sandboxed runner) |
 | Video | `expo-video` | planned (scene loops, asset-blocked) |
 
 ## 2. Folder structure
@@ -49,16 +49,20 @@ src/
 │   │       ├── Card.tsx         presentational
 │   │       ├── Constants.ts     feature-local constants
 │   │       └── index.ts         public exports
-│   ├── common/      shared low-level components
-│   └── icons/       custom icon components (today: Icon.tsx wrapper + SVGs)
+│   └── common/      shared low-level components (Icon.tsx wrapper + SVGs)
 ├── contexts/        React contexts (when used — see §6)
 ├── hooks/           custom hooks, one per feature/concern (see §4)
-├── lib/             framework-agnostic utilities (content seam, audio, pulse, stores)
+├── lib/             framework-agnostic code, grouped by domain:
+│   ├── audio/       audio engine + asset cache
+│   ├── content/     content provisioning seam (scenes, sounds, voice scripts)
+│   ├── storage/     AsyncStorage wrapper + Zustand stores (crisis, session)
+│   ├── integrations/native-module wrappers (HealthKit, pulse, reminders, contacts)
+│   └── ui/          design tokens, i18n, display-name resolver, time-of-day helpers
 ├── generated/       auto-generated Supabase types (database.types.ts), planned
 ├── types/           shared TypeScript types
 ├── config/          config constants (URLs, feature-flag defaults)
-├── styles/          design tokens + theme (today: lib/tokens.ts)
-├── locales/<lang>/  i18n string files (today: inlined in lib/i18n.ts; split when features grow)
+├── styles/          design tokens + theme (today: lib/ui/tokens.ts)
+├── locales/<lang>/  i18n string files (today: inlined in lib/ui/i18n.ts; split when features grow)
 └── utils/           pure utility functions
 ```
 
@@ -70,7 +74,7 @@ Rules:
 
 ## 3. Design tokens
 
-Centralize tokens in `src/lib/tokens.ts` (today's location) — migrating to `src/styles/theme.ts` is fine when the surface grows.
+Centralize tokens in `src/lib/ui/tokens.ts` — migrating to `src/styles/theme.ts` is fine when the surface grows.
 
 Token scales to define:
 
@@ -125,7 +129,7 @@ Rules:
 - **Remote state → TanStack Query wrapping the Supabase client** (every read/write goes through a hook).
 - **URL / route state → Expo Router navigation params**.
 - **Cross-cutting client state → React Context** (auth session, theme). One context per concern, providers composed at app root.
-- **Zustand is allowed where Context creates re-render storms or feels overkill.** We currently use it in `lib/session-store.ts`, `lib/crisis-store.ts` — small slices that several disconnected components subscribe to. Default to Context unless there's a concrete reason; reach for Zustand only when measured.
+- **Zustand is allowed where Context creates re-render storms or feels overkill.** We currently use it in `lib/storage/session-store.ts`, `lib/storage/crisis-store.ts` — small slices that several disconnected components subscribe to. Default to Context unless there's a concrete reason; reach for Zustand only when measured.
 - **No Redux, no MobX.**
 
 ## 7. Forms
@@ -155,7 +159,7 @@ Rules:
 
 Rules:
 
-- **No hardcoded user-facing strings.** Every visible string lives in a locale file. Catalog content (scene labels, voice scripts) lives in `lib/content.ts`, not i18n — the adapter owns its own bilingual fields.
+- **No hardcoded user-facing strings.** Every visible string lives in a locale file. Catalog content (scene labels, voice scripts) lives in `lib/content/content.ts`, not i18n — the adapter owns its own bilingual fields.
 - **No string interpolation in JSX with `${}`** — use i18next interpolation: `t('sat.welcome', { name: user.name })`.
 - **Hebrew is a first-class language**, not an afterthought. RTL is handled via `I18nManager.forceRTL` at app start.
 
@@ -202,11 +206,34 @@ Rules:
 - [ ] User-meaningful actions wired through `useAnalytics()`
 - [ ] Hebrew strings present for every English string
 
+## 13a. Cutting a dev build
+
+All on-device work runs against a native build — no sandboxed runner. The relevant native modules are:
+
+- **`react-native-audio-api`** (audio engine) — Software Mansion native module; the entire session screen depends on it. Cross-platform.
+- **`@kingstinct/react-native-healthkit`** (iOS HealthKit) — needs the HealthKit entitlement + a paired Apple Watch to read real samples. iOS-only; the pulse hook falls through to the mock generator on Android.
+- Anything else that adds a config-plugin which mutates `Info.plist`, `AndroidManifest.xml`, the entitlements file, or the Podfile / `build.gradle`.
+
+Cut a dev build with:
+
+```bash
+# iOS
+npx expo run:ios
+
+# Android
+npx expo run:android
+
+# Cloud (EAS, either platform)
+eas build --profile development --platform ios     # or --platform android
+```
+
+iOS installs land in TestFlight or via the Expo orbit "install on device" flow. Android installs as an `.apk` on a connected device; the Play Console internal-testing track is the production-equivalent path (not wired in Codemagic yet — see backlog). Re-cut whenever native config (plist/manifest keys, entitlements, native deps) changes — JS-only changes don't need a rebuild.
+
 ## 14. Current state vs. aspiration
 
 The conventions above are the target. As of the last commit, HearO is partly there:
 
-- **In place:** Expo Router, TypeScript strict, NativeWind, tokens in `lib/tokens.ts`, i18n with EN+HE, Reanimated, Zustand stores, content adapter in `lib/content.ts` (local data today, Supabase queries tomorrow), `expo-audio` for trigger playback, Streamline icons via SVG transformer.
-- **Not yet:** Supabase client + schema + generated types, TanStack Query wrapping the client, forms (no form screens exist), Sentry, PostHog, formal `src/styles/` and `src/locales/` splits (still inlined while the surface is small), feature folders (the app is small enough that everything lives at `src/app/` and `src/components/`).
+- **In place:** Expo Router, TypeScript strict, NativeWind, tokens in `lib/ui/tokens.ts`, i18n with EN+HE in `lib/ui/i18n.ts`, Reanimated, Zustand stores under `lib/storage/`, content adapter in `lib/content/content.ts` (local data today, Supabase queries tomorrow), `react-native-audio-api` engine in `lib/audio/`, native-module wrappers in `lib/integrations/`, Streamline icons via SVG transformer, feature folders under `components/features/<name>/` with `common/` for shared primitives like `Icon`.
+- **Not yet:** Supabase client + schema + generated types, TanStack Query wrapping the client, forms (no form screens exist), Sentry, PostHog, formal `src/styles/` and `src/locales/` splits (still inlined while the surface is small).
 
 Adopt the structure as new features land; don't refactor purely for the sake of it.

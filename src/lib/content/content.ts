@@ -9,7 +9,20 @@ import { ImageSourcePropType } from "react-native";
 
 import { getDefaultSceneForTimeOfDay } from "@/lib/ui/timeOfDay";
 
-export type SceneKey = "beach" | "park" | "cafe" | "road";
+export type SceneKey =
+  | "beach"
+  | "park"
+  | "cafe"
+  | "road"
+  // v1.2.0 — Roy's 2026-07-07 drop of 5 new scenes (still + ambient bed each).
+  // Voice narration for these is still owed (TODO Roy), so they're wired for
+  // the Companion feature (which doesn't need voice) but not yet promoted
+  // to the Practice picker until intro/mid/end clips land.
+  | "train"
+  | "quiet-bar"
+  | "house-party"
+  | "supermarket"
+  | "bus";
 export type SoundKey =
   | "motorcycle"
   | "helicopter"
@@ -208,6 +221,85 @@ const SCENES: Record<SceneKey, Scene> = {
       "dog",
     ],
   },
+  // v1.2.0 — Roy's 2026-07-07 drop. Voice narration still owed for each
+  // (TODO Roy). Voice fields intentionally empty — the /session Practice
+  // flow shouldn't route to these until intro/mid/end recordings arrive.
+  // The Companion feature uses only the still + short label + triggerCandidates.
+  train: {
+    key: "train",
+    label: { en: "Train carriage, daytime", he: "קרון רכבת, יום" },
+    short: { en: "Train", he: "רכבת" },
+    activity: { en: "Riding the train", he: "נסיעה ברכבת" },
+    media: { still: require("@/assets/scenes/train.png") },
+    tint: { top: "#3B4A5A" },
+    voice: {
+      // TODO(roy): record intro/mid/end voice for the train scene, EN + HE.
+      opening: { en: "", he: "" },
+      during: { en: "", he: "" },
+      calming: { en: "", he: "" },
+    },
+    triggerCandidates: ["train-horn", "brake-squeal", "station-announcement", "baby-crying", "brake-hiss"],
+  },
+  "quiet-bar": {
+    key: "quiet-bar",
+    label: { en: "Quiet bar, evening", he: "בר שקט, ערב" },
+    short: { en: "Quiet bar", he: "בר שקט" },
+    activity: { en: "Sitting at a quiet bar", he: "יושב בבר שקט" },
+    media: { still: require("@/assets/scenes/quiet-bar.png") },
+    tint: { top: "#3A2C24" },
+    voice: {
+      // TODO(roy): record intro/mid/end voice for the quiet-bar scene.
+      opening: { en: "", he: "" },
+      during: { en: "", he: "" },
+      calming: { en: "", he: "" },
+    },
+    triggerCandidates: ["glass-breaking", "party-shout", "door-slam", "restaurant"],
+  },
+  "house-party": {
+    key: "house-party",
+    label: { en: "House party, evening", he: "מסיבת בית, ערב" },
+    short: { en: "House party", he: "מסיבת בית" },
+    activity: { en: "At a house party", he: "במסיבת בית" },
+    media: { still: require("@/assets/scenes/house-party.png") },
+    tint: { top: "#4A2C3D" },
+    voice: {
+      // TODO(roy): record intro/mid/end voice for the house-party scene.
+      opening: { en: "", he: "" },
+      during: { en: "", he: "" },
+      calming: { en: "", he: "" },
+    },
+    triggerCandidates: ["party-shout", "glass-breaking", "door-slam", "dog", "baby-crying"],
+  },
+  supermarket: {
+    key: "supermarket",
+    label: { en: "Supermarket, daytime", he: "סופרמרקט, יום" },
+    short: { en: "Supermarket", he: "סופרמרקט" },
+    activity: { en: "Shopping at the supermarket", he: "עושה קניות בסופרמרקט" },
+    media: { still: require("@/assets/scenes/supermarket.png") },
+    tint: { top: "#3D4A3C" },
+    voice: {
+      // TODO(roy): record intro/mid/end voice for the supermarket scene.
+      opening: { en: "", he: "" },
+      during: { en: "", he: "" },
+      calming: { en: "", he: "" },
+    },
+    triggerCandidates: ["checkout-beep", "pa-announcement", "baby-crying", "dog"],
+  },
+  bus: {
+    key: "bus",
+    label: { en: "City bus, daytime", he: "אוטובוס עירוני, יום" },
+    short: { en: "Bus", he: "אוטובוס" },
+    activity: { en: "Riding the bus", he: "נסיעה באוטובוס" },
+    media: { still: require("@/assets/scenes/bus.png") },
+    tint: { top: "#3D4552" },
+    voice: {
+      // TODO(roy): record intro/mid/end voice for the bus scene.
+      opening: { en: "", he: "" },
+      during: { en: "", he: "" },
+      calming: { en: "", he: "" },
+    },
+    triggerCandidates: ["bus-horn", "brake-hiss", "brake-squeal", "baby-crying", "door-slam"],
+  },
 };
 
 // TODO(supabase): `sounds` table — key, labels by lang.
@@ -222,10 +314,6 @@ const SOUNDS: Record<SoundKey, Sound> = {
       require("@/assets/sounds/triggers/motorcycle/2.mp3"),
       require("@/assets/sounds/triggers/motorcycle/3.mp3"),
       require("@/assets/sounds/triggers/motorcycle/4.mp3"),
-      require("@/assets/sounds/triggers/motorcycle/5.mp3"),
-      require("@/assets/sounds/triggers/motorcycle/6.mp3"),
-      require("@/assets/sounds/triggers/motorcycle/7.mp3"),
-      require("@/assets/sounds/triggers/motorcycle/8.mp3"),
     ],
     image: require("@/assets/trigger-images/motorcycle.png"),
   },
@@ -236,8 +324,6 @@ const SOUNDS: Record<SoundKey, Sound> = {
     audioVariations: [
       require("@/assets/sounds/triggers/helicopter/1.mp3"),
       require("@/assets/sounds/triggers/helicopter/2.mp3"),
-      require("@/assets/sounds/triggers/helicopter/3.mp3"),
-      require("@/assets/sounds/triggers/helicopter/4.mp3"),
     ],
     image: require("@/assets/trigger-images/helicopter.png"),
   },
@@ -250,10 +336,6 @@ const SOUNDS: Record<SoundKey, Sound> = {
       require("@/assets/sounds/triggers/fireworks/2.mp3"),
       require("@/assets/sounds/triggers/fireworks/3.mp3"),
       require("@/assets/sounds/triggers/fireworks/4.mp3"),
-      require("@/assets/sounds/triggers/fireworks/5.mp3"),
-      require("@/assets/sounds/triggers/fireworks/6.mp3"),
-      require("@/assets/sounds/triggers/fireworks/7.mp3"),
-      require("@/assets/sounds/triggers/fireworks/8.mp3"),
     ],
     image: require("@/assets/trigger-images/fireworks.png"),
   },
@@ -265,9 +347,6 @@ const SOUNDS: Record<SoundKey, Sound> = {
       require("@/assets/sounds/triggers/siren/1.mp3"),
       require("@/assets/sounds/triggers/siren/2.mp3"),
       require("@/assets/sounds/triggers/siren/3.mp3"),
-      require("@/assets/sounds/triggers/siren/4.mp3"),
-      require("@/assets/sounds/triggers/siren/5.mp3"),
-      require("@/assets/sounds/triggers/siren/6.mp3"),
     ],
     image: require("@/assets/trigger-images/siren.png"),
   },
@@ -278,8 +357,6 @@ const SOUNDS: Record<SoundKey, Sound> = {
     audioVariations: [
       require("@/assets/sounds/triggers/car-horn/1.mp3"),
       require("@/assets/sounds/triggers/car-horn/2.mp3"),
-      require("@/assets/sounds/triggers/car-horn/3.mp3"),
-      require("@/assets/sounds/triggers/car-horn/4.mp3"),
     ],
     image: require("@/assets/trigger-images/car-horn.png"),
   },
@@ -292,10 +369,6 @@ const SOUNDS: Record<SoundKey, Sound> = {
       require("@/assets/sounds/triggers/door-slam/2.mp3"),
       require("@/assets/sounds/triggers/door-slam/3.mp3"),
       require("@/assets/sounds/triggers/door-slam/4.mp3"),
-      require("@/assets/sounds/triggers/door-slam/5.mp3"),
-      require("@/assets/sounds/triggers/door-slam/6.mp3"),
-      require("@/assets/sounds/triggers/door-slam/7.mp3"),
-      require("@/assets/sounds/triggers/door-slam/8.mp3"),
     ],
     image: require("@/assets/trigger-images/door-slam.png"),
   },
@@ -344,6 +417,7 @@ const SOUNDS: Record<SoundKey, Sound> = {
       require("@/assets/sounds/triggers/brake-squeal/2.mp3"),
       require("@/assets/sounds/triggers/brake-squeal/3.mp3"),
       require("@/assets/sounds/triggers/brake-squeal/4.mp3"),
+      require("@/assets/sounds/triggers/brake-squeal/5.mp3"),
     ],
     image: require("@/assets/trigger-images/brake-squeal.png"),
   },
@@ -403,47 +477,59 @@ const SOUNDS: Record<SoundKey, Sound> = {
     key: "baby-crying",
     label: { en: "Baby crying", he: "תינוק בוכה" },
     inAction: { en: "a baby crying", he: "תינוק בוכה" },
+    image: require("@/assets/trigger-images/baby-crying.png"),
     audioVariations: [
       require("@/assets/sounds/triggers/baby-crying/1.mp3"),
       require("@/assets/sounds/triggers/baby-crying/2.mp3"),
       require("@/assets/sounds/triggers/baby-crying/3.mp3"),
-      require("@/assets/sounds/triggers/baby-crying/4.mp3"),
-      require("@/assets/sounds/triggers/baby-crying/5.mp3"),
-      require("@/assets/sounds/triggers/baby-crying/6.mp3"),
     ],
   },
   dog: {
     key: "dog",
     label: { en: "Dog barking", he: "כלב נובח" },
     inAction: { en: "a dog barking nearby", he: "כלב נובח בקרבת מקום" },
+    image: require("@/assets/trigger-images/dog.png"),
     audioVariations: [
       require("@/assets/sounds/triggers/dog/1.mp3"),
       require("@/assets/sounds/triggers/dog/2.mp3"),
       require("@/assets/sounds/triggers/dog/3.mp3"),
-      require("@/assets/sounds/triggers/dog/4.mp3"),
-      require("@/assets/sounds/triggers/dog/5.mp3"),
-      require("@/assets/sounds/triggers/dog/6.mp3"),
     ],
   },
   restaurant: {
     key: "restaurant",
     label: { en: "Restaurant noise", he: "רעש מסעדה" },
     inAction: { en: "a noisy restaurant", he: "מסעדה הומה" },
+    image: require("@/assets/trigger-images/restaurant.png"),
     audioVariations: [
       require("@/assets/sounds/triggers/restaurant/1.mp3"),
       require("@/assets/sounds/triggers/restaurant/2.mp3"),
       require("@/assets/sounds/triggers/restaurant/3.mp3"),
       require("@/assets/sounds/triggers/restaurant/4.mp3"),
       require("@/assets/sounds/triggers/restaurant/5.mp3"),
-      require("@/assets/sounds/triggers/restaurant/6.mp3"),
-      require("@/assets/sounds/triggers/restaurant/7.mp3"),
-      require("@/assets/sounds/triggers/restaurant/8.mp3"),
-      require("@/assets/sounds/triggers/restaurant/9.mp3"),
     ],
   },
 };
 
+// SCENE_ORDER — the 4 scenes with recorded voice narration. These are the
+// only scenes Practice's SceneCarousel offers (a session needs intro/mid/end
+// clips). The 5 v1.2.0 scenes (train / quiet-bar / house-party / supermarket
+// / bus) don't have voice yet, so they're excluded here.
 export const SCENE_ORDER: SceneKey[] = ["beach", "park", "cafe", "road"];
+
+// COMPANION_SCENE_ORDER — every scene the Companion feature lists. Voice
+// isn't required for Companion (no session, just per-scene task ladders),
+// so the 5 v1.2.0 scenes appear alongside the originals.
+export const COMPANION_SCENE_ORDER: SceneKey[] = [
+  "beach",
+  "park",
+  "cafe",
+  "road",
+  "train",
+  "bus",
+  "quiet-bar",
+  "house-party",
+  "supermarket",
+];
 // Ordered roughly by how commonly users encounter each trigger in daily urban
 // life — most encountered first, so the picker reads as a familiar list.
 // v1.1.x adds the 9 new triggers grouped by typical situation
@@ -476,6 +562,12 @@ export const SOUND_ORDER: SoundKey[] = [
 // TODO(supabase): `supabase.from('scenes').select('*, scene_voice_lines(*)')`
 export function getScenes(): Scene[] {
   return SCENE_ORDER.map((k) => SCENES[k]);
+}
+
+/** Every scene visible in the Companion feature (superset of Practice scenes
+ *  — see COMPANION_SCENE_ORDER comment for why). */
+export function getCompanionScenes(): Scene[] {
+  return COMPANION_SCENE_ORDER.map((k) => SCENES[k]);
 }
 
 export function getScene(key: SceneKey): Scene {
@@ -567,6 +659,49 @@ const AMBIENT_TRACKS: Record<SceneKey, { label: LocalizedText; variations: Audio
       require("@/assets/sounds/ambient/street/Steady_urban_city_st_4-1780143711220.mp3"),
     ],
   },
+  train: {
+    label: { en: "Train carriage", he: "קרון רכבת" },
+    variations: [
+      require("@/assets/sounds/ambient/train/1.mp3"),
+      require("@/assets/sounds/ambient/train/2.mp3"),
+      require("@/assets/sounds/ambient/train/3.mp3"),
+      require("@/assets/sounds/ambient/train/4.mp3"),
+    ],
+  },
+  "quiet-bar": {
+    label: { en: "Quiet bar", he: "בר שקט" },
+    variations: [
+      require("@/assets/sounds/ambient/quiet-bar/1.mp3"),
+      require("@/assets/sounds/ambient/quiet-bar/2.mp3"),
+      require("@/assets/sounds/ambient/quiet-bar/3.mp3"),
+    ],
+  },
+  "house-party": {
+    label: { en: "House party", he: "מסיבת בית" },
+    variations: [
+      require("@/assets/sounds/ambient/house-party/1.mp3"),
+      require("@/assets/sounds/ambient/house-party/2.mp3"),
+      require("@/assets/sounds/ambient/house-party/3.mp3"),
+      require("@/assets/sounds/ambient/house-party/4.mp3"),
+    ],
+  },
+  supermarket: {
+    label: { en: "Supermarket", he: "סופרמרקט" },
+    variations: [
+      require("@/assets/sounds/ambient/supermarket/1.mp3"),
+      require("@/assets/sounds/ambient/supermarket/2.mp3"),
+      require("@/assets/sounds/ambient/supermarket/3.mp3"),
+      require("@/assets/sounds/ambient/supermarket/4.mp3"),
+    ],
+  },
+  bus: {
+    label: { en: "City bus", he: "אוטובוס עירוני" },
+    variations: [
+      require("@/assets/sounds/ambient/bus/1.mp3"),
+      require("@/assets/sounds/ambient/bus/2.mp3"),
+      require("@/assets/sounds/ambient/bus/3.mp3"),
+    ],
+  },
 };
 
 // TODO(supabase): `supabase.from('ambient_tracks').select('*').eq('scene', scene)`
@@ -598,7 +733,13 @@ type VoiceLang = "en" | "he";
 // contract — 0=DISCLAIMER, 1=MID_SESSION, 2=WIND_DOWN — so callers don't have
 // to map keys to indices.
 // TODO(supabase): `voice_clips` table replaces this require() lattice.
-const VOICE_TRACKS: Record<SceneKey, Record<VoiceLang, { intro: AudioModule; mid: AudioModule; end: AudioModule }>> = {
+// Partial<Record<...>> because the 5 v1.2.0 scenes (train / quiet-bar /
+// house-party / supermarket / bus) don't have voice narration yet — Roy
+// still owes intro/mid/end recordings for each. getVoiceClips falls back to
+// placeholder sources for scenes without recorded voice; the Practice flow
+// only routes to voice-having scenes via SCENE_ORDER, so callers with a
+// scene from SCENE_ORDER always get real audio.
+const VOICE_TRACKS: Partial<Record<SceneKey, Record<VoiceLang, { intro: AudioModule; mid: AudioModule; end: AudioModule }>>> = {
   beach: {
     he: {
       intro: require("@/assets/sounds/voice/beach/intro-he.mp3"),
@@ -665,7 +806,19 @@ function resolveVoiceLang(lang: string): VoiceLang {
 // TODO(supabase): `supabase.from('voice_clips').select('*').eq('scene', scene).eq('lang', lang)`
 export function getVoiceClips(scene: SceneKey, lang: string): VoiceClip[] {
   const voiceLang = resolveVoiceLang(lang);
-  const tracks = VOICE_TRACKS[scene][voiceLang];
+  const tracks = VOICE_TRACKS[scene]?.[voiceLang];
+  if (!tracks) {
+    // Scene without recorded voice (v1.2.0 Companion-only scenes). Return
+    // placeholder-source clips — isPlaceholderSource() flags each so the
+    // session flow skips playback rather than crashing. Practice's
+    // SceneCarousel filters to SCENE_ORDER, so this branch only trips if
+    // a caller reaches a voice-less scene by some other path.
+    return [
+      { ...VOICE_LABELS[0], source: "placeholder://voice" },
+      { ...VOICE_LABELS[1], source: "placeholder://voice" },
+      { ...VOICE_LABELS[2], source: "placeholder://voice" },
+    ];
+  }
   return [
     { ...VOICE_LABELS[0], source: tracks.intro },
     { ...VOICE_LABELS[1], source: tracks.mid },
@@ -1143,4 +1296,104 @@ export function computeClinicalScreeningOutcome(
   const score = answers.filter(Boolean).length;
   const outcome = score >= cutoff ? "above-threshold" : "below-threshold";
   return { score, outcome };
+}
+
+// ── Companion tasks (v1 behavioral roadmap) ────────────────────────────────
+//
+// Per-scenario exposure/behavioral-activation ladders. Each scene has a
+// short, ordered sequence of concrete steps a veteran can attempt in their
+// day-to-day life — the "behavioral half" of HearO.
+//
+// Content status: all task labels below are placeholders drafted from the
+// research-recommended evidence-based hierarchies for combat PTSD (social
+// interaction, intimacy, agoraphobia-like avoidance, sleep, shared
+// activities). ALL of these MUST be reviewed by Dr. Hirschman before real
+// users see them — see docs/meeting-notes-2026-06-29.md and the deep-research
+// report (2026-07-06) for the clinical rationale. Marked TODO(clinical-review)
+// throughout.
+
+export interface CompanionTask {
+  key: string;
+  label: LocalizedText;
+}
+
+const COMPANION_TASKS: Record<SceneKey, CompanionTask[]> = {
+  // TODO(clinical-review): beach exposure ladder — social + open space
+  beach: [
+    { key: "beach-1", label: { en: "Walk to a beach access point and stand for 2 minutes", he: "לך לנקודת גישה לים ועמוד שם שתי דקות" } },
+    { key: "beach-2", label: { en: "Sit on the sand for 10 minutes and listen", he: "שב על החול עשר דקות ופשוט הקשב" } },
+    { key: "beach-3", label: { en: "Walk barefoot along the water for 5 minutes", he: "לך יחף לאורך המים חמש דקות" } },
+    { key: "beach-4", label: { en: "Sit for 20 minutes and watch the people around you", he: "שב עשרים דקות והתבונן באנשים סביבך" } },
+    { key: "beach-5", label: { en: "Come to the beach with someone you trust", he: "בוא לים עם מישהו שאתה סומך עליו" } },
+  ],
+  // TODO(clinical-review): park exposure ladder — crowds + unpredictable stimuli
+  park: [
+    { key: "park-1", label: { en: "Walk through the park in the early morning (quiet)", he: "לך דרך הפארק בשעות הבוקר המוקדמות" } },
+    { key: "park-2", label: { en: "Sit on a bench for 10 minutes", he: "שב על ספסל עשר דקות" } },
+    { key: "park-3", label: { en: "Walk through the park during regular hours", he: "לך דרך הפארק בשעות הרגילות" } },
+    { key: "park-4", label: { en: "Sit near where children play for 5 minutes", he: "שב ליד גן שעשועים חמש דקות" } },
+    { key: "park-5", label: { en: "Come with a family member", he: "בוא עם בן משפחה" } },
+  ],
+  // TODO(clinical-review): cafe exposure ladder — enclosed space + strangers
+  cafe: [
+    { key: "cafe-1", label: { en: "Order coffee at the counter and take it to go", he: "הזמן קפה בדלפק וקח לך" } },
+    { key: "cafe-2", label: { en: "Order and stand inside for 5 minutes", he: "הזמן ותעמוד בפנים חמש דקות" } },
+    { key: "cafe-3", label: { en: "Sit inside for 10 minutes alone", he: "שב בפנים לבד עשר דקות" } },
+    { key: "cafe-4", label: { en: "Sit inside for 20 minutes with a friend", he: "שב בפנים עשרים דקות עם חבר" } },
+    { key: "cafe-5", label: { en: "Meet someone here for a full breakfast", he: "קבע פגישה לארוחת בוקר שלמה" } },
+  ],
+  // TODO(clinical-review): road exposure ladder — traffic, sirens, movement
+  road: [
+    { key: "road-1", label: { en: "Walk 100 meters along the road", he: "לך מאה מטרים לאורך הכביש" } },
+    { key: "road-2", label: { en: "Walk to the nearest bus stop and back", he: "לך לתחנת האוטובוס הקרובה וחזור" } },
+    { key: "road-3", label: { en: "Take the bus one stop", he: "סע באוטובוס תחנה אחת" } },
+    { key: "road-4", label: { en: "Take the bus a longer distance", he: "סע באוטובוס מרחק ארוך יותר" } },
+    { key: "road-5", label: { en: "Drive a short distance", he: "נהג מרחק קצר" } },
+  ],
+  // TODO(clinical-review): train exposure ladder — enclosed, cannot easily leave
+  train: [
+    { key: "train-1", label: { en: "Walk into the station and buy a ticket", he: "היכנס לתחנה וקנה כרטיס" } },
+    { key: "train-2", label: { en: "Stand on the platform for 10 minutes", he: "עמוד על הרציף עשר דקות" } },
+    { key: "train-3", label: { en: "Ride one stop and get off", he: "סע תחנה אחת וירד" } },
+    { key: "train-4", label: { en: "Ride a longer distance during regular hours", he: "סע מרחק ארוך בשעות הרגילות" } },
+    { key: "train-5", label: { en: "Take a full trip with someone you trust", he: "עשה נסיעה מלאה עם מישהו שאתה סומך עליו" } },
+  ],
+  // TODO(clinical-review): quiet-bar exposure ladder — social + evening lighting
+  "quiet-bar": [
+    { key: "quiet-bar-1", label: { en: "Walk past the bar and look inside", he: "עבור ליד הבר והסתכל פנימה" } },
+    { key: "quiet-bar-2", label: { en: "Go in and sit at the bar for 10 minutes", he: "היכנס ושב בבר עשר דקות" } },
+    { key: "quiet-bar-3", label: { en: "Order a drink and stay for 20 minutes", he: "הזמן משקה ותישאר עשרים דקות" } },
+    { key: "quiet-bar-4", label: { en: "Meet a friend here for an hour", he: "קבע פגישה כאן עם חבר לשעה" } },
+    { key: "quiet-bar-5", label: { en: "Come with a small group in the evening", he: "בוא עם קבוצה קטנה בשעות הערב" } },
+  ],
+  // TODO(clinical-review): house-party exposure ladder — dense social exposure
+  "house-party": [
+    { key: "house-party-1", label: { en: "Say yes to an invitation and arrive briefly", he: "אמור כן להזמנה והגע לזמן קצר" } },
+    { key: "house-party-2", label: { en: "Stay for 30 minutes and talk to one person", he: "השאר חצי שעה ודבר עם אדם אחד" } },
+    { key: "house-party-3", label: { en: "Stay for an hour and talk to a few people", he: "השאר שעה ודבר עם כמה אנשים" } },
+    { key: "house-party-4", label: { en: "Stay through the busy part of the evening", he: "השאר בשעות העמוסות של הערב" } },
+    { key: "house-party-5", label: { en: "Host a small gathering yourself", he: "ארח בעצמך התכנסות קטנה" } },
+  ],
+  // TODO(clinical-review): supermarket exposure ladder — announcements, crowds
+  supermarket: [
+    { key: "supermarket-1", label: { en: "Walk through and buy one item", he: "עבור בסופר וקנה פריט אחד" } },
+    { key: "supermarket-2", label: { en: "Do a short shop during quiet hours", he: "עשה קנייה קצרה בשעות שקטות" } },
+    { key: "supermarket-3", label: { en: "Shop during regular hours", he: "עשה קניות בשעות הרגילות" } },
+    { key: "supermarket-4", label: { en: "Shop when the store is busy", he: "עשה קניות כשהסופר עמוס" } },
+    { key: "supermarket-5", label: { en: "Do the family shopping on a weekend", he: "עשה את קניות המשפחה בסוף השבוע" } },
+  ],
+  // TODO(clinical-review): bus exposure ladder — enclosed, unpredictable
+  bus: [
+    { key: "bus-1", label: { en: "Walk to a bus stop and wait 5 minutes", he: "לך לתחנת אוטובוס וחכה חמש דקות" } },
+    { key: "bus-2", label: { en: "Board and ride one stop", he: "עלה ותסע תחנה אחת" } },
+    { key: "bus-3", label: { en: "Ride during quiet hours for a longer route", he: "סע בשעות שקטות לקו ארוך יותר" } },
+    { key: "bus-4", label: { en: "Ride during rush hour for one stop", he: "סע בשעות עומס תחנה אחת" } },
+    { key: "bus-5", label: { en: "Take a full route during rush hour", he: "עשה קו שלם בשעות העומס" } },
+  ],
+};
+
+export function getCompanionTasks(scene: SceneKey): CompanionTask[] {
+  // COMPANION_TASKS is Record<SceneKey, ...>, so the key is guaranteed
+  // present at compile time — no runtime fallback needed.
+  return COMPANION_TASKS[scene];
 }

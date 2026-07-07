@@ -21,6 +21,8 @@ import {
   incrementSessionsCompleted,
   getLanguagePreference,
   setLanguagePreference,
+  getCompanionCompletedTasks,
+  setCompanionTaskCompleted,
 } from "@/lib/storage/storage";
 
 // Tri-state semantics under test: `undefined` (never tried) vs `null` (tried,
@@ -339,5 +341,57 @@ describe("storage / language preference", () => {
   it("defends against a corrupt stored value (returns null)", async () => {
     await AsyncStorage.setItem("hearo:languagePreference", "fr");
     expect(await getLanguagePreference()).toBeNull();
+  });
+});
+
+// v1.2.0 companion roadmap — task completion is stored as a JSON array of
+// task keys. Corrupt values reset to empty rather than crash the roadmap.
+describe("storage / companion tasks", () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it("returns an empty list when no tasks are completed", async () => {
+    expect(await getCompanionCompletedTasks()).toEqual([]);
+  });
+
+  it("marks a task complete and reflects it in the completed list", async () => {
+    await setCompanionTaskCompleted("beach-2", true);
+    expect(await getCompanionCompletedTasks()).toContain("beach-2");
+  });
+
+  it("dedupes when the same task is marked complete twice", async () => {
+    await setCompanionTaskCompleted("park-1", true);
+    await setCompanionTaskCompleted("park-1", true);
+    const done = await getCompanionCompletedTasks();
+    expect(done.filter((k) => k === "park-1")).toHaveLength(1);
+  });
+
+  it("removes a task when marked incomplete", async () => {
+    await setCompanionTaskCompleted("cafe-3", true);
+    await setCompanionTaskCompleted("cafe-3", false);
+    expect(await getCompanionCompletedTasks()).not.toContain("cafe-3");
+  });
+
+  it("preserves other completions when one task is toggled", async () => {
+    await setCompanionTaskCompleted("road-1", true);
+    await setCompanionTaskCompleted("road-2", true);
+    await setCompanionTaskCompleted("road-1", false);
+    const done = await getCompanionCompletedTasks();
+    expect(done).not.toContain("road-1");
+    expect(done).toContain("road-2");
+  });
+
+  it("defends against a corrupt stored value (returns [])", async () => {
+    await AsyncStorage.setItem("hearo:companionCompletedTasks", "not-json");
+    expect(await getCompanionCompletedTasks()).toEqual([]);
+  });
+
+  it("filters out non-string entries in a partially-corrupt array", async () => {
+    await AsyncStorage.setItem(
+      "hearo:companionCompletedTasks",
+      JSON.stringify(["beach-1", 42, null, "park-3"]),
+    );
+    expect(await getCompanionCompletedTasks()).toEqual(["beach-1", "park-3"]);
   });
 });

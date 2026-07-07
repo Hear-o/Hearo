@@ -14,6 +14,7 @@ import {
   getClinicalScreening,
   computeClinicalScreeningOutcome,
   isPlaceholderSource,
+  getCompanionTasks,
   SCENE_ORDER,
   SOUND_ORDER,
 } from "@/lib/content/content";
@@ -320,5 +321,30 @@ describe("content / daily affirmation", () => {
     // (one is Hebrew, one is English). This catches a wiring bug where the
     // localize() helper might collapse to one language regardless of input.
     expect(getDailyAffirmation("he")).not.toBe(getDailyAffirmation("en"));
+  });
+});
+
+// v1.2.0 companion roadmap — per-scene task ladders. All labels are
+// TODO(clinical-review); the tests here just verify the data structure
+// is well-formed and that every SceneKey has at least one task.
+describe("content / companion tasks", () => {
+  it("returns a non-empty task list for every scene", () => {
+    for (const sceneKey of SCENE_ORDER) {
+      const tasks = getCompanionTasks(sceneKey);
+      expect(tasks.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("every task has a unique key and localized label", () => {
+    const allKeys: string[] = [];
+    for (const sceneKey of SCENE_ORDER) {
+      for (const task of getCompanionTasks(sceneKey)) {
+        expect(task.key).toMatch(/^[a-z]+-\d+$/);
+        expect(task.label.en.length).toBeGreaterThan(0);
+        expect(task.label.he.length).toBeGreaterThan(0);
+        allKeys.push(task.key);
+      }
+    }
+    expect(new Set(allKeys).size).toBe(allKeys.length);
   });
 });

@@ -160,36 +160,110 @@ export default function Home() {
 
           <View className="flex-1" />
 
-          <View className="pb-2">
+          {/* v1.2.0: home splits into two paths — Practice (the existing
+              sound-exposure flow) and Companion (new v1 behavioral roadmap
+              with a BETA tag while clinical review is pending). Cards stack
+              vertically rather than side-by-side so labels stay readable in
+              Hebrew and don't get truncated on small phones. */}
+          <View className="pb-2" style={{ gap: 12 }}>
             <Pressable
               onPress={handleBegin}
               accessibilityRole="button"
-              accessibilityHint="Tap or swipe to begin a session"
+              accessibilityHint="Tap or swipe to begin a practice session"
               hitSlop={8}
               style={{
                 borderWidth: 1,
                 borderColor: tokens.accent,
-                borderRadius: 999,
-                paddingVertical: 16,
-                alignItems: "center",
+                borderRadius: 20,
+                paddingVertical: 20,
+                paddingHorizontal: 24,
+                backgroundColor: tokens.accent + "12",
               }}
             >
               <Text
                 style={{
                   color: tokens.accent,
-                  fontFamily: fonts.body,
-                  ...typeScale.body,
+                  fontFamily: fonts.display,
+                  fontSize: 22,
+                  lineHeight: 28,
+                  textAlign: "left",
                 }}
               >
-                {t("home.beginSession")}
+                {t("companion.practiceCta")}
+              </Text>
+              <Text
+                style={{
+                  color: tokens.textMute,
+                  fontFamily: fonts.body,
+                  fontSize: 13,
+                  marginTop: 4,
+                  textAlign: "left",
+                }}
+              >
+                {t("companion.practiceHint")}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              onPress={() => router.push("/companion" as any)}
+              accessibilityRole="button"
+              accessibilityLabel={t("companion.companionCta")}
+              hitSlop={8}
+              style={{
+                borderWidth: 1,
+                borderColor: tokens.sage,
+                borderRadius: 20,
+                paddingVertical: 20,
+                paddingHorizontal: 24,
+                backgroundColor: tokens.sage + "12",
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Text
+                  style={{
+                    color: tokens.sage,
+                    fontFamily: fonts.display,
+                    fontSize: 22,
+                    lineHeight: 28,
+                    textAlign: "left",
+                  }}
+                >
+                  {t("companion.companionCta")}
+                </Text>
+                <View
+                  style={{
+                    backgroundColor: tokens.sage,
+                    borderRadius: 4,
+                    paddingHorizontal: 6,
+                    paddingVertical: 2,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: tokens.bg,
+                      fontFamily: fonts.bodyMedium,
+                      fontSize: 10,
+                      letterSpacing: 1,
+                    }}
+                  >
+                    {t("companion.beta")}
+                  </Text>
+                </View>
+              </View>
+              <Text
+                style={{
+                  color: tokens.textMute,
+                  fontFamily: fonts.body,
+                  fontSize: 13,
+                  marginTop: 4,
+                  textAlign: "left",
+                }}
+              >
+                {t("companion.companionHint")}
               </Text>
             </Pressable>
           </View>
-
-          {/* "Change what's planned" intentionally NOT shown on Home — Setup
-              is part of the Begin-a-session flow now, not a preferences side
-              trip. The link stays on /ready for users mid-flow who want to
-              reconfigure before starting. */}
         </View>
       </GestureDetector>
     </SafeAreaView>

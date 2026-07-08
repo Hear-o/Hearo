@@ -1,8 +1,8 @@
 const appConfig = require("../app.json");
 
 describe("Expo app config", () => {
-  it("targets only iOS and Android", () => {
-    expect(appConfig.expo.platforms).toEqual(["ios", "android"]);
+  it("targets iOS, Android, and web", () => {
+    expect(appConfig.expo.platforms).toEqual(["ios", "android", "web"]);
   });
 
   it("does not support iPad tablet screen sizes", () => {

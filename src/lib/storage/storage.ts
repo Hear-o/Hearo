@@ -20,6 +20,7 @@ const KEYS = {
   sessionsCompleted: `${PREFIX}sessionsCompleted`,
   languagePreference: `${PREFIX}languagePreference`,
   companionCompletedTasks: `${PREFIX}companionCompletedTasks`,
+  companionTaskMedia: `${PREFIX}companionTaskMedia`,
 } as const;
 
 /** Persisted language preference. `null` means the user has never explicitly
@@ -252,4 +253,60 @@ export async function setCompanionTaskCompleted(key: string, done: boolean): Pro
   if (done) set.add(key);
   else set.delete(key);
   await AsyncStorage.setItem(KEYS.companionCompletedTasks, JSON.stringify([...set]));
+}
+
+/** Media a user has attached to a Companion step — a photo or video captured
+ *  (camera or library) as evidence of completing the step. Stored locally
+ *  only; `uri` points at a file we copied into the app's document directory
+ *  (see lib/companion/media.ts). The presence of a record for a task key IS
+ *  that step's completion — it's what unlocks the next step. */
+export type CompanionTaskMedia = {
+  uri: string;
+  type: "image" | "video";
+  capturedAt: number; // epoch ms
+};
+
+function isCompanionTaskMedia(value: unknown): value is CompanionTaskMedia {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as CompanionTaskMedia).uri === "string" &&
+    ((value as CompanionTaskMedia).type === "image" ||
+      (value as CompanionTaskMedia).type === "video") &&
+    typeof (value as CompanionTaskMedia).capturedAt === "number"
+  );
+}
+
+/** Map of Companion task key → attached media. Corrupt or partially-invalid
+ *  values are dropped rather than thrown, matching getCompanionCompletedTasks. */
+export async function getCompanionTaskMedia(): Promise<Record<string, CompanionTaskMedia>> {
+  const raw = await AsyncStorage.getItem(KEYS.companionTaskMedia);
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return {};
+    const out: Record<string, CompanionTaskMedia> = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      if (isCompanionTaskMedia(value)) out[key] = value;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+export async function setCompanionTaskMedia(
+  key: string,
+  media: CompanionTaskMedia,
+): Promise<void> {
+  const current = await getCompanionTaskMedia();
+  current[key] = media;
+  await AsyncStorage.setItem(KEYS.companionTaskMedia, JSON.stringify(current));
+}
+
+export async function removeCompanionTaskMedia(key: string): Promise<void> {
+  const current = await getCompanionTaskMedia();
+  if (!(key in current)) return;
+  delete current[key];
+  await AsyncStorage.setItem(KEYS.companionTaskMedia, JSON.stringify(current));
 }

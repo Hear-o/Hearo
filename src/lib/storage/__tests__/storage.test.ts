@@ -23,6 +23,9 @@ import {
   setLanguagePreference,
   getCompanionCompletedTasks,
   setCompanionTaskCompleted,
+  getCompanionTaskMedia,
+  setCompanionTaskMedia,
+  removeCompanionTaskMedia,
 } from "@/lib/storage/storage";
 
 // Tri-state semantics under test: `undefined` (never tried) vs `null` (tried,
@@ -393,5 +396,65 @@ describe("storage / companion tasks", () => {
       JSON.stringify(["beach-1", 42, null, "park-3"]),
     );
     expect(await getCompanionCompletedTasks()).toEqual(["beach-1", "park-3"]);
+  });
+});
+
+// v1.2.0 companion — a step's attached photo/video, keyed by task key. Presence
+// of a record IS completion, so a dropped/corrupt value must fail safe to "no
+// media" (an empty map) rather than throw and wedge the roadmap screen.
+describe("storage / companion task media", () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it("returns an empty map before anything is saved", async () => {
+    expect(await getCompanionTaskMedia()).toEqual({});
+  });
+
+  it("saves and reads back a media record", async () => {
+    const media = { uri: "file:///m/beach-1.jpg", type: "image" as const, capturedAt: 111 };
+    await setCompanionTaskMedia("beach-1", media);
+    expect(await getCompanionTaskMedia()).toEqual({ "beach-1": media });
+  });
+
+  it("overwrites the record for the same key", async () => {
+    await setCompanionTaskMedia("beach-1", { uri: "a", type: "image", capturedAt: 1 });
+    await setCompanionTaskMedia("beach-1", { uri: "b", type: "video", capturedAt: 2 });
+    const map = await getCompanionTaskMedia();
+    expect(map["beach-1"]).toEqual({ uri: "b", type: "video", capturedAt: 2 });
+  });
+
+  it("preserves other keys when one is removed", async () => {
+    await setCompanionTaskMedia("beach-1", { uri: "a", type: "image", capturedAt: 1 });
+    await setCompanionTaskMedia("beach-2", { uri: "b", type: "image", capturedAt: 2 });
+    await removeCompanionTaskMedia("beach-1");
+    const map = await getCompanionTaskMedia();
+    expect(map["beach-1"]).toBeUndefined();
+    expect(map["beach-2"]).toBeDefined();
+  });
+
+  it("removing a missing key is a no-op", async () => {
+    await removeCompanionTaskMedia("nope");
+    expect(await getCompanionTaskMedia()).toEqual({});
+  });
+
+  it("defends against a corrupt stored value (returns {})", async () => {
+    await AsyncStorage.setItem("hearo:companionTaskMedia", "not-json");
+    expect(await getCompanionTaskMedia()).toEqual({});
+  });
+
+  it("drops partially-invalid entries (bad type / missing fields)", async () => {
+    await AsyncStorage.setItem(
+      "hearo:companionTaskMedia",
+      JSON.stringify({
+        good: { uri: "file:///ok.mp4", type: "video", capturedAt: 9 },
+        badType: { uri: "x", type: "gif", capturedAt: 9 },
+        noUri: { type: "image", capturedAt: 9 },
+        notObject: 42,
+      }),
+    );
+    expect(await getCompanionTaskMedia()).toEqual({
+      good: { uri: "file:///ok.mp4", type: "video", capturedAt: 9 },
+    });
   });
 });

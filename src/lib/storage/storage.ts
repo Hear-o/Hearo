@@ -19,7 +19,6 @@ const KEYS = {
   onboardedAt: `${PREFIX}onboardedAt`,
   sessionsCompleted: `${PREFIX}sessionsCompleted`,
   languagePreference: `${PREFIX}languagePreference`,
-  companionCompletedTasks: `${PREFIX}companionCompletedTasks`,
   companionTaskMedia: `${PREFIX}companionTaskMedia`,
 } as const;
 
@@ -230,29 +229,6 @@ export async function incrementSessionsCompleted(): Promise<number> {
   const next = current + 1;
   await AsyncStorage.setItem(KEYS.sessionsCompleted, String(next));
   return next;
-}
-
-/** Companion task completion (v1 behavioral roadmap). Stored as a JSON array
- *  of task keys the user has marked done — corrupt values reset to empty
- *  rather than throw. Task keys match the ones in content.ts's
- *  COMPANION_TASKS record (e.g. "beach-3", "road-1"). */
-export async function getCompanionCompletedTasks(): Promise<string[]> {
-  const raw = await AsyncStorage.getItem(KEYS.companionCompletedTasks);
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : [];
-  } catch {
-    return [];
-  }
-}
-
-export async function setCompanionTaskCompleted(key: string, done: boolean): Promise<void> {
-  const current = await getCompanionCompletedTasks();
-  const set = new Set(current);
-  if (done) set.add(key);
-  else set.delete(key);
-  await AsyncStorage.setItem(KEYS.companionCompletedTasks, JSON.stringify([...set]));
 }
 
 /** Media a user has attached to a Companion step — a photo or video captured

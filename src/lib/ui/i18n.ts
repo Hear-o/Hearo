@@ -110,6 +110,7 @@ const resources = {
           "Hearo needs photo access to choose a photo or video. You can turn it on in Settings.",
         removeMediaTitle: "Remove this photo or video?",
         removeMediaMessage: "The steps after it will lock again until you add media.",
+        mediaMissing: "This photo or video is no longer available.",
       },
       calming: {
         breatheIn: "Breathe in",
@@ -303,6 +304,7 @@ const resources = {
           "HearO צריך גישה לתמונות כדי לבחור תמונה או סרטון. אפשר להפעיל את זה בהגדרות.",
         removeMediaTitle: "להסיר את התמונה או הסרטון?",
         removeMediaMessage: "הצעדים שאחריו יינעלו שוב עד שתוסיף מדיה.",
+        mediaMissing: "התמונה או הסרטון כבר לא זמינים.",
       },
 
       calming: {

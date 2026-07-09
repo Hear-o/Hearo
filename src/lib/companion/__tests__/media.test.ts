@@ -22,8 +22,12 @@ import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system/legacy";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { captureCompanionMedia } from "@/lib/companion/media";
-import { getCompanionTaskMedia } from "@/lib/storage/storage";
+import {
+  captureCompanionMedia,
+  deleteCompanionMedia,
+  pickCompanionMedia,
+} from "@/lib/companion/media";
+import { getCompanionTaskMedia, setCompanionTaskMedia } from "@/lib/storage/storage";
 
 const picker = ImagePicker as jest.Mocked<typeof ImagePicker>;
 const fs = FileSystem as jest.Mocked<typeof FileSystem>;
@@ -112,5 +116,99 @@ describe("captureCompanionMedia", () => {
     expect(fs.makeDirectoryAsync).toHaveBeenCalledWith("file:///doc/companion-media/", {
       intermediates: true,
     });
+  });
+});
+
+// pickCompanionMedia adds the camera-vs-library Alert on top of the core. The
+// Alert is driven synchronously in tests by invoking the button handlers.
+describe("pickCompanionMedia", () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.clearAllMocks();
+    fs.getInfoAsync.mockResolvedValue({ exists: true } as never);
+    fs.readDirectoryAsync.mockResolvedValue([] as never);
+  });
+
+  it("routes to the camera when the user chooses Camera", async () => {
+    jest
+      .spyOn(Alert, "alert")
+      .mockImplementation((_t, _m, buttons) => (buttons as { onPress?: () => void }[])[0].onPress?.());
+    picker.requestCameraPermissionsAsync.mockResolvedValue({ granted: true } as never);
+    picker.launchCameraAsync.mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: "file:///c.jpg", type: "image" }],
+    } as never);
+
+    const media = await pickCompanionMedia("beach-1");
+
+    expect(picker.launchCameraAsync).toHaveBeenCalled();
+    expect(picker.launchImageLibraryAsync).not.toHaveBeenCalled();
+    expect(media).toMatchObject({ type: "image" });
+  });
+
+  it("routes to the library when the user chooses Library", async () => {
+    jest
+      .spyOn(Alert, "alert")
+      .mockImplementation((_t, _m, buttons) => (buttons as { onPress?: () => void }[])[1].onPress?.());
+    picker.requestMediaLibraryPermissionsAsync.mockResolvedValue({ granted: true } as never);
+    picker.launchImageLibraryAsync.mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: "file:///l.mp4", type: "video" }],
+    } as never);
+
+    const media = await pickCompanionMedia("beach-1");
+
+    expect(picker.launchImageLibraryAsync).toHaveBeenCalled();
+    expect(media).toMatchObject({ type: "video" });
+  });
+
+  it("returns null when the user cancels the source prompt", async () => {
+    jest
+      .spyOn(Alert, "alert")
+      .mockImplementation((_t, _m, buttons) => (buttons as { onPress?: () => void }[])[2].onPress?.());
+
+    const media = await pickCompanionMedia("beach-1");
+
+    expect(media).toBeNull();
+    expect(picker.launchCameraAsync).not.toHaveBeenCalled();
+    expect(picker.launchImageLibraryAsync).not.toHaveBeenCalled();
+  });
+});
+
+describe("deleteCompanionMedia", () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+    jest.clearAllMocks();
+  });
+
+  it("deletes only the matching file(s) and clears the record", async () => {
+    await setCompanionTaskMedia("beach-1", {
+      uri: "file:///doc/companion-media/beach-1.jpg",
+      type: "image",
+      capturedAt: 1,
+    });
+    // "beach-10" must NOT be caught by the "beach-1" prefix (trailing-dot guard).
+    fs.readDirectoryAsync.mockResolvedValue([
+      "beach-1.jpg",
+      "beach-10.jpg",
+      "park-1.jpg",
+    ] as never);
+
+    await deleteCompanionMedia("beach-1");
+
+    expect(fs.deleteAsync).toHaveBeenCalledWith(
+      "file:///doc/companion-media/beach-1.jpg",
+      { idempotent: true },
+    );
+    expect(fs.deleteAsync).not.toHaveBeenCalledWith(
+      "file:///doc/companion-media/beach-10.jpg",
+      { idempotent: true },
+    );
+    expect((await getCompanionTaskMedia())["beach-1"]).toBeUndefined();
+  });
+
+  it("is resilient when the media directory cannot be read", async () => {
+    fs.readDirectoryAsync.mockRejectedValue(new Error("no dir"));
+    await expect(deleteCompanionMedia("beach-1")).resolves.toBeUndefined();
   });
 });

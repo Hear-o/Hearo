@@ -746,7 +746,10 @@ export default function Session() {
               Roy's recordings aren't verbatim reads of the script and showing
               the script during playback creates a read/listen mismatch. */}
           <View className="pt-16">
-            {!isVoicePlaying ? <VoiceLine text={voiceText} /> : null}
+            {/* voiceText is "" for scenes without recorded narration (v1.2.0
+                newer scenes) — hide the caption entirely rather than render a
+                blank line so those sessions read as intentionally quiet. */}
+            {!isVoicePlaying && voiceText ? <VoiceLine text={voiceText} /> : null}
           </View>
 
           {/* Breathing circle */}

@@ -51,12 +51,23 @@ describe("SceneCarousel", () => {
     render(<SceneCarousel value="beach" onChange={noop} lang="en" />);
 
     // The mock keys each card wrapper as scene-<key>; their document order must
-    // match SCENE_ORDER (beach, park, cafe, road).
+    // match SCENE_ORDER. v1.2.0: Practice offers all scenes (originals first,
+    // then the newer not-yet-voiced ones).
     const renderedKeys = SCENE_ORDER.map((key) =>
       screen.getByTestId(`scene-${key}`),
     );
     expect(renderedKeys).toHaveLength(SCENE_ORDER.length);
-    expect(SCENE_ORDER).toEqual(["beach", "park", "cafe", "road"]);
+    expect(SCENE_ORDER).toEqual([
+      "beach",
+      "park",
+      "cafe",
+      "road",
+      "train",
+      "bus",
+      "quiet-bar",
+      "house-party",
+      "supermarket",
+    ]);
   });
 
   it("fires onChange with the scene key when an item is snapped to", () => {

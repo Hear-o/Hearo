@@ -47,13 +47,26 @@ describe("CompanionCarousel", () => {
     expect(screen.getByText("2/5 steps")).toBeTruthy();
   });
 
-  it("calls onOpen with the scene key when a page is pressed", () => {
+  it("opens the scene on a tap (little/no finger movement)", () => {
     const onOpen = jest.fn();
     render(
       <CompanionCarousel scenes={scenes} progress={progress} lang="en" onOpen={onOpen} />,
     );
     const first: SceneKey = scenes[0].key;
-    fireEvent.press(screen.getByTestId(`companion-scenario-${first}`));
+    const page = screen.getByTestId(`companion-scenario-${first}`);
+    fireEvent(page, "touchStart", { nativeEvent: { pageX: 100, pageY: 200 } });
+    fireEvent(page, "touchEnd", { nativeEvent: { pageX: 103, pageY: 201 } });
     expect(onOpen).toHaveBeenCalledWith(first);
+  });
+
+  it("does NOT open when the touch is a swipe (finger moved)", () => {
+    const onOpen = jest.fn();
+    render(
+      <CompanionCarousel scenes={scenes} progress={progress} lang="en" onOpen={onOpen} />,
+    );
+    const page = screen.getByTestId(`companion-scenario-${scenes[0].key}`);
+    fireEvent(page, "touchStart", { nativeEvent: { pageX: 100, pageY: 200 } });
+    fireEvent(page, "touchEnd", { nativeEvent: { pageX: 180, pageY: 205 } });
+    expect(onOpen).not.toHaveBeenCalled();
   });
 });

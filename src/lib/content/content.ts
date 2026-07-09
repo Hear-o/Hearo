@@ -510,11 +510,29 @@ const SOUNDS: Record<SoundKey, Sound> = {
   },
 };
 
-// SCENE_ORDER — the 4 scenes with recorded voice narration. These are the
-// only scenes Practice's SceneCarousel offers (a session needs intro/mid/end
-// clips). The 5 v1.2.0 scenes (train / quiet-bar / house-party / supermarket
-// / bus) don't have voice yet, so they're excluded here.
-export const SCENE_ORDER: SceneKey[] = ["beach", "park", "cafe", "road"];
+// SCENE_ORDER — every scene Practice's SceneCarousel offers. As of v1.2.0 this
+// is all scenes: the 5 newer ones (train / bus / quiet-bar / house-party /
+// supermarket) don't have recorded voice yet, so their sessions run without
+// narration (ambient + triggers only) — VoiceLine is hidden when the script is
+// empty, and getVoiceClips returns skippable placeholders. VOICED_SCENES below
+// tracks which scenes actually have narration.
+export const SCENE_ORDER: SceneKey[] = [
+  "beach",
+  "park",
+  "cafe",
+  "road",
+  "train",
+  "bus",
+  "quiet-bar",
+  "house-party",
+  "supermarket",
+];
+
+// The scenes that have recorded intro/mid/end voice narration. Kept distinct
+// from SCENE_ORDER so tests can assert full voice coverage for these without
+// requiring it of the not-yet-voiced scenes (TODO(roy): record voice, then
+// fold these back into a single list).
+export const VOICED_SCENES: SceneKey[] = ["beach", "park", "cafe", "road"];
 
 // COMPANION_SCENE_ORDER — every scene the Companion feature lists. Voice
 // isn't required for Companion (no session, just per-scene task ladders),
@@ -614,9 +632,15 @@ export type AmbientTrack = {
 };
 
 /** Returns true when a source field is still an unresolved placeholder.
- *  Guards against passing placeholder strings to AudioEngine.loadBuffers(). */
+ *  Guards against passing placeholder strings to AudioEngine.loadBuffers().
+ *  Two placeholder shapes exist: "TODO_*" (content not yet sourced) and
+ *  "placeholder://*" (getVoiceClips' fallback for scenes without recorded
+ *  narration — v1.2.0 Practice scenes). Both must be treated as skippable. */
 export function isPlaceholderSource(source: AudioModule | string): boolean {
-  return typeof source === "string" && source.startsWith("TODO_");
+  return (
+    typeof source === "string" &&
+    (source.startsWith("TODO_") || source.startsWith("placeholder://"))
+  );
 }
 
 // Bundled ambient tracks per scene — one variation is picked randomly at

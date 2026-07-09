@@ -1,5 +1,11 @@
-import { useState } from "react";
-import { Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
+import { useRef, useState } from "react";
+import {
+  Dimensions,
+  GestureResponderEvent,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import Carousel from "react-native-reanimated-carousel";
@@ -75,11 +81,34 @@ function ScenePage({
   const total = progress?.total ?? 0;
   const pct = total > 0 ? (done / total) * 100 : 0;
 
+  // Tap-vs-swipe: the card lives inside a horizontally-panning carousel, so a
+  // plain Pressable fired onPress at the end of a swipe ("too sensitive"). We
+  // instead record the touch's start point and only treat the release as a tap
+  // (→ open) when the finger barely moved; any real drag is a swipe and is
+  // ignored, leaving the carousel to slide.
+  const TAP_SLOP = 12;
+  const start = useRef<{ x: number; y: number } | null>(null);
+
+  const onTouchStart = (e: GestureResponderEvent) => {
+    start.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY };
+  };
+  const onTouchEnd = (e: GestureResponderEvent) => {
+    const from = start.current;
+    start.current = null;
+    if (!from) return;
+    const moved =
+      Math.abs(e.nativeEvent.pageX - from.x) > TAP_SLOP ||
+      Math.abs(e.nativeEvent.pageY - from.y) > TAP_SLOP;
+    if (!moved) onOpen();
+  };
+
   return (
-    <Pressable
-      onPress={onOpen}
+    <View
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
       accessibilityRole="button"
       accessibilityLabel={localize(scene.label, lang)}
+      onAccessibilityTap={onOpen}
       testID={`companion-scenario-${scene.key}`}
       style={{
         width: CARD_WIDTH,
@@ -147,7 +176,7 @@ function ScenePage({
           </Text>
         </View>
       </View>
-    </Pressable>
+    </View>
   );
 }
 

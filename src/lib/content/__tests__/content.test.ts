@@ -16,6 +16,7 @@ import {
   isPlaceholderSource,
   getCompanionTasks,
   SCENE_ORDER,
+  VOICED_SCENES,
   SOUND_ORDER,
 } from "@/lib/content/content";
 import type { Phase } from "@/lib/content/content";
@@ -46,9 +47,9 @@ describe("content / scenes", () => {
     }
   });
 
-  it("getVoiceScript returns non-empty, locale-distinct text for every phase", () => {
+  it("getVoiceScript returns non-empty, locale-distinct text for every voiced scene", () => {
     const phases: Phase[] = ["opening", "during", "calming"];
-    for (const scene of SCENE_ORDER) {
+    for (const scene of VOICED_SCENES) {
       for (const phase of phases) {
         const en = getVoiceScript(scene, phase, "en");
         const he = getVoiceScript(scene, phase, "he");
@@ -56,6 +57,17 @@ describe("content / scenes", () => {
         expect(he.length).toBeGreaterThan(0);
         expect(he).not.toBe(en);
       }
+    }
+  });
+
+  it("getVoiceScript returns empty text for not-yet-voiced Practice scenes", () => {
+    // v1.2.0 scenes are offered in Practice but have no narration yet; the
+    // session hides the caption when the script is empty.
+    const voiceless = SCENE_ORDER.filter((s) => !VOICED_SCENES.includes(s));
+    expect(voiceless.length).toBeGreaterThan(0);
+    for (const scene of voiceless) {
+      expect(getVoiceScript(scene, "opening", "en")).toBe("");
+      expect(getVoiceScript(scene, "during", "he")).toBe("");
     }
   });
 });
@@ -112,11 +124,10 @@ describe("content / session audio sources", () => {
     }
   });
 
-  it("returns bundled clips for every scene + language combination in disclaimer/mid/wind-down order", () => {
-    // Both langs across every scene must resolve to a real bundled mp3 —
-    // no placeholders remain after the v1.0.6 narration drop. The order
-    // matches AudioEngine's playVoiceClip(index) contract.
-    for (const scene of SCENE_ORDER) {
+  it("returns bundled clips for every voiced scene + language in disclaimer/mid/wind-down order", () => {
+    // Both langs across every voiced scene must resolve to a real bundled mp3.
+    // The order matches AudioEngine's playVoiceClip(index) contract.
+    for (const scene of VOICED_SCENES) {
       for (const lang of ["en", "he"] as const) {
         const clips = getVoiceClips(scene, lang);
         expect(clips.map((clip) => clip.key)).toEqual([
@@ -130,6 +141,24 @@ describe("content / session audio sources", () => {
           expect(isPlaceholderSource(clip.source)).toBe(false);
           expect(typeof clip.source).toBe("number");
         }
+      }
+    }
+  });
+
+  it("returns skippable placeholder clips for not-yet-voiced Practice scenes", () => {
+    // Voice-less scenes still yield three clips (same disclaimer/mid/wind-down
+    // shape) but with placeholder sources the session flow skips, so playback
+    // never crashes on a scene without recordings.
+    const voiceless = SCENE_ORDER.filter((s) => !VOICED_SCENES.includes(s));
+    for (const scene of voiceless) {
+      const clips = getVoiceClips(scene, "en");
+      expect(clips.map((clip) => clip.key)).toEqual([
+        "disclaimer",
+        "mid-session",
+        "wind-down",
+      ]);
+      for (const clip of clips) {
+        expect(isPlaceholderSource(clip.source)).toBe(true);
       }
     }
   });
@@ -339,7 +368,7 @@ describe("content / companion tasks", () => {
     const allKeys: string[] = [];
     for (const sceneKey of SCENE_ORDER) {
       for (const task of getCompanionTasks(sceneKey)) {
-        expect(task.key).toMatch(/^[a-z]+-\d+$/);
+        expect(task.key).toMatch(/^[a-z]+(?:-[a-z]+)*-\d+$/);
         expect(task.label.en.length).toBeGreaterThan(0);
         expect(task.label.he.length).toBeGreaterThan(0);
         allKeys.push(task.key);

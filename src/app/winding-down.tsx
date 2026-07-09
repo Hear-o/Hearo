@@ -141,7 +141,8 @@ export default function WindingDown() {
           {t("windingDown.eyebrow")}
         </Text>
 
-        <VoiceLine text={closingText} />
+        {/* Empty for scenes without recorded narration — skip the blank line. */}
+        {closingText ? <VoiceLine text={closingText} /> : null}
       </View>
     </View>
   );

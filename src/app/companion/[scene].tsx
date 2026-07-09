@@ -152,7 +152,7 @@ export default function CompanionRoadmap() {
             textAlign: "left",
           }}
         >
-          {t("companion.progress", { done: doneCount, total: tasks.length })}
+          {t("companion.progress", { count: tasks.length, done: doneCount, total: tasks.length })}
         </Text>
 
         <View style={{ marginTop: 28, paddingHorizontal: 24 }}>

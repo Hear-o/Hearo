@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { useCallback, useState } from "react";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Image } from "expo-image";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
@@ -14,9 +15,11 @@ import {
   SceneKey,
 } from "@/lib/content/content";
 import {
-  getCompanionCompletedTasks,
-  setCompanionTaskCompleted,
+  CompanionTaskMedia,
+  getCompanionTaskMedia,
 } from "@/lib/storage/storage";
+import { deleteCompanionMedia, pickCompanionMedia } from "@/lib/companion/media";
+import { companionDoneCount, computeStepStates } from "@/lib/companion/steps";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 const VALID_SCENES: SceneKey[] = [
@@ -35,12 +38,12 @@ const VALID_SCENES: SceneKey[] = [
  *
  *  Duolingo-inspired zig-zag layout: nodes stack vertically down the page
  *  but alternate horizontally (right-left-right-left) to give the eye a
- *  path to follow. Each node is a task; tapping toggles completion.
+ *  path to follow.
  *
- *  v1 UX: simple done toggle. No detail page, no reflection form yet —
- *  the research recommendation was to optimize for the retention curve,
- *  not the feature list, and every extra step compounds against
- *  engagement. Reflection prompts can layer in once we see weekly retention. */
+ *  v1.2.0 media gating: a step is completed by attaching a photo or video
+ *  (camera or library) — proof you took the step in real life. That upload is
+ *  what unlocks the next step; a step stays locked until the one before it has
+ *  media. Media lives only on the device (see lib/companion/media.ts). */
 export default function CompanionRoadmap() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
@@ -51,15 +54,16 @@ export default function CompanionRoadmap() {
 
   const sceneRecord = getScene(scene);
   const tasks = getCompanionTasks(scene);
-  const [completed, setCompleted] = useState<Set<string>>(new Set());
+  const [media, setMedia] = useState<Record<string, CompanionTaskMedia>>({});
+  const [busyKey, setBusyKey] = useState<string | null>(null);
 
-  // Reload completion state on focus so returning from another screen
-  // shows the latest checkmarks.
+  // Reload media on focus so returning from the viewer (or another screen)
+  // reflects the latest uploads and unlock state.
   useFocusEffect(
     useCallback(() => {
       let active = true;
-      void getCompanionCompletedTasks().then((keys) => {
-        if (active) setCompleted(new Set(keys));
+      void getCompanionTaskMedia().then((m) => {
+        if (active) setMedia(m);
       });
       return () => {
         active = false;
@@ -67,19 +71,45 @@ export default function CompanionRoadmap() {
     }, []),
   );
 
-  const toggle = async (task: CompanionTask) => {
-    const wasDone = completed.has(task.key);
-    // Optimistic UI — snap the check on/off immediately.
-    setCompleted((prev) => {
-      const next = new Set(prev);
-      if (wasDone) next.delete(task.key);
-      else next.add(task.key);
-      return next;
-    });
-    await setCompanionTaskCompleted(task.key, !wasDone);
+  const stepStates = computeStepStates(tasks, media);
+  const doneCount = companionDoneCount(tasks, media);
+
+  const addMedia = async (task: CompanionTask) => {
+    if (busyKey) return; // guard against a double-tap launching two pickers
+    setBusyKey(task.key);
+    try {
+      const result = await pickCompanionMedia(task.key);
+      if (result) setMedia((prev) => ({ ...prev, [task.key]: result }));
+    } finally {
+      setBusyKey(null);
+    }
   };
 
-  const doneCount = tasks.filter((task) => completed.has(task.key)).length;
+  const removeMedia = (task: CompanionTask) => {
+    Alert.alert(t("companion.removeMediaTitle"), t("companion.removeMediaMessage"), [
+      { text: t("companion.cancel"), style: "cancel" },
+      {
+        text: t("companion.removeMedia"),
+        style: "destructive",
+        onPress: () => {
+          void deleteCompanionMedia(task.key).then(() => {
+            setMedia((prev) => {
+              const next = { ...prev };
+              delete next[task.key];
+              return next;
+            });
+          });
+        },
+      },
+    ]);
+  };
+
+  const viewMedia = (task: CompanionTask) => {
+    router.push({
+      pathname: "/companion/media" as any,
+      params: { task: task.key },
+    });
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-bg">
@@ -122,18 +152,22 @@ export default function CompanionRoadmap() {
             textAlign: "left",
           }}
         >
-          {t("companion.progress", { done: doneCount, total: tasks.length })}
+          {t("companion.progress", { count: tasks.length, done: doneCount, total: tasks.length })}
         </Text>
 
         <View style={{ marginTop: 28, paddingHorizontal: 24 }}>
-          {tasks.map((task, i) => (
+          {stepStates.map(({ task, media: taskMedia, unlocked }, i) => (
             <RoadmapNode
               key={task.key}
               index={i}
-              total={tasks.length}
+              total={stepStates.length}
               label={localize(task.label, i18n.language)}
-              done={completed.has(task.key)}
-              onPress={() => void toggle(task)}
+              media={taskMedia}
+              unlocked={unlocked}
+              busy={busyKey === task.key}
+              onAdd={() => void addMedia(task)}
+              onView={() => viewMedia(task)}
+              onRemove={() => removeMedia(task)}
             />
           ))}
         </View>
@@ -142,63 +176,123 @@ export default function CompanionRoadmap() {
   );
 }
 
-/** One node on the roadmap. Zig-zag horizontal position based on index —
- *  even indices to the leading edge, odd to trailing — plus a soft dotted
- *  connector line below to imply the path. */
+/** One node on the roadmap. Zig-zag horizontal position by index; renders one
+ *  of three states — locked (previous step has no media), unlocked-empty (an
+ *  "add" affordance), or done (thumbnail + replace/remove). */
 function RoadmapNode({
   index,
   total,
   label,
-  done,
-  onPress,
+  media,
+  unlocked,
+  busy,
+  onAdd,
+  onView,
+  onRemove,
 }: {
   index: number;
   total: number;
   label: string;
-  done: boolean;
-  onPress: () => void;
+  media?: CompanionTaskMedia;
+  unlocked: boolean;
+  busy: boolean;
+  onAdd: () => void;
+  onView: () => void;
+  onRemove: () => void;
 }) {
+  const { t } = useTranslation();
   const isRight = index % 2 === 1;
   const alignSelf = isRight ? "flex-end" : "flex-start";
   const showConnector = index < total - 1;
+  const done = !!media;
 
   return (
     <View style={{ alignItems: "stretch", marginBottom: 8 }}>
-      <Pressable
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityState={{ selected: done }}
-        accessibilityLabel={label}
+      <View
+        accessibilityState={{ disabled: !unlocked && !done }}
         style={{
           alignSelf,
-          maxWidth: "78%",
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 14,
-          paddingVertical: 14,
-          paddingHorizontal: 18,
+          maxWidth: "84%",
           borderRadius: 16,
           borderWidth: 1,
-          borderColor: done ? tokens.sage : tokens.textMute + "44",
+          borderColor: done
+            ? tokens.sage
+            : unlocked
+              ? tokens.textMute + "44"
+              : tokens.textMute + "22",
           backgroundColor: done ? tokens.sage + "22" : tokens.bgElev,
+          opacity: unlocked || done ? 1 : 0.5,
+          paddingVertical: 14,
+          paddingHorizontal: 18,
         }}
       >
-        <NodeCheck done={done} />
-        <Text
-          style={{
-            color: done ? tokens.text : tokens.text,
-            fontFamily: fonts.body,
-            fontSize: 15,
-            lineHeight: 22,
-            flexShrink: 1,
-            textAlign: "left",
-            textDecorationLine: done ? "line-through" : "none",
-            opacity: done ? 0.7 : 1,
-          }}
-        >
-          {label}
-        </Text>
-      </Pressable>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+          <NodeCheck done={done} />
+          <Text
+            style={{
+              color: tokens.text,
+              fontFamily: fonts.body,
+              fontSize: 15,
+              lineHeight: 22,
+              flexShrink: 1,
+              textAlign: "left",
+              textDecorationLine: done ? "line-through" : "none",
+              opacity: done ? 0.7 : 1,
+            }}
+          >
+            {label}
+          </Text>
+        </View>
+
+        {done ? (
+          <MediaRow media={media} onView={onView} onRemove={onRemove} onReplace={onAdd} />
+        ) : unlocked ? (
+          <Pressable
+            onPress={onAdd}
+            disabled={busy}
+            accessibilityRole="button"
+            accessibilityLabel={t("companion.addMedia")}
+            style={{
+              marginTop: 12,
+              alignSelf: "flex-start",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              paddingVertical: 8,
+              paddingHorizontal: 14,
+              borderRadius: 999,
+              borderWidth: 1,
+              borderColor: tokens.accent,
+              backgroundColor: tokens.accent + "12",
+              opacity: busy ? 0.5 : 1,
+            }}
+          >
+            <Text style={{ color: tokens.accent, fontSize: 16, lineHeight: 18 }}>＋</Text>
+            <Text
+              style={{
+                color: tokens.accent,
+                fontFamily: fonts.bodyMedium,
+                fontSize: 13,
+                textAlign: "left",
+              }}
+            >
+              {t("companion.addMedia")}
+            </Text>
+          </Pressable>
+        ) : (
+          <Text
+            style={{
+              color: tokens.textMute,
+              fontFamily: fonts.body,
+              fontSize: 12,
+              marginTop: 8,
+              textAlign: "left",
+            }}
+          >
+            {t("companion.locked")}
+          </Text>
+        )}
+      </View>
 
       {showConnector ? (
         <View
@@ -213,6 +307,75 @@ function RoadmapNode({
         />
       ) : null}
     </View>
+  );
+}
+
+function MediaRow({
+  media,
+  onView,
+  onReplace,
+  onRemove,
+}: {
+  media: CompanionTaskMedia;
+  onView: () => void;
+  onReplace: () => void;
+  onRemove: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <View style={{ marginTop: 12, flexDirection: "row", alignItems: "center", gap: 12 }}>
+      <Pressable
+        onPress={onView}
+        accessibilityRole="button"
+        accessibilityLabel={t("companion.open")}
+        testID="companion-media-thumb"
+      >
+        <Thumbnail media={media} />
+      </Pressable>
+      <View style={{ flex: 1 }} />
+      <Pressable onPress={onReplace} hitSlop={8} accessibilityRole="button">
+        <Text style={{ color: tokens.accent, fontFamily: fonts.bodyMedium, fontSize: 13 }}>
+          {t("companion.replaceMedia")}
+        </Text>
+      </Pressable>
+      <Pressable onPress={onRemove} hitSlop={8} accessibilityRole="button">
+        <Text style={{ color: tokens.critical, fontFamily: fonts.bodyMedium, fontSize: 13 }}>
+          {t("companion.removeMedia")}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function Thumbnail({ media }: { media: CompanionTaskMedia }) {
+  const { t } = useTranslation();
+  const SIZE = 56;
+  if (media.type === "video") {
+    return (
+      <View
+        style={{
+          width: SIZE,
+          height: SIZE,
+          borderRadius: 10,
+          backgroundColor: tokens.text + "22",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Text style={{ color: tokens.text, fontSize: 16, lineHeight: 18 }}>▶</Text>
+        <Text style={{ color: tokens.textMute, fontSize: 9, marginTop: 2 }}>
+          {t("companion.videoLabel")}
+        </Text>
+      </View>
+    );
+  }
+  return (
+    <Image
+      source={{ uri: media.uri }}
+      style={{ width: SIZE, height: SIZE, borderRadius: 10 }}
+      contentFit="cover"
+      transition={150}
+    />
   );
 }
 

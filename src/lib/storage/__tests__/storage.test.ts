@@ -21,8 +21,9 @@ import {
   incrementSessionsCompleted,
   getLanguagePreference,
   setLanguagePreference,
-  getCompanionCompletedTasks,
-  setCompanionTaskCompleted,
+  getCompanionTaskMedia,
+  setCompanionTaskMedia,
+  removeCompanionTaskMedia,
 } from "@/lib/storage/storage";
 
 // Tri-state semantics under test: `undefined` (never tried) vs `null` (tried,
@@ -344,54 +345,62 @@ describe("storage / language preference", () => {
   });
 });
 
-// v1.2.0 companion roadmap — task completion is stored as a JSON array of
-// task keys. Corrupt values reset to empty rather than crash the roadmap.
-describe("storage / companion tasks", () => {
+// v1.2.0 companion — a step's attached photo/video, keyed by task key. Presence
+// of a record IS completion, so a dropped/corrupt value must fail safe to "no
+// media" (an empty map) rather than throw and wedge the roadmap screen.
+describe("storage / companion task media", () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
   });
 
-  it("returns an empty list when no tasks are completed", async () => {
-    expect(await getCompanionCompletedTasks()).toEqual([]);
+  it("returns an empty map before anything is saved", async () => {
+    expect(await getCompanionTaskMedia()).toEqual({});
   });
 
-  it("marks a task complete and reflects it in the completed list", async () => {
-    await setCompanionTaskCompleted("beach-2", true);
-    expect(await getCompanionCompletedTasks()).toContain("beach-2");
+  it("saves and reads back a media record", async () => {
+    const media = { uri: "file:///m/beach-1.jpg", type: "image" as const, capturedAt: 111 };
+    await setCompanionTaskMedia("beach-1", media);
+    expect(await getCompanionTaskMedia()).toEqual({ "beach-1": media });
   });
 
-  it("dedupes when the same task is marked complete twice", async () => {
-    await setCompanionTaskCompleted("park-1", true);
-    await setCompanionTaskCompleted("park-1", true);
-    const done = await getCompanionCompletedTasks();
-    expect(done.filter((k) => k === "park-1")).toHaveLength(1);
+  it("overwrites the record for the same key", async () => {
+    await setCompanionTaskMedia("beach-1", { uri: "a", type: "image", capturedAt: 1 });
+    await setCompanionTaskMedia("beach-1", { uri: "b", type: "video", capturedAt: 2 });
+    const map = await getCompanionTaskMedia();
+    expect(map["beach-1"]).toEqual({ uri: "b", type: "video", capturedAt: 2 });
   });
 
-  it("removes a task when marked incomplete", async () => {
-    await setCompanionTaskCompleted("cafe-3", true);
-    await setCompanionTaskCompleted("cafe-3", false);
-    expect(await getCompanionCompletedTasks()).not.toContain("cafe-3");
+  it("preserves other keys when one is removed", async () => {
+    await setCompanionTaskMedia("beach-1", { uri: "a", type: "image", capturedAt: 1 });
+    await setCompanionTaskMedia("beach-2", { uri: "b", type: "image", capturedAt: 2 });
+    await removeCompanionTaskMedia("beach-1");
+    const map = await getCompanionTaskMedia();
+    expect(map["beach-1"]).toBeUndefined();
+    expect(map["beach-2"]).toBeDefined();
   });
 
-  it("preserves other completions when one task is toggled", async () => {
-    await setCompanionTaskCompleted("road-1", true);
-    await setCompanionTaskCompleted("road-2", true);
-    await setCompanionTaskCompleted("road-1", false);
-    const done = await getCompanionCompletedTasks();
-    expect(done).not.toContain("road-1");
-    expect(done).toContain("road-2");
+  it("removing a missing key is a no-op", async () => {
+    await removeCompanionTaskMedia("nope");
+    expect(await getCompanionTaskMedia()).toEqual({});
   });
 
-  it("defends against a corrupt stored value (returns [])", async () => {
-    await AsyncStorage.setItem("hearo:companionCompletedTasks", "not-json");
-    expect(await getCompanionCompletedTasks()).toEqual([]);
+  it("defends against a corrupt stored value (returns {})", async () => {
+    await AsyncStorage.setItem("hearo:companionTaskMedia", "not-json");
+    expect(await getCompanionTaskMedia()).toEqual({});
   });
 
-  it("filters out non-string entries in a partially-corrupt array", async () => {
+  it("drops partially-invalid entries (bad type / missing fields)", async () => {
     await AsyncStorage.setItem(
-      "hearo:companionCompletedTasks",
-      JSON.stringify(["beach-1", 42, null, "park-3"]),
+      "hearo:companionTaskMedia",
+      JSON.stringify({
+        good: { uri: "file:///ok.mp4", type: "video", capturedAt: 9 },
+        badType: { uri: "x", type: "gif", capturedAt: 9 },
+        noUri: { type: "image", capturedAt: 9 },
+        notObject: 42,
+      }),
     );
-    expect(await getCompanionCompletedTasks()).toEqual(["beach-1", "park-3"]);
+    expect(await getCompanionTaskMedia()).toEqual({
+      good: { uri: "file:///ok.mp4", type: "video", capturedAt: 9 },
+    });
   });
 });

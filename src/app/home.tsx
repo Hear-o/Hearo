@@ -78,7 +78,7 @@ export default function Home() {
               onPress={() => useSettingsSheetStore.getState().open()}
               accessibilityLabel={t("settings.open")}
             >
-              <Icon name="settings" size={22} color={tokens.text} />
+              <Icon name="settings" size={28} color={tokens.text} />
             </Pressable>
             <CrisisAffordance />
           </View>

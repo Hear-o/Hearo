@@ -108,10 +108,23 @@ export default function Setup() {
 
         <Text
           style={{
+            color: tokens.textMute,
+            fontFamily: fonts.body,
+            fontSize: 15,
+            lineHeight: 24,
+            paddingHorizontal: 32,
+            marginTop: 20,
+            marginBottom: 16,
+          }}
+        >
+          {t("setup.soundsIntro")}
+        </Text>
+
+        <Text
+          style={{
             color: tokens.text,
             fontFamily: fonts.display,
             ...typeScale.hero,
-            marginTop: 24,
             marginBottom: 8,
             paddingHorizontal: 32,
           }}

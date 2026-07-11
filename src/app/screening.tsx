@@ -53,8 +53,8 @@ export default function Screening() {
     setStep({ kind: "items" });
   }
 
-  /** Step 2 → 5 items answered. Score, persist, transition to outcome. */
-  async function handleItemsSubmit(answers: boolean[]) {
+  /** Step 2 → 4 Likert items answered. Score, persist, transition to outcome. */
+  async function handleItemsSubmit(answers: number[]) {
     const { score, outcome } = computeClinicalScreeningOutcome(true, answers, content.cutoff);
     await setClinicalScreeningResult({
       instrument: "pc-ptsd-5",

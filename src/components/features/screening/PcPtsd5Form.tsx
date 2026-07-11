@@ -6,25 +6,23 @@ import { getClinicalScreening, localize } from "@/lib/content/content";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 type Props = {
-  /** Called once the user has answered all 5 items and tapped Submit. */
-  onSubmit: (answers: boolean[]) => void;
+  /** Called once the user has answered all 4 items and tapped Submit. */
+  onSubmit: (answers: number[]) => void;
 };
 
-/** Renders the 5 PC-PTSD-5 yes/no items in a vertical list with a single
- *  Submit at bottom. Submit stays disabled until all 5 items have been
- *  answered — partial submission would silently score absent items as `no`
- *  and skew the gate. */
+/** Renders the 4 short-PCL items with a 5-point Likert scale (0–4).
+ *  Submit stays disabled until all 4 items have been answered. */
 export function PcPtsd5Form({ onSubmit }: Props) {
   const { i18n } = useTranslation();
   const lang = i18n.language;
   const content = getClinicalScreening();
 
-  // null = unanswered. true/false = the user's pick. Indexed by question position.
-  const [answers, setAnswers] = useState<(boolean | null)[]>(
+  // null = unanswered. 0–4 = the user's Likert pick. Indexed by question position.
+  const [answers, setAnswers] = useState<(number | null)[]>(
     Array(content.items.questions.length).fill(null),
   );
 
-  function setAnswer(index: number, value: boolean) {
+  function setAnswer(index: number, value: number) {
     setAnswers((prev) => {
       const next = [...prev];
       next[index] = value;
@@ -36,7 +34,7 @@ export function PcPtsd5Form({ onSubmit }: Props) {
 
   function handleSubmit() {
     if (!allAnswered) return;
-    onSubmit(answers as boolean[]);
+    onSubmit(answers as number[]);
   }
 
   return (
@@ -59,12 +57,12 @@ export function PcPtsd5Form({ onSubmit }: Props) {
       </Text>
 
       {content.items.questions.map((q, i) => (
-        <QuestionRow
+        <LikertRow
           key={i}
           questionNumber={i + 1}
+          total={content.items.questions.length}
           questionText={localize(q, lang)}
-          yesLabel={localize(content.items.yes, lang)}
-          noLabel={localize(content.items.no, lang)}
+          labels={content.items.likertLabels.map((l) => localize(l, lang))}
           answer={answers[i]}
           onChange={(v) => setAnswer(i, v)}
         />
@@ -99,23 +97,23 @@ export function PcPtsd5Form({ onSubmit }: Props) {
   );
 }
 
-function QuestionRow({
+function LikertRow({
   questionNumber,
+  total,
   questionText,
-  yesLabel,
-  noLabel,
+  labels,
   answer,
   onChange,
 }: {
   questionNumber: number;
+  total: number;
   questionText: string;
-  yesLabel: string;
-  noLabel: string;
-  answer: boolean | null;
-  onChange: (value: boolean) => void;
+  labels: string[];
+  answer: number | null;
+  onChange: (value: number) => void;
 }) {
   return (
-    <View style={{ marginBottom: 24 }}>
+    <View style={{ marginBottom: 28 }}>
       <Text
         style={{
           color: tokens.textMute,
@@ -125,7 +123,7 @@ function QuestionRow({
           textAlign: "left",
         }}
       >
-        {questionNumber} / 5
+        {questionNumber} / {total}
       </Text>
       <Text
         style={{
@@ -133,21 +131,27 @@ function QuestionRow({
           fontFamily: fonts.body,
           fontSize: 16,
           lineHeight: 24,
-          marginBottom: 12,
+          marginBottom: 14,
           textAlign: "left",
         }}
       >
         {questionText}
       </Text>
-      <View style={{ flexDirection: "row", gap: 12 }}>
-        <YesNoChip label={yesLabel} selected={answer === true} onPress={() => onChange(true)} />
-        <YesNoChip label={noLabel} selected={answer === false} onPress={() => onChange(false)} />
+      <View style={{ gap: 8 }}>
+        {labels.map((label, i) => (
+          <LikertOption
+            key={i}
+            label={label}
+            selected={answer === i}
+            onPress={() => onChange(i)}
+          />
+        ))}
       </View>
     </View>
   );
 }
 
-function YesNoChip({
+function LikertOption({
   label,
   selected,
   onPress,
@@ -163,20 +167,47 @@ function YesNoChip({
       accessibilityRole="button"
       accessibilityState={{ selected }}
       style={{
-        flex: 1,
-        borderWidth: 1,
-        borderColor: selected ? tokens.accent : tokens.textMute,
-        borderRadius: 999,
-        paddingVertical: 12,
+        flexDirection: "row",
         alignItems: "center",
-        backgroundColor: selected ? tokens.accent : "transparent",
+        gap: 12,
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        borderWidth: 1,
+        borderColor: selected ? tokens.accent : tokens.textMute + "55",
+        borderRadius: 12,
+        backgroundColor: selected ? tokens.accent + "18" : "transparent",
       }}
     >
+      <View
+        style={{
+          width: 20,
+          height: 20,
+          borderRadius: 10,
+          borderWidth: 1.5,
+          borderColor: selected ? tokens.accent : tokens.textMute,
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        {selected && (
+          <View
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: 5,
+              backgroundColor: tokens.accent,
+            }}
+          />
+        )}
+      </View>
       <Text
         style={{
-          color: selected ? tokens.bg : tokens.text,
+          color: selected ? tokens.text : tokens.textMute,
           fontFamily: fonts.body,
           fontSize: 15,
+          flex: 1,
+          textAlign: "left",
         }}
       >
         {label}

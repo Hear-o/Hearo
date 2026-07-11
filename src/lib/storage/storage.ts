@@ -154,9 +154,9 @@ export type ClinicalScreeningResult = {
   instrument: "pc-ptsd-5";
   version: string;            // e.g. "v1-2026-06-11" — bumps when wording / cutoff revised
   traumaExposure: boolean;    // step 1 answer
-  answers: boolean[];         // length 5 when traumaExposure=true, [] when false
-  score: number;              // 0–5; 0 when traumaExposure=false
-  cutoff: number;             // currently 3 (Prins et al., 2016)
+  answers: number[];          // Likert 0–4 per item; length 4 when traumaExposure=true, [] when false
+  score: number;              // 0–16; 0 when traumaExposure=false
+  cutoff: number;             // currently 8 (provisional; TODO hirschman-review)
   outcome: ClinicalScreeningOutcome;
   takenAt: number;            // epoch ms
 };
@@ -176,7 +176,7 @@ export async function getClinicalScreeningResult(): Promise<ClinicalScreeningRes
       typeof parsed.version === "string" &&
       typeof parsed.traumaExposure === "boolean" &&
       Array.isArray(parsed.answers) &&
-      parsed.answers.every((a) => typeof a === "boolean") &&
+      parsed.answers.every((a) => typeof a === "number" && a >= 0 && a <= 4) &&
       typeof parsed.score === "number" &&
       typeof parsed.cutoff === "number" &&
       isValidOutcome(parsed.outcome) &&

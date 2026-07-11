@@ -88,6 +88,7 @@ export function PcPtsd5Form({ onSubmit }: Props) {
             color: tokens.accent,
             fontFamily: fonts.body,
             fontSize: 18,
+            textAlign: "left",
           }}
         >
           {localize(content.items.submit, lang)}

@@ -112,6 +112,7 @@ export default function Setup() {
             fontFamily: fonts.body,
             fontSize: 15,
             lineHeight: 24,
+            textAlign: "left",
             paddingHorizontal: 32,
             marginTop: 20,
             marginBottom: 16,

@@ -892,15 +892,15 @@ const DAILY_AFFIRMATIONS: LocalizedText[] = [
     en: "Waking up today\nwas already something.",
   },
   {
-    he: "ההתאוששות לא קווית.\nאתה לא מאחר.",
+    he: "ההתאוששות לא קווית.\nאי אפשר לאחר בה.",
     en: "Healing isn't linear.\nYou're not behind.",
   },
   {
-    he: "אתה לא צריך להבין הכל עכשיו.\nרק להיות כאן.",
+    he: "אין צורך להבין הכל עכשיו.\nרק להיות כאן.",
     en: "You don't need to understand everything now.\nJust be here.",
   },
   {
-    he: "מה שעבר עליך אמיתי.\nמה שאתה מרגיש עכשיו זה לא חולשה.",
+    he: "מה שעבר עליך אמיתי.\nומה שמרגישים עכשיו זה לא חולשה.",
     en: "What you went through is real.\nWhat you feel now isn't weakness.",
   },
   {
@@ -908,7 +908,7 @@ const DAILY_AFFIRMATIONS: LocalizedText[] = [
     en: "This breath is yours.\nNothing takes it from you.",
   },
   {
-    he: "אתה לא לבד בזה.\nגם כשזה מרגיש ככה.",
+    he: "אינך לבד בזה.\nגם כשזה מרגיש ככה.",
     en: "You're not alone in this.\nEven when it feels that way.",
   },
   {
@@ -924,7 +924,7 @@ const DAILY_AFFIRMATIONS: LocalizedText[] = [
     en: "There's no right way\nto feel well.",
   },
   {
-    he: "אתה זכאי לזמן\nשאתה צריך.",
+    he: "מגיע לך הזמן\nשנחוץ לך.",
     en: "You're entitled to the time\nyou need.",
   },
   {
@@ -932,11 +932,11 @@ const DAILY_AFFIRMATIONS: LocalizedText[] = [
     en: "A small daily action\nisn't small.",
   },
   {
-    he: "המערכת שלך הייתה בכוננות.\nעכשיו אתה לומד אותה לסמוך שוב.",
+    he: "המערכת שלך הייתה בכוננות.\nעכשיו היא לומדת לסמוך מחדש.",
     en: "Your system was on alert.\nNow you're teaching it to trust again.",
   },
   {
-    he: "אתה לא הסיפור שאתה מספר על עצמך\nברגעים הקשים.",
+    he: "אינך הסיפור שסיפרת לעצמך\nברגעים הקשים.",
     en: "You are not the story you tell yourself\nin the hardest moments.",
   },
 ];
@@ -1003,7 +1003,7 @@ const PSYCHO_EDUCATION: PsychoEducationContent = {
   ],
   continueLabel: {
     en: "I'm ready",
-    he: "אני מוכן",
+    he: "אפשר להתחיל",
   },
 };
 
@@ -1066,7 +1066,7 @@ const CALMING_PROTOCOL: CalmingProtocolStep[] = [
     kind: "validation",
     text: {
       en: "It's okay. You're safe now.\n\nWhat you're feeling is anxiety. Anxiety is a wave. It rises, peaks, and falls.\n\nI'm here. It will pass.",
-      he: "הכל בסדר. אתה בטוח עכשיו.\n\nמה שאתה מרגיש זה חרדה. חרדה היא כמו גל. היא עולה, מגיעה לשיא, ויורדת.\n\nאני כאן. זה יעבור.",
+      he: "הכל בסדר. עכשיו בטוח כאן.\n\nמה שמרגישים זה חרדה. חרדה היא כמו גל. היא עולה, מגיעה לשיא, ויורדת.\n\nאני כאן. זה יעבור.",
     },
     durationMs: 12_000,
   },
@@ -1074,7 +1074,7 @@ const CALMING_PROTOCOL: CalmingProtocolStep[] = [
     kind: "body-grounding",
     text: {
       en: "Come back to your body.\n\nIf you're standing, sit. Feel your feet on the floor. Press them down.\n\nFeel your weight in the chair.",
-      he: "חזור לגוף שלך.\n\nאם אתה עומד, שב. תרגיש את כפות הרגליים על הרצפה. לחץ אותן למטה.\n\nתרגיש את משקל הגוף שלך על הכיסא.",
+      he: "לחזור לגוף.\n\nאם עומדים, לשבת. להרגיש את כפות הרגליים על הרצפה וללחוץ אותן למטה.\n\nלהרגיש את משקל הגוף על הכיסא.",
     },
     durationMs: 10_000,
   },
@@ -1095,7 +1095,7 @@ const CALMING_PROTOCOL: CalmingProtocolStep[] = [
         count: 3,
         prompt: {
           en: "Notice 3 things\nyou can see\naround you.",
-          he: "שים לב ל-3 דברים\nשאתה יכול לראות\nברגע זה.",
+          he: "שימו לב ל-3 דברים\nשאפשר לראות\nברגע זה.",
         },
         durationMs: 9_000,
       },
@@ -1103,7 +1103,7 @@ const CALMING_PROTOCOL: CalmingProtocolStep[] = [
         count: 2,
         prompt: {
           en: "Notice 2 sounds\nyou can hear.",
-          he: "שים לב ל-2 צלילים\nשאתה יכול לשמוע.",
+          he: "שימו לב ל-2 צלילים\nשאפשר לשמוע.",
         },
         durationMs: 9_000,
       },
@@ -1111,7 +1111,7 @@ const CALMING_PROTOCOL: CalmingProtocolStep[] = [
         count: 1,
         prompt: {
           en: "Notice 1 texture\nyou can touch:\nyour clothing,\nthe surface near you.",
-          he: "שים לב למרקם אחד\nשאתה יכול לגעת בו:\nהבגד שלך,\nהמשטח שלידך.",
+          he: "שימו לב למרקם אחד\nשאפשר לגעת בו:\nהבגד שלך,\nהמשטח שלידך.",
         },
         durationMs: 9_000,
       },

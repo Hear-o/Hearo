@@ -11,7 +11,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Carousel from "react-native-reanimated-carousel";
 import { useTranslation } from "react-i18next";
 
-import { localize, Scene, SceneKey } from "@/lib/content/content";
+import { localize, Scene, SceneKey, SCENES_WITH_BAKED_CAPTION } from "@/lib/content/content";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -119,7 +119,19 @@ function ScenePage({
       }}
     >
       {source ? (
-        <Image source={source} style={StyleSheet.absoluteFill} contentFit="cover" transition={400} />
+        <Image
+          source={source}
+          // TEMP(roy): captioned stills are drawn oversized + top-anchored so the
+          // card's overflow:hidden crops the bottom ~15% (the baked English title).
+          style={
+            SCENES_WITH_BAKED_CAPTION.has(scene.key)
+              ? { position: "absolute", top: 0, left: 0, right: 0, height: CARD_HEIGHT / 0.85 }
+              : StyleSheet.absoluteFill
+          }
+          contentFit="cover"
+          contentPosition="top"
+          transition={400}
+        />
       ) : null}
       <LinearGradient
         colors={["rgba(20,15,12,0)", "rgba(20,15,12,0.92)"]}

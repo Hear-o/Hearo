@@ -3,7 +3,13 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import Carousel from "react-native-reanimated-carousel";
 
-import { getScenes, localize, Scene, SceneKey } from "@/lib/content/content";
+import {
+  getScenes,
+  localize,
+  Scene,
+  SceneKey,
+  SCENES_WITH_BAKED_CAPTION,
+} from "@/lib/content/content";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -80,8 +86,15 @@ function SceneCard({ scene, lang }: { scene: Scene; lang: string }) {
       {source ? (
         <Image
           source={source}
-          style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+          // TEMP(roy): captioned stills are drawn oversized + top-anchored so the
+          // card's overflow:hidden crops the bottom ~15% (the baked English title).
+          style={
+            SCENES_WITH_BAKED_CAPTION.has(scene.key)
+              ? { position: "absolute", top: 0, left: 0, right: 0, height: CARD_HEIGHT / 0.85 }
+              : { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }
+          }
           contentFit="cover"
+          contentPosition="top"
           transition={400}
         />
       ) : null}

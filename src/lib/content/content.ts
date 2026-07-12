@@ -534,6 +534,19 @@ export const SCENE_ORDER: SceneKey[] = [
 // fold these back into a single list).
 export const VOICED_SCENES: SceneKey[] = ["beach", "park", "cafe", "road"];
 
+// TEMP(roy): the 5 v1.2.0 scene stills ship with an English title baked into
+// the bottom of the image (e.g. "House party, evening"). Until Roy delivers
+// clean re-exports, the scene carousels crop the bottom ~15% of these images
+// (top-anchored) to hide that caption. Remove this set — and the crop that
+// reads it — once clean assets land.
+export const SCENES_WITH_BAKED_CAPTION: ReadonlySet<SceneKey> = new Set<SceneKey>([
+  "train",
+  "bus",
+  "quiet-bar",
+  "house-party",
+  "supermarket",
+]);
+
 // COMPANION_SCENE_ORDER — every scene the Companion feature lists. Voice
 // isn't required for Companion (no session, just per-scene task ladders),
 // so the 5 v1.2.0 scenes appear alongside the originals.

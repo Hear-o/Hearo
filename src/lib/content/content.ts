@@ -1131,7 +1131,7 @@ export function getCalmingProtocol(): CalmingProtocolStep[] {
 // /screening to gate above-threshold users into a clinician-recommendation
 // outcome screen. See docs/research/clinical-screening-review.md.
 
-export type PcPtsd5Content = {
+export type Pcl4Content = {
   /** Version tag bumped whenever the wording or cutoff changes. Persisted on
    *  every screening result so old records can be detected if the instrument
    *  is later revised. */
@@ -1173,7 +1173,7 @@ export type PcPtsd5Content = {
 };
 
 // TODO(supabase): `pc_ptsd5_content` table keyed by version + lang.
-const CLINICAL_SCREENING: PcPtsd5Content = {
+const CLINICAL_SCREENING: Pcl4Content = {
   version: "pc-ptsd-5-v2-2026-07-11",
   // TODO(hirschman-review): cutoff 8/16 is provisional (avg "Moderately" across 4 items).
   cutoff: 8,
@@ -1292,7 +1292,7 @@ const CLINICAL_SCREENING: PcPtsd5Content = {
 };
 
 // TODO(supabase): `supabase.from('pc_ptsd5_content').select('*').eq('version', '...').single()`
-export function getClinicalScreening(): PcPtsd5Content {
+export function getClinicalScreening(): Pcl4Content {
   return CLINICAL_SCREENING;
 }
 

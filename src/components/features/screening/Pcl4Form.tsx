@@ -12,7 +12,7 @@ type Props = {
 
 /** Renders the 4 short-PCL items with a 5-point Likert scale (0–4).
  *  Submit stays disabled until all 4 items have been answered. */
-export function PcPtsd5Form({ onSubmit }: Props) {
+export function Pcl4Form({ onSubmit }: Props) {
   const { i18n } = useTranslation();
   const lang = i18n.language;
   const content = getClinicalScreening();

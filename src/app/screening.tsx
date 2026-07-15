@@ -5,7 +5,7 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
-import { PcPtsd5Form } from "@/components/features/screening/PcPtsd5Form";
+import { Pcl4Form } from "@/components/features/screening/Pcl4Form";
 import {
   computeClinicalScreeningOutcome,
   getClinicalScreening,
@@ -84,7 +84,7 @@ export default function Screening() {
         <IntroStep lang={lang} onAnswer={handleTraumaExposureAnswer} />
       )}
 
-      {step.kind === "items" && <PcPtsd5Form onSubmit={handleItemsSubmit} />}
+      {step.kind === "items" && <Pcl4Form onSubmit={handleItemsSubmit} />}
 
       {step.kind === "outcome" && step.outcome === "no-trauma" && (
         <NoTraumaOutcome lang={lang} onContinue={handleContinue} />

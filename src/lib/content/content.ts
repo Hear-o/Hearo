@@ -534,6 +534,19 @@ export const SCENE_ORDER: SceneKey[] = [
 // fold these back into a single list).
 export const VOICED_SCENES: SceneKey[] = ["beach", "park", "cafe", "road"];
 
+// TEMP(roy): the 5 v1.2.0 scene stills ship with an English title baked into
+// the bottom of the image (e.g. "House party, evening"). Until Roy delivers
+// clean re-exports, the scene carousels crop the bottom ~15% of these images
+// (top-anchored) to hide that caption. Remove this set — and the crop that
+// reads it — once clean assets land.
+export const SCENES_WITH_BAKED_CAPTION: ReadonlySet<SceneKey> = new Set<SceneKey>([
+  "train",
+  "bus",
+  "quiet-bar",
+  "house-party",
+  "supermarket",
+]);
+
 // COMPANION_SCENE_ORDER — every scene the Companion feature lists. Voice
 // isn't required for Companion (no session, just per-scene task ladders),
 // so the 5 v1.2.0 scenes appear alongside the originals.
@@ -879,15 +892,15 @@ const DAILY_AFFIRMATIONS: LocalizedText[] = [
     en: "Waking up today\nwas already something.",
   },
   {
-    he: "ההתאוששות לא קווית.\nאתה לא מאחר.",
+    he: "ההתאוששות לא קווית.\nאי אפשר לאחר בה.",
     en: "Healing isn't linear.\nYou're not behind.",
   },
   {
-    he: "אתה לא צריך להבין הכל עכשיו.\nרק להיות כאן.",
+    he: "אין צורך להבין הכל עכשיו.\nרק להיות כאן.",
     en: "You don't need to understand everything now.\nJust be here.",
   },
   {
-    he: "מה שעבר עליך אמיתי.\nמה שאתה מרגיש עכשיו זה לא חולשה.",
+    he: "מה שעבר עליך אמיתי.\nומה שמרגישים עכשיו זה לא חולשה.",
     en: "What you went through is real.\nWhat you feel now isn't weakness.",
   },
   {
@@ -895,7 +908,7 @@ const DAILY_AFFIRMATIONS: LocalizedText[] = [
     en: "This breath is yours.\nNothing takes it from you.",
   },
   {
-    he: "אתה לא לבד בזה.\nגם כשזה מרגיש ככה.",
+    he: "אינך לבד בזה.\nגם כשזה מרגיש ככה.",
     en: "You're not alone in this.\nEven when it feels that way.",
   },
   {
@@ -911,7 +924,7 @@ const DAILY_AFFIRMATIONS: LocalizedText[] = [
     en: "There's no right way\nto feel well.",
   },
   {
-    he: "אתה זכאי לזמן\nשאתה צריך.",
+    he: "מגיע לך הזמן\nשנחוץ לך.",
     en: "You're entitled to the time\nyou need.",
   },
   {
@@ -919,11 +932,11 @@ const DAILY_AFFIRMATIONS: LocalizedText[] = [
     en: "A small daily action\nisn't small.",
   },
   {
-    he: "המערכת שלך הייתה בכוננות.\nעכשיו אתה לומד אותה לסמוך שוב.",
+    he: "המערכת שלך הייתה בכוננות.\nעכשיו היא לומדת לסמוך מחדש.",
     en: "Your system was on alert.\nNow you're teaching it to trust again.",
   },
   {
-    he: "אתה לא הסיפור שאתה מספר על עצמך\nברגעים הקשים.",
+    he: "אינך הסיפור שסיפרת לעצמך\nברגעים הקשים.",
     en: "You are not the story you tell yourself\nin the hardest moments.",
   },
 ];
@@ -990,7 +1003,7 @@ const PSYCHO_EDUCATION: PsychoEducationContent = {
   ],
   continueLabel: {
     en: "I'm ready",
-    he: "אני מוכן",
+    he: "אפשר להתחיל",
   },
 };
 
@@ -1053,7 +1066,7 @@ const CALMING_PROTOCOL: CalmingProtocolStep[] = [
     kind: "validation",
     text: {
       en: "It's okay. You're safe now.\n\nWhat you're feeling is anxiety. Anxiety is a wave. It rises, peaks, and falls.\n\nI'm here. It will pass.",
-      he: "הכל בסדר. אתה בטוח עכשיו.\n\nמה שאתה מרגיש זה חרדה. חרדה היא כמו גל. היא עולה, מגיעה לשיא, ויורדת.\n\nאני כאן. זה יעבור.",
+      he: "הכל בסדר. עכשיו בטוח כאן.\n\nמה שמרגישים זה חרדה. חרדה היא כמו גל. היא עולה, מגיעה לשיא, ויורדת.\n\nאני כאן. זה יעבור.",
     },
     durationMs: 12_000,
   },
@@ -1061,7 +1074,7 @@ const CALMING_PROTOCOL: CalmingProtocolStep[] = [
     kind: "body-grounding",
     text: {
       en: "Come back to your body.\n\nIf you're standing, sit. Feel your feet on the floor. Press them down.\n\nFeel your weight in the chair.",
-      he: "חזור לגוף שלך.\n\nאם אתה עומד, שב. תרגיש את כפות הרגליים על הרצפה. לחץ אותן למטה.\n\nתרגיש את משקל הגוף שלך על הכיסא.",
+      he: "לחזור לגוף.\n\nאם עומדים, לשבת. להרגיש את כפות הרגליים על הרצפה וללחוץ אותן למטה.\n\nלהרגיש את משקל הגוף על הכיסא.",
     },
     durationMs: 10_000,
   },
@@ -1082,7 +1095,7 @@ const CALMING_PROTOCOL: CalmingProtocolStep[] = [
         count: 3,
         prompt: {
           en: "Notice 3 things\nyou can see\naround you.",
-          he: "שים לב ל-3 דברים\nשאתה יכול לראות\nברגע זה.",
+          he: "שימו לב ל-3 דברים\nשאפשר לראות\nברגע זה.",
         },
         durationMs: 9_000,
       },
@@ -1090,7 +1103,7 @@ const CALMING_PROTOCOL: CalmingProtocolStep[] = [
         count: 2,
         prompt: {
           en: "Notice 2 sounds\nyou can hear.",
-          he: "שים לב ל-2 צלילים\nשאתה יכול לשמוע.",
+          he: "שימו לב ל-2 צלילים\nשאפשר לשמוע.",
         },
         durationMs: 9_000,
       },
@@ -1098,7 +1111,7 @@ const CALMING_PROTOCOL: CalmingProtocolStep[] = [
         count: 1,
         prompt: {
           en: "Notice 1 texture\nyou can touch:\nyour clothing,\nthe surface near you.",
-          he: "שים לב למרקם אחד\nשאתה יכול לגעת בו:\nהבגד שלך,\nהמשטח שלידך.",
+          he: "שימו לב למרקם אחד\nשאפשר לגעת בו:\nהבגד שלך,\nהמשטח שלידך.",
         },
         durationMs: 9_000,
       },
@@ -1333,75 +1346,75 @@ export interface CompanionTask {
 const COMPANION_TASKS: Record<SceneKey, CompanionTask[]> = {
   // TODO(clinical-review): beach exposure ladder — social + open space
   beach: [
-    { key: "beach-1", label: { en: "Walk to a beach access point and stand for 2 minutes", he: "לך לנקודת גישה לים ועמוד שם שתי דקות" } },
-    { key: "beach-2", label: { en: "Sit on the sand for 10 minutes and listen", he: "שב על החול עשר דקות ופשוט הקשב" } },
-    { key: "beach-3", label: { en: "Walk barefoot along the water for 5 minutes", he: "לך יחף לאורך המים חמש דקות" } },
-    { key: "beach-4", label: { en: "Sit for 20 minutes and watch the people around you", he: "שב עשרים דקות והתבונן באנשים סביבך" } },
-    { key: "beach-5", label: { en: "Come to the beach with someone you trust", he: "בוא לים עם מישהו שאתה סומך עליו" } },
+    { key: "beach-1", label: { en: "Walk to a beach access point and stand for 2 minutes", he: "ללכת לנקודת גישה לים ולעמוד שם שתי דקות" } },
+    { key: "beach-2", label: { en: "Sit on the sand for 10 minutes and listen", he: "לשבת על החול עשר דקות ופשוט להקשיב" } },
+    { key: "beach-3", label: { en: "Walk barefoot along the water for 5 minutes", he: "ללכת יחף לאורך המים חמש דקות" } },
+    { key: "beach-4", label: { en: "Sit for 20 minutes and watch the people around you", he: "לשבת עשרים דקות ולהתבונן באנשים מסביב" } },
+    { key: "beach-5", label: { en: "Come to the beach with someone you trust", he: "להגיע לים עם מישהו שאפשר לסמוך עליו" } },
   ],
   // TODO(clinical-review): park exposure ladder — crowds + unpredictable stimuli
   park: [
-    { key: "park-1", label: { en: "Walk through the park in the early morning (quiet)", he: "לך דרך הפארק בשעות הבוקר המוקדמות" } },
-    { key: "park-2", label: { en: "Sit on a bench for 10 minutes", he: "שב על ספסל עשר דקות" } },
-    { key: "park-3", label: { en: "Walk through the park during regular hours", he: "לך דרך הפארק בשעות הרגילות" } },
-    { key: "park-4", label: { en: "Sit near where children play for 5 minutes", he: "שב ליד גן שעשועים חמש דקות" } },
-    { key: "park-5", label: { en: "Come with a family member", he: "בוא עם בן משפחה" } },
+    { key: "park-1", label: { en: "Walk through the park in the early morning (quiet)", he: "ללכת דרך הפארק בשעות הבוקר המוקדמות" } },
+    { key: "park-2", label: { en: "Sit on a bench for 10 minutes", he: "לשבת על ספסל עשר דקות" } },
+    { key: "park-3", label: { en: "Walk through the park during regular hours", he: "ללכת דרך הפארק בשעות הרגילות" } },
+    { key: "park-4", label: { en: "Sit near where children play for 5 minutes", he: "לשבת ליד גן שעשועים חמש דקות" } },
+    { key: "park-5", label: { en: "Come with a family member", he: "להגיע עם בן משפחה" } },
   ],
   // TODO(clinical-review): cafe exposure ladder — enclosed space + strangers
   cafe: [
-    { key: "cafe-1", label: { en: "Order coffee at the counter and take it to go", he: "הזמן קפה בדלפק וקח לך" } },
-    { key: "cafe-2", label: { en: "Order and stand inside for 5 minutes", he: "הזמן ותעמוד בפנים חמש דקות" } },
-    { key: "cafe-3", label: { en: "Sit inside for 10 minutes alone", he: "שב בפנים לבד עשר דקות" } },
-    { key: "cafe-4", label: { en: "Sit inside for 20 minutes with a friend", he: "שב בפנים עשרים דקות עם חבר" } },
-    { key: "cafe-5", label: { en: "Meet someone here for a full breakfast", he: "קבע פגישה לארוחת בוקר שלמה" } },
+    { key: "cafe-1", label: { en: "Order coffee at the counter and take it to go", he: "להזמין קפה בדלפק ולקחת לדרך" } },
+    { key: "cafe-2", label: { en: "Order and stand inside for 5 minutes", he: "להזמין ולעמוד בפנים חמש דקות" } },
+    { key: "cafe-3", label: { en: "Sit inside for 10 minutes alone", he: "לשבת בפנים לבד עשר דקות" } },
+    { key: "cafe-4", label: { en: "Sit inside for 20 minutes with a friend", he: "לשבת בפנים עשרים דקות עם חבר" } },
+    { key: "cafe-5", label: { en: "Meet someone here for a full breakfast", he: "לקבוע פגישה לארוחת בוקר שלמה" } },
   ],
   // TODO(clinical-review): road exposure ladder — traffic, sirens, movement
   road: [
-    { key: "road-1", label: { en: "Walk 100 meters along the road", he: "לך מאה מטרים לאורך הכביש" } },
-    { key: "road-2", label: { en: "Walk to the nearest bus stop and back", he: "לך לתחנת האוטובוס הקרובה וחזור" } },
-    { key: "road-3", label: { en: "Take the bus one stop", he: "סע באוטובוס תחנה אחת" } },
-    { key: "road-4", label: { en: "Take the bus a longer distance", he: "סע באוטובוס מרחק ארוך יותר" } },
-    { key: "road-5", label: { en: "Drive a short distance", he: "נהג מרחק קצר" } },
+    { key: "road-1", label: { en: "Walk 100 meters along the road", he: "ללכת מאה מטרים לאורך הכביש" } },
+    { key: "road-2", label: { en: "Walk to the nearest bus stop and back", he: "ללכת לתחנת האוטובוס הקרובה ולחזור" } },
+    { key: "road-3", label: { en: "Take the bus one stop", he: "לנסוע באוטובוס תחנה אחת" } },
+    { key: "road-4", label: { en: "Take the bus a longer distance", he: "לנסוע באוטובוס מרחק ארוך יותר" } },
+    { key: "road-5", label: { en: "Drive a short distance", he: "לנהוג מרחק קצר" } },
   ],
   // TODO(clinical-review): train exposure ladder — enclosed, cannot easily leave
   train: [
-    { key: "train-1", label: { en: "Walk into the station and buy a ticket", he: "היכנס לתחנה וקנה כרטיס" } },
-    { key: "train-2", label: { en: "Stand on the platform for 10 minutes", he: "עמוד על הרציף עשר דקות" } },
-    { key: "train-3", label: { en: "Ride one stop and get off", he: "סע תחנה אחת וירד" } },
-    { key: "train-4", label: { en: "Ride a longer distance during regular hours", he: "סע מרחק ארוך בשעות הרגילות" } },
-    { key: "train-5", label: { en: "Take a full trip with someone you trust", he: "עשה נסיעה מלאה עם מישהו שאתה סומך עליו" } },
+    { key: "train-1", label: { en: "Walk into the station and buy a ticket", he: "להיכנס לתחנה ולקנות כרטיס" } },
+    { key: "train-2", label: { en: "Stand on the platform for 10 minutes", he: "לעמוד על הרציף עשר דקות" } },
+    { key: "train-3", label: { en: "Ride one stop and get off", he: "לנסוע תחנה אחת ולרדת" } },
+    { key: "train-4", label: { en: "Ride a longer distance during regular hours", he: "לנסוע מרחק ארוך בשעות הרגילות" } },
+    { key: "train-5", label: { en: "Take a full trip with someone you trust", he: "לעשות נסיעה מלאה עם מישהו שאפשר לסמוך עליו" } },
   ],
   // TODO(clinical-review): quiet-bar exposure ladder — social + evening lighting
   "quiet-bar": [
-    { key: "quiet-bar-1", label: { en: "Walk past the bar and look inside", he: "עבור ליד הבר והסתכל פנימה" } },
-    { key: "quiet-bar-2", label: { en: "Go in and sit at the bar for 10 minutes", he: "היכנס ושב בבר עשר דקות" } },
-    { key: "quiet-bar-3", label: { en: "Order a drink and stay for 20 minutes", he: "הזמן משקה ותישאר עשרים דקות" } },
-    { key: "quiet-bar-4", label: { en: "Meet a friend here for an hour", he: "קבע פגישה כאן עם חבר לשעה" } },
-    { key: "quiet-bar-5", label: { en: "Come with a small group in the evening", he: "בוא עם קבוצה קטנה בשעות הערב" } },
+    { key: "quiet-bar-1", label: { en: "Walk past the bar and look inside", he: "לעבור ליד הבר ולהסתכל פנימה" } },
+    { key: "quiet-bar-2", label: { en: "Go in and sit at the bar for 10 minutes", he: "להיכנס ולשבת בבר עשר דקות" } },
+    { key: "quiet-bar-3", label: { en: "Order a drink and stay for 20 minutes", he: "להזמין משקה ולהישאר עשרים דקות" } },
+    { key: "quiet-bar-4", label: { en: "Meet a friend here for an hour", he: "לקבוע פגישה כאן עם חבר לשעה" } },
+    { key: "quiet-bar-5", label: { en: "Come with a small group in the evening", he: "להגיע עם קבוצה קטנה בשעות הערב" } },
   ],
   // TODO(clinical-review): house-party exposure ladder — dense social exposure
   "house-party": [
-    { key: "house-party-1", label: { en: "Say yes to an invitation and arrive briefly", he: "אמור כן להזמנה והגע לזמן קצר" } },
-    { key: "house-party-2", label: { en: "Stay for 30 minutes and talk to one person", he: "השאר חצי שעה ודבר עם אדם אחד" } },
-    { key: "house-party-3", label: { en: "Stay for an hour and talk to a few people", he: "השאר שעה ודבר עם כמה אנשים" } },
-    { key: "house-party-4", label: { en: "Stay through the busy part of the evening", he: "השאר בשעות העמוסות של הערב" } },
-    { key: "house-party-5", label: { en: "Host a small gathering yourself", he: "ארח בעצמך התכנסות קטנה" } },
+    { key: "house-party-1", label: { en: "Say yes to an invitation and arrive briefly", he: "לומר כן להזמנה ולהגיע לזמן קצר" } },
+    { key: "house-party-2", label: { en: "Stay for 30 minutes and talk to one person", he: "להישאר חצי שעה ולדבר עם אדם אחד" } },
+    { key: "house-party-3", label: { en: "Stay for an hour and talk to a few people", he: "להישאר שעה ולדבר עם כמה אנשים" } },
+    { key: "house-party-4", label: { en: "Stay through the busy part of the evening", he: "להישאר בשעות העמוסות של הערב" } },
+    { key: "house-party-5", label: { en: "Host a small gathering yourself", he: "לארח התכנסות קטנה בעצמך" } },
   ],
   // TODO(clinical-review): supermarket exposure ladder — announcements, crowds
   supermarket: [
-    { key: "supermarket-1", label: { en: "Walk through and buy one item", he: "עבור בסופר וקנה פריט אחד" } },
-    { key: "supermarket-2", label: { en: "Do a short shop during quiet hours", he: "עשה קנייה קצרה בשעות שקטות" } },
-    { key: "supermarket-3", label: { en: "Shop during regular hours", he: "עשה קניות בשעות הרגילות" } },
-    { key: "supermarket-4", label: { en: "Shop when the store is busy", he: "עשה קניות כשהסופר עמוס" } },
-    { key: "supermarket-5", label: { en: "Do the family shopping on a weekend", he: "עשה את קניות המשפחה בסוף השבוע" } },
+    { key: "supermarket-1", label: { en: "Walk through and buy one item", he: "לעבור בסופר ולקנות פריט אחד" } },
+    { key: "supermarket-2", label: { en: "Do a short shop during quiet hours", he: "לעשות קנייה קצרה בשעות שקטות" } },
+    { key: "supermarket-3", label: { en: "Shop during regular hours", he: "לעשות קניות בשעות הרגילות" } },
+    { key: "supermarket-4", label: { en: "Shop when the store is busy", he: "לעשות קניות כשהסופר עמוס" } },
+    { key: "supermarket-5", label: { en: "Do the family shopping on a weekend", he: "לעשות את קניות המשפחה בסוף השבוע" } },
   ],
   // TODO(clinical-review): bus exposure ladder — enclosed, unpredictable
   bus: [
-    { key: "bus-1", label: { en: "Walk to a bus stop and wait 5 minutes", he: "לך לתחנת אוטובוס וחכה חמש דקות" } },
-    { key: "bus-2", label: { en: "Board and ride one stop", he: "עלה ותסע תחנה אחת" } },
-    { key: "bus-3", label: { en: "Ride during quiet hours for a longer route", he: "סע בשעות שקטות לקו ארוך יותר" } },
-    { key: "bus-4", label: { en: "Ride during rush hour for one stop", he: "סע בשעות עומס תחנה אחת" } },
-    { key: "bus-5", label: { en: "Take a full route during rush hour", he: "עשה קו שלם בשעות העומס" } },
+    { key: "bus-1", label: { en: "Walk to a bus stop and wait 5 minutes", he: "ללכת לתחנת אוטובוס ולחכות חמש דקות" } },
+    { key: "bus-2", label: { en: "Board and ride one stop", he: "לעלות ולנסוע תחנה אחת" } },
+    { key: "bus-3", label: { en: "Ride during quiet hours for a longer route", he: "לנסוע בשעות שקטות לקו ארוך יותר" } },
+    { key: "bus-4", label: { en: "Ride during rush hour for one stop", he: "לנסוע בשעות עומס תחנה אחת" } },
+    { key: "bus-5", label: { en: "Take a full route during rush hour", he: "לעשות קו שלם בשעות העומס" } },
   ],
 };
 

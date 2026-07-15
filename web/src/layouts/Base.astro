@@ -16,6 +16,8 @@ const { title, description = "A quiet place to be again. Gradual, consent-based 
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -27,8 +29,17 @@ const { title, description = "A quiet place to be again. Gradual, consent-based 
   <body class="min-h-screen flex flex-col">
     <header class="px-6 sm:px-12 pt-8 pb-4">
       <nav class="max-w-5xl mx-auto flex items-center justify-between">
-        <a href="/" class="font-display text-3xl sm:text-4xl tracking-tight leading-none">
-          Hear<span class="text-accent">O</span>
+        <a href="/" class="flex items-center gap-2.5">
+          <img
+            src="/logo.png"
+            alt="HearO"
+            width="40"
+            height="40"
+            class="h-9 w-9 sm:h-10 sm:w-10"
+          />
+          <span class="font-display text-3xl sm:text-4xl tracking-tight leading-none">
+            Hear<span class="text-accent">O</span>
+          </span>
         </a>
         <div class="flex items-center gap-6">
           <a href="/about" class="text-base text-text-mute hover:text-text transition-colors">
@@ -48,7 +59,10 @@ const { title, description = "A quiet place to be again. Gradual, consent-based 
     <footer class="px-6 sm:px-12 py-12 mt-16 border-t border-text-mute/20">
       <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-start justify-between gap-6 text-sm text-text-mute">
         <div>
-          <p class="font-display text-base text-text mb-1">HearO</p>
+          <div class="flex items-center gap-2 mb-1">
+            <img src="/logo.png" alt="" width="24" height="24" class="h-6 w-6" />
+            <p class="font-display text-base text-text">HearO</p>
+          </div>
           <p>A quiet place to be again.</p>
         </div>
         <div class="flex gap-6">

@@ -11,7 +11,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Carousel from "react-native-reanimated-carousel";
 import { useTranslation } from "react-i18next";
 
-import { localize, Scene, SceneKey } from "@/lib/content/content";
+import { localize, Scene, SceneKey, SCENES_WITH_BAKED_CAPTION } from "@/lib/content/content";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -79,7 +79,6 @@ function ScenePage({
     typeof scene.media.still === "string" ? { uri: scene.media.still } : scene.media.still;
   const done = progress?.done ?? 0;
   const total = progress?.total ?? 0;
-  const pct = total > 0 ? (done / total) * 100 : 0;
 
   // Tap-vs-swipe: the card lives inside a horizontally-panning carousel, so a
   // plain Pressable fired onPress at the end of a swipe ("too sensitive"). We
@@ -120,7 +119,19 @@ function ScenePage({
       }}
     >
       {source ? (
-        <Image source={source} style={StyleSheet.absoluteFill} contentFit="cover" transition={400} />
+        <Image
+          source={source}
+          // TEMP(roy): captioned stills are drawn oversized + top-anchored so the
+          // card's overflow:hidden crops the bottom ~15% (the baked English title).
+          style={
+            SCENES_WITH_BAKED_CAPTION.has(scene.key)
+              ? { position: "absolute", top: 0, left: 0, right: 0, height: CARD_HEIGHT / 0.85 }
+              : StyleSheet.absoluteFill
+          }
+          contentFit="cover"
+          contentPosition="top"
+          transition={400}
+        />
       ) : null}
       <LinearGradient
         colors={["rgba(20,15,12,0)", "rgba(20,15,12,0.92)"]}
@@ -150,31 +161,24 @@ function ScenePage({
         >
           {t("companion.stepsCount", { count: total, done, total })}
         </Text>
-        <View
-          style={{
-            marginTop: 10,
-            height: 4,
-            borderRadius: 2,
-            backgroundColor: "rgba(244,238,227,0.25)",
-            overflow: "hidden",
-          }}
-        >
-          <View style={{ width: `${pct}%`, height: 4, backgroundColor: tokens.sage }} />
-        </View>
-        <View
-          style={{
-            marginTop: 16,
-            alignSelf: "flex-start",
-            paddingVertical: 10,
-            paddingHorizontal: 20,
-            borderRadius: 999,
-            backgroundColor: tokens.sceneText,
-          }}
-        >
-          <Text style={{ color: tokens.bg, fontFamily: fonts.bodyMedium, fontSize: 14 }}>
-            {t("companion.open")}
-          </Text>
-        </View>
+        {/* Segmented progress — one pip per step, filled up to `done`. Reads as
+            "X of Y" at a glance and shows the total even at zero progress
+            (a single empty bar looked broken). */}
+        {total > 0 ? (
+          <View style={{ marginTop: 12, flexDirection: "row", gap: 5 }}>
+            {Array.from({ length: total }).map((_, i) => (
+              <View
+                key={i}
+                style={{
+                  flex: 1,
+                  height: 5,
+                  borderRadius: 3,
+                  backgroundColor: i < done ? tokens.sage : "rgba(244,238,227,0.3)",
+                }}
+              />
+            ))}
+          </View>
+        ) : null}
       </View>
     </View>
   );

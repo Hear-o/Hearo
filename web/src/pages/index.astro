@@ -17,23 +17,28 @@ import Base from "../layouts/Base.astro";
         HearO uses gradual, consent-based sound exposure. Ambient soundscapes layered with sounds you've chosen to encounter, guided by a calm voice and watched over by your Apple Watch pulse. When your body starts to spike, the app responds: voice softens, breathing slows, intensity drops. No popups. No alarms. The app does the work you shouldn't have to.
       </p>
 
-      <div class="mt-12 flex flex-col sm:flex-row gap-3">
-        <button
-          type="button"
-          disabled
-          class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full border border-text-mute/40 text-text-mute cursor-not-allowed bg-bg-elev/60"
-          aria-label="Apple App Store, coming soon"
+      <div class="mt-12 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+        <a
+          href="https://apps.apple.com/il/app/hearo/id6778679218?l=he"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-block transition-opacity hover:opacity-90"
+          aria-label="Download HearO on the App Store"
         >
-          <span class="text-sm">Coming to the App Store</span>
-        </button>
-        <button
-          type="button"
-          disabled
-          class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full border border-text-mute/40 text-text-mute cursor-not-allowed bg-bg-elev/60"
-          aria-label="Google Play, coming soon"
+          <img src="/appstore-badge.svg" alt="Download on the App Store" class="h-12 w-auto" />
+        </a>
+        <a
+          href="https://play.google.com/store/apps/details?id=com.techheal.hearo"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-block transition-opacity hover:opacity-90"
+          aria-label="Get HearO on Google Play"
         >
-          <span class="text-sm">Coming to Google Play</span>
-        </button>
+          <!-- Google's official badge SVG carries built-in clear-space, so it's
+               sized taller than the App Store badge to keep the visible buttons
+               the same height. -->
+          <img src="/googleplay-badge.svg" alt="Get it on Google Play" class="h-[60px] w-auto" />
+        </a>
       </div>
     </div>
   </section>

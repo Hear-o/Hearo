@@ -1144,7 +1144,7 @@ export function getCalmingProtocol(): CalmingProtocolStep[] {
 // /screening to gate above-threshold users into a clinician-recommendation
 // outcome screen. See docs/research/clinical-screening-review.md.
 
-export type PcPtsd5Content = {
+export type Pcl4Content = {
   /** Version tag bumped whenever the wording or cutoff changes. Persisted on
    *  every screening result so old records can be detected if the instrument
    *  is later revised. */
@@ -1162,14 +1162,14 @@ export type PcPtsd5Content = {
     yes: LocalizedText;
     no: LocalizedText;
   };
-  /** Step 2 — the 5 PC-PTSD-5 items, asked over the past month after a
+  /** Step 2 — the 4 short-PCL items, asked over the past month after a
    *  user-affirmed traumatic event. */
   items: {
     instructions: LocalizedText;
-    yes: LocalizedText;
-    no: LocalizedText;
+    /** Likert labels index 0 (Not at all) … 4 (Extremely). */
+    likertLabels: LocalizedText[];
     submit: LocalizedText;
-    /** Item text. Order matches the official VA PDF (questions 1–5). */
+    /** Item text. */
     questions: LocalizedText[];
   };
   outcomes: {
@@ -1186,9 +1186,10 @@ export type PcPtsd5Content = {
 };
 
 // TODO(supabase): `pc_ptsd5_content` table keyed by version + lang.
-const CLINICAL_SCREENING: PcPtsd5Content = {
-  version: "pc-ptsd-5-v1-2026-06-11",
-  cutoff: 3,
+const CLINICAL_SCREENING: Pcl4Content = {
+  version: "pc-ptsd-5-v2-2026-07-11",
+  // TODO(hirschman-review): cutoff 8/16 is provisional (avg "Moderately" across 4 items).
+  cutoff: 8,
   intro: {
     eyebrow: {
       en: "A quick check-in",
@@ -1196,24 +1197,20 @@ const CLINICAL_SCREENING: PcPtsd5Content = {
       he: "כמה שאלות לפני שמתחילים",
     },
     heading: {
-      en: "Five short questions\nbefore we begin.",
+      en: "Four short questions\nbefore we begin.",
       // TODO(hirschman-review)
-      he: "חמש שאלות קצרות\nלפני שמתחילים.",
+      he: "ארבע שאלות קצרות\nלפני שמתחילים.",
     },
     body: {
-      en: "Five quick questions. We use them to suggest whether to pair the app with talking to someone. Your answers stay on this device.",
+      en: "Four quick questions. We use them to suggest whether to pair the app with talking to someone. Your answers stay on this device.",
       // TODO(hirschman-review)
-      he: "חמש שאלות קצרות. עוזרות לנו להציע אם כדאי לשלב את האפליקציה עם שיחה עם מישהו. התשובות נשארות במכשיר.",
+      he: "ארבע שאלות קצרות. עוזרות לנו להציע אם כדאי לשלב את האפליקציה עם שיחה עם מישהו. התשובות נשארות במכשיר.",
     },
   },
   traumaExposure: {
-    // EN text is paraphrased from the VA PC-PTSD-5 intro (the official wording
-    // is a long enumeration of trauma examples; we condense for mobile while
-    // preserving the clinical content). The 5 symptom items below are verbatim.
     prompt: {
-      en: "Sometimes things happen to people that are unusually frightening, horrible, or traumatic. A serious accident, a physical or sexual assault, war, seeing someone hurt or killed, losing a loved one to violence.\n\nHave you ever experienced something like that?",
-      // TODO(hirschman-review)
-      he: "לפעמים קורים לאנשים דברים מפחידים, נוראיים או טראומטיים במיוחד. תאונה חמורה, תקיפה גופנית או מינית, מלחמה, ראייה של מישהו שנפצע או נהרג, אובדן של אדם אהוב באלימות.\n\nהאם אי פעם חווית משהו כזה?",
+      en: "Sometimes people experience stressful, difficult, or traumatic events. For example - an accident, physical or sexual assault, war, or the loss of a loved one.\n\nHave you ever experienced something like that?",
+      he: "לפעמים קורים לאנשים אירועים מלחיצים, קשים או טראומטיים. למשל - תאונה, תקיפה גופנית או מינית, מלחמה, אבדן של אדם אהוב.\n\nהאם אי פעם חווית משהו כזה?",
     },
     yes: { en: "Yes", he: "כן" },
     no: { en: "No", he: "לא" },
@@ -1221,42 +1218,35 @@ const CLINICAL_SCREENING: PcPtsd5Content = {
   items: {
     instructions: {
       en: "In the past month, have you…",
-      // TODO(hirschman-review)
       he: "בחודש האחרון, האם…",
     },
-    yes: { en: "Yes", he: "כן" },
-    no: { en: "No", he: "לא" },
+    likertLabels: [
+      { en: "Not at all",   he: "בכלל לא" },
+      { en: "A little bit", he: "במידה מועטה" },
+      { en: "Moderately",   he: "באופן בינוני" },
+      { en: "Quite a bit",  he: "במידה רבה" },
+      { en: "Extremely",    he: "באופן קיצוני" },
+    ],
     submit: {
       en: "Done",
-      // TODO(hirschman-review)
       he: "סיום",
     },
-    // VA PC-PTSD-5 items, verbatim EN. HE drafted from the source.
     questions: [
       {
-        en: "Had nightmares about the event(s), or thought about the event(s) when you did not want to?",
-        // TODO(hirschman-review)
-        he: "היו לך סיוטים על האירוע, או חשבת עליו כשלא רצית?",
+        en: "Have you suddenly acted or felt as if the stressful experience were actually happening again (as if you were actually reliving it)?",
+        he: "האם התנהגת או הרגשת פתאום כאילו החוויה הטראומטית ממש שבה ומתרחשת שוב (כאילו את/ה ממש חי/ה אותו שוב)?",
       },
       {
-        en: "Tried hard not to think about the event(s), or went out of your way to avoid situations that reminded you of the event(s)?",
-        // TODO(hirschman-review)
-        he: "השתדלת מאוד לא לחשוב על האירוע, או הלכת רחוק מדרכך כדי להימנע ממצבים שהזכירו לך אותו?",
+        en: "Have you avoided thoughts, feelings, or physical sensations that reminded you of the stressful experience?",
+        he: "האם נמנעת ממחשבות, רגשות או תחושות גופניות שהזכירו לך את החוויה הטראומטית (כלומר גורמים מתוך עצמך ולא גורמים חיצוניים)?",
       },
       {
-        en: "Been constantly on guard, watchful, or easily startled?",
-        // TODO(hirschman-review)
-        he: "היית כל הזמן בכוננות, ערני, או נבהלת בקלות?",
+        en: "Do you experience a sense of distance or detachment from other people?",
+        he: "האם את/ה חווה תחושה של ריחוק או ניתוק מאנשים אחרים?",
       },
       {
-        en: "Felt numb or detached from people, activities, or your surroundings?",
-        // TODO(hirschman-review)
-        he: "הרגשת חוסר תחושה או ניתוק מאנשים, מפעילויות או מהסביבה שלך?",
-      },
-      {
-        en: "Felt guilty or unable to stop blaming yourself or others for the event(s) or any problems the event(s) may have caused?",
-        // TODO(hirschman-review)
-        he: "הרגשת אשמה, או לא הצלחת להפסיק להאשים את עצמך או אחרים בגלל האירוע או הבעיות שנגרמו ממנו?",
+        en: "Do you feel irritable or angry, or act aggressively?",
+        he: "האם את/ה מרגיש/ה עצבני/ת או כעסן/ית או מתנהג/ת בתוקפנות?",
       },
     ],
   },
@@ -1302,9 +1292,8 @@ const CLINICAL_SCREENING: PcPtsd5Content = {
         he: "אתה לא חייב\nלעשות את זה לבד.",
       },
       body: {
-        en: "What you've shared sounds like something a conversation with someone trained in trauma could really help with. We work with the Mativ Institute and can put you in touch. The app is here either way. You can use it on its own, or alongside that support.",
-        // TODO(hirschman-review)
-        he: "מה ששיתפת נשמע כמו משהו ששיחה עם איש מקצוע מאומן בטראומה יכולה לעזור איתו. אנחנו עובדים עם מכון מטיב ויכולים לחבר ביניכם. האפליקציה תהיה כאן בכל מקרה. תוכל להשתמש בה בנפרד, או לצד התמיכה הזו.",
+        en: "Our app can try to support and assist you in coping. It can be used alongside therapy, or independently. The app was built in collaboration with the Metiv Center, and we can connect you to the center if you need it.",
+        he: "האפליקציה שלנו יכולה לנסות לתמוך ולעזור בהתמודדות. אפשר להשתמש בה גם לצד טיפול, או בנפרד. האפליקציה נבנתה בשיתוף מרכז מטיב ונוכל לחבר אותך למרכז אם תצטרך.",
       },
       continueLabel: {
         en: "Continue to the app",
@@ -1316,21 +1305,21 @@ const CLINICAL_SCREENING: PcPtsd5Content = {
 };
 
 // TODO(supabase): `supabase.from('pc_ptsd5_content').select('*').eq('version', '...').single()`
-export function getClinicalScreening(): PcPtsd5Content {
+export function getClinicalScreening(): Pcl4Content {
   return CLINICAL_SCREENING;
 }
 
-/** Compute the PC-PTSD-5 outcome from raw step-1 + step-2 answers. Pure
- *  function; the route calls this before persisting + rendering step 3. */
+/** Compute the short-PCL outcome from raw step-1 + step-2 Likert answers.
+ *  Each answer is 0–4; score is the sum (max 16 for 4 items). */
 export function computeClinicalScreeningOutcome(
   traumaExposure: boolean,
-  answers: boolean[],
+  answers: number[],
   cutoff: number,
 ): { score: number; outcome: "no-trauma" | "below-threshold" | "above-threshold" } {
   if (!traumaExposure) {
     return { score: 0, outcome: "no-trauma" };
   }
-  const score = answers.filter(Boolean).length;
+  const score = answers.reduce((s, a) => s + a, 0);
   const outcome = score >= cutoff ? "above-threshold" : "below-threshold";
   return { score, outcome };
 }

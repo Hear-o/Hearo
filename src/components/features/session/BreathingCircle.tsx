@@ -36,7 +36,7 @@ export function BreathingCircle({ flash = 0, slow = false, paused = false }: Pro
       cancelAnimation(scale);
       return;
     }
-    const inhale = slow ? 5000 : 4000;
+    const inhale = slow ? 7000 : 6000;
     const exhale = slow ? 8000 : 6000;
     scale.value = withRepeat(
       withSequence(
@@ -51,7 +51,7 @@ export function BreathingCircle({ flash = 0, slow = false, paused = false }: Pro
   // Drive the guidance text in lockstep with the scale animation.
   useEffect(() => {
     if (paused) return;
-    const inhale = slow ? 5000 : 4000;
+    const inhale = slow ? 7000 : 6000;
     const exhale = slow ? 8000 : 6000;
 
     setPhase("in");

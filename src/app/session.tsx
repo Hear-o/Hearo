@@ -3,6 +3,7 @@ import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 
 import { BreathingCircle } from "@/components/features/session/BreathingCircle";
 import { ExitSessionConfirm } from "@/components/features/session/ExitSessionConfirm";
@@ -168,6 +169,12 @@ export default function Session() {
   const ADAPTIVE_LOOP_MS = sessionTimingRef.current.adaptiveMs;
   const TOTAL_SESSION_MS = sessionTimingRef.current.totalMs;
 
+  // Keep the screen on for the duration of the session.
+  useEffect(() => {
+    void activateKeepAwakeAsync();
+    return () => { deactivateKeepAwake(); };
+  }, []);
+
   // ── Machine state ──────────────────────────────────────────────────────
 
   // /preparing now handles asset cache + buffer decode + audio activation
@@ -205,6 +212,7 @@ export default function Session() {
   const startedAt = useRef(Date.now());
   const pausedSince = useRef<number | null>(null);
   const manualReturnTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const postTriggerDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const manualCountdownInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   // Stores the dB ceiling for the active trigger sound. The slider used to
   // multiply this; now that the slider is gone, the ceiling is the literal
@@ -420,8 +428,12 @@ export default function Session() {
             setLastBurstApproachingAt(Date.now());
           },
           onBurstEnd: () => {
-            // Surface the post-trigger grounding caption for ~10s.
-            setLastBurstEndedAt(Date.now());
+            // Delay the post-trigger caption by 3s so it doesn't appear
+            // on top of the still-fading trigger sound.
+            if (postTriggerDelayRef.current) clearTimeout(postTriggerDelayRef.current);
+            postTriggerDelayRef.current = setTimeout(() => {
+              setLastBurstEndedAt(Date.now());
+            }, 3000);
             // Close the lead-in window — the post-burst caption takes over.
             setLastBurstApproachingAt(null);
             // v1.1.5: play the calming/end voice clip after the burst so the
@@ -463,6 +475,7 @@ export default function Session() {
     return () => {
       cancelled = true;
       clearTimeout(timerId);
+      if (postTriggerDelayRef.current) clearTimeout(postTriggerDelayRef.current);
     };
   }, [machineState, consentedSounds, engine]);
 

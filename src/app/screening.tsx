@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
 import { Pcl4Form } from "@/components/features/screening/Pcl4Form";
 import {
@@ -106,14 +106,15 @@ export default function Screening() {
 
   return (
     <SafeAreaView className="flex-1 bg-bg">
-      <View className="flex-row justify-between items-center pt-2 px-8">
-        <CrisisAffordance />
-        {isLongStep && (
-          <Pressable onPress={goBack} hitSlop={12}>
-            <Icon name="arrow-left" size={20} color={tokens.accent} />
-          </Pressable>
-        )}
-      </View>
+      <ScreenHeader
+        left={
+          isLongStep ? (
+            <Pressable onPress={goBack} hitSlop={12}>
+              <Icon name="arrow-left" size={20} color={tokens.accent} />
+            </Pressable>
+          ) : undefined
+        }
+      />
 
       {step.kind === "intro" && (
         <IntroStep lang={lang} onAnswer={handleTraumaExposureAnswer} />
@@ -149,7 +150,7 @@ function IntroStep({
   return (
     <ScrollView
       contentContainerStyle={{ paddingHorizontal: 32, paddingTop: 24, paddingBottom: 24 }}
-      showsVerticalScrollIndicator={false}
+      showsVerticalScrollIndicator={true}
     >
       <Text
         style={{
@@ -359,7 +360,7 @@ function AboveThresholdOutcome({ lang, onContinue }: { lang: string; onContinue:
   return (
     <ScrollView
       contentContainerStyle={{ paddingHorizontal: 32, paddingTop: 24, paddingBottom: 24, flexGrow: 1 }}
-      showsVerticalScrollIndicator={false}
+      showsVerticalScrollIndicator={true}
     >
       <View className="flex-1 justify-center">
         <Text

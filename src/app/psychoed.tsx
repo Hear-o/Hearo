@@ -4,7 +4,7 @@ import { GestureDetector } from "react-native-gesture-handler";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { useSwipeForward } from "@/hooks/useSwipeForward";
 import { getPsychoEducation, localize, SceneKey } from "@/lib/content/content";
 import { setPsychoEducationSeen } from "@/lib/storage/storage";
@@ -44,13 +44,11 @@ export default function PsychoEducation() {
     <SafeAreaView className="flex-1 bg-bg">
       <GestureDetector gesture={swipeGesture}>
       <View className="flex-1 px-8">
-        <View className="flex-row justify-between items-center pt-2">
-          <CrisisAffordance />
-        </View>
+        <ScreenHeader paddingX={0} />
 
         <ScrollView
           contentContainerStyle={{ paddingTop: 24, paddingBottom: 8 }}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true}
         >
           <Text
             style={{

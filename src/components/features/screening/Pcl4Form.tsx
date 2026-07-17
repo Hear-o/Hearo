@@ -40,7 +40,7 @@ export function Pcl4Form({ onSubmit }: Props) {
   return (
     <ScrollView
       contentContainerStyle={{ paddingHorizontal: 32, paddingBottom: 32 }}
-      showsVerticalScrollIndicator={false}
+      showsVerticalScrollIndicator={true}
     >
       <Text
         style={{

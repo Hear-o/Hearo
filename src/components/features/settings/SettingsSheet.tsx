@@ -460,6 +460,8 @@ export function SettingsSheet() {
                   mode="time"
                   display="spinner"
                   onChange={handleInlinePickerChange}
+                  // App is light-only; keep the spinner legible under system Dark Mode.
+                  themeVariant="light"
                 />
               </View>
             ) : (

@@ -11,27 +11,8 @@ type Props = {
   testID?: string;
 };
 
-/** The single source of truth for the app's "move forward" affordance —
- *  welcome's Begin, permissions' Continue, setup's Ready. These used to be
- *  hand-rolled per screen and drifted in text size / lineHeight; this is the
- *  one place that decides what "forward" looks like.
- *
- *  RTL positioning — the app forces native RTL for Hebrew (forceRTL=true
- *  in AppDelegate.swift via plugins/withRtl.js), with
- *  makeRTLFlipLeftAndRightStyles=false. Under that config Yoga mirrors
- *  cross-axis flex alignment (flex-start/flex-end) but leaves physical
- *  left/right/margin untouched. So `alignSelf: "flex-end"` is the single
- *  correct value in BOTH directions: LTR pins physical right (English
- *  forward CTA), RTL mirrors it to physical left (Hebrew forward CTA) —
- *  no isRTL branch. This is the same writing-direction-relative primitive
- *  permissions.tsx and companion/[scene].tsx already rely on.
- *
- *  alignSelf is load-bearing for a second reason: ForwardCtaFooter's
- *  wrapping View defaults to alignItems: "stretch", which would make this
- *  Pressable fill 100% width. flex-end overrides that stretch, shrinking
- *  the Pressable to its content so it can pin to an edge at all. (Earlier
- *  marginLeft/marginRight: "auto" attempts silently did nothing because
- *  stretch left no free space for an auto margin to consume.) */
+// alignSelf "flex-end" is writing-direction-relative: physical-right in LTR,
+// mirrored to physical-left in RTL — one value, no isRTL branch.
 export function ForwardCta({ label, onPress, disabled, accessibilityHint, testID }: Props) {
   return (
     <Pressable

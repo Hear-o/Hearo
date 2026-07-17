@@ -123,11 +123,11 @@ export default function Screening() {
       {step.kind === "items" && <Pcl4Form onSubmit={handleItemsSubmit} />}
 
       {step.kind === "outcome" && step.outcome === "no-trauma" && (
-        <NoTraumaOutcome lang={lang} onContinue={handleContinue} onBack={goBack} />
+        <NoTraumaOutcome lang={lang} onContinue={handleContinue} />
       )}
 
       {step.kind === "outcome" && step.outcome === "below-threshold" && (
-        <BelowThresholdOutcome lang={lang} onContinue={handleContinue} onBack={goBack} />
+        <BelowThresholdOutcome lang={lang} onContinue={handleContinue} />
       )}
 
       {step.kind === "outcome" && step.outcome === "above-threshold" && (
@@ -245,15 +245,7 @@ function IntroStep({
 
 // ── Step 3: outcome screens ───────────────────────────────────────────────────
 
-function NoTraumaOutcome({
-  lang,
-  onContinue,
-  onBack,
-}: {
-  lang: string;
-  onContinue: () => void;
-  onBack: () => void;
-}) {
+function NoTraumaOutcome({ lang, onContinue }: { lang: string; onContinue: () => void }) {
   const c = getClinicalScreening().outcomes.noTrauma;
   return (
     <ProseOutcome
@@ -262,20 +254,11 @@ function NoTraumaOutcome({
       body={c.body}
       continueLabel={c.continueLabel}
       onContinue={onContinue}
-      onBack={onBack}
     />
   );
 }
 
-function BelowThresholdOutcome({
-  lang,
-  onContinue,
-  onBack,
-}: {
-  lang: string;
-  onContinue: () => void;
-  onBack: () => void;
-}) {
+function BelowThresholdOutcome({ lang, onContinue }: { lang: string; onContinue: () => void }) {
   const c = getClinicalScreening().outcomes.belowThreshold;
   return (
     <ProseOutcome
@@ -284,7 +267,6 @@ function BelowThresholdOutcome({
       body={c.body}
       continueLabel={c.continueLabel}
       onContinue={onContinue}
-      onBack={onBack}
     />
   );
 }
@@ -295,14 +277,12 @@ function ProseOutcome({
   body,
   continueLabel,
   onContinue,
-  onBack,
 }: {
   lang: string;
   heading: { en: string; he: string };
   body: { en: string; he: string };
   continueLabel: { en: string; he: string };
   onContinue: () => void;
-  onBack: () => void;
 }) {
   return (
     <View className="flex-1 px-8 pt-6 pb-6">
@@ -314,6 +294,7 @@ function ProseOutcome({
             fontSize: 28,
             lineHeight: 38,
             marginBottom: 16,
+            textAlign: "left",
           }}
         >
           {localize(heading, lang)}
@@ -324,33 +305,28 @@ function ProseOutcome({
             fontFamily: fonts.body,
             fontSize: 16,
             lineHeight: 26,
+            textAlign: "left",
           }}
         >
           {localize(body, lang)}
         </Text>
       </View>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-        <Pressable onPress={onBack} hitSlop={12}>
-          <Icon name="arrow-left" size={22} color={tokens.accent} />
-        </Pressable>
-        <Pressable
-          onPress={onContinue}
-          hitSlop={8}
-          accessibilityRole="button"
-          style={{
-            flex: 1,
-            borderWidth: 1,
-            borderColor: tokens.accent,
-            borderRadius: 999,
-            paddingVertical: 16,
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 18 }}>
-            {localize(continueLabel, lang)}
-          </Text>
-        </Pressable>
-      </View>
+      <Pressable
+        onPress={onContinue}
+        hitSlop={8}
+        accessibilityRole="button"
+        style={{
+          borderWidth: 1,
+          borderColor: tokens.accent,
+          borderRadius: 999,
+          paddingVertical: 16,
+          alignItems: "center",
+        }}
+      >
+        <Text style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 18 }}>
+          {localize(continueLabel, lang)}
+        </Text>
+      </Pressable>
     </View>
   );
 }

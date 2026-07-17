@@ -125,6 +125,13 @@ function Dots({ count, currentKey }: { count: number; currentKey: SceneKey }) {
   return (
     <View
       style={{
+        // react-native-reanimated-carousel is RTL-agnostic: it lays items out
+        // by index left-to-right regardless of I18nManager. Under the app's
+        // forced RTL, a plain flexDirection: "row" here reverses, so dot 0
+        // lands physical-right while carousel item 0 is physical-left — the
+        // active dot then travels opposite the swipe. Pinning the row to LTR
+        // keeps dot order aligned with the carousel's index order both ways.
+        direction: "ltr",
         flexDirection: "row",
         justifyContent: "center",
         marginTop: 14,

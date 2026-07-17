@@ -10,10 +10,12 @@ import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { ForwardCta } from "@/components/common/ForwardCta";
 import { ForwardCtaFooter } from "@/components/common/ForwardCtaFooter";
 import { Icon } from "@/components/common/Icon";
+import { NameTextInput } from "@/components/common/NameTextInput";
 import { useSwipeForward } from "@/hooks/useSwipeForward";
 import * as healthKit from "@/lib/integrations/healthKit";
 import * as reminders from "@/lib/integrations/reminders";
 import { getClinicalScreeningResult } from "@/lib/storage/storage";
+import { useNameDraft } from "@/lib/ui/displayName";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 type Status = "idle" | "granted" | "denied";
@@ -109,6 +111,8 @@ export default function Permissions() {
   const [pulseStatus, setPulseStatus] = useState<Status>("idle");
   const [notifsStatus, setNotifsStatus] = useState<Status>("idle");
   const [showPicker, setShowPicker] = useState(false);
+
+  const nameDraft = useNameDraft();
 
   // On mount, read real notification permission so the row reflects actual
   // state, not just session-local UI state. Permission is what unlocks
@@ -226,6 +230,37 @@ export default function Permissions() {
           {t("permissions.title")}
         </Text>
 
+        <View className="mb-12">
+          <Text
+            style={{
+              color: tokens.text,
+              fontFamily: fonts.display,
+              fontSize: 22,
+              marginBottom: 8,
+              textAlign: "left",
+            }}
+          >
+            {t("setup.nameQuestion")}
+          </Text>
+          <NameTextInput
+            value={nameDraft.value}
+            onChangeText={nameDraft.onChangeText}
+            onBlur={nameDraft.onBlur}
+            style={{ marginBottom: 6 }}
+          />
+          <Text
+            style={{
+              color: tokens.textMute,
+              fontFamily: fonts.body,
+              fontSize: 13,
+              lineHeight: 18,
+              textAlign: "left",
+            }}
+          >
+            {t("setup.nameHint")}
+          </Text>
+        </View>
+
         <PermissionRow
           title={t("permissions.pulseTitle")}
           why={t("permissions.pulseWhy")}
@@ -264,6 +299,8 @@ export default function Permissions() {
               value={defaultPickerValue}
               onChange={onTimePicked}
               display={Platform.OS === "ios" ? "spinner" : "default"}
+              // App is light-only; keep the spinner legible under system Dark Mode.
+              themeVariant="light"
             />
           </View>
         ) : null}

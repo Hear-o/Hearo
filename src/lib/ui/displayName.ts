@@ -115,3 +115,27 @@ export async function persistDisplayName(name: string | null): Promise<void> {
   const trimmed = name?.trim() ?? null;
   await setDisplayName(trimmed && trimmed.length > 0 ? trimmed : null);
 }
+
+/** Editable draft backed by the stored display name — pre-fills once resolved,
+ *  persists on blur. Shared by every screen with a name field (Permissions,
+ *  Settings) so they can't drift out of sync. */
+export function useNameDraft(): {
+  value: string;
+  onChangeText: (value: string) => void;
+  onBlur: () => void;
+} {
+  const { name: storedName } = useDisplayName();
+  const [value, setValue] = useState<string>(storedName ?? "");
+  useEffect(() => {
+    if (storedName !== null && storedName !== undefined && value === "") {
+      setValue(storedName);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storedName]);
+
+  return {
+    value,
+    onChangeText: setValue,
+    onBlur: () => void persistDisplayName(value),
+  };
+}

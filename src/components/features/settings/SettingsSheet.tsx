@@ -7,7 +7,6 @@ import {
   ScrollView,
   Switch,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import Animated, {
@@ -20,6 +19,7 @@ import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/dat
 import * as Updates from "expo-updates";
 import { useTranslation } from "react-i18next";
 
+import { NameTextInput } from "@/components/common/NameTextInput";
 import {
   clearSchedule,
   getSchedule,
@@ -33,7 +33,7 @@ import {
   setLanguagePreference,
   setReminderTime,
 } from "@/lib/storage/storage";
-import { persistDisplayName, useDisplayName } from "@/lib/ui/displayName";
+import { useNameDraft } from "@/lib/ui/displayName";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
@@ -94,19 +94,7 @@ export function SettingsSheet() {
   const translateY = useSharedValue(SHEET_HEIGHT);
   const backdropOpacity = useSharedValue(0);
 
-  // Name input — persisted on blur. Mirrors the previous Setup logic.
-  const { name: storedName } = useDisplayName();
-  const [nameDraft, setNameDraft] = useState<string>(storedName ?? "");
-  useEffect(() => {
-    if (storedName !== null && storedName !== undefined && nameDraft === "") {
-      setNameDraft(storedName);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storedName]);
-
-  function handleNameBlur() {
-    void persistDisplayName(nameDraft);
-  }
+  const nameDraft = useNameDraft();
 
   // Reminder state — read on open, refreshed when picker saves or turns off.
   // v1.1.6: redesigned as a Switch + always-visible iOS spinner. Previous
@@ -298,24 +286,10 @@ export function SettingsSheet() {
           >
             {t("settings.nameLabel")}
           </Text>
-          <TextInput
-            value={nameDraft}
-            onChangeText={setNameDraft}
-            onBlur={handleNameBlur}
-            placeholder={t("setup.namePlaceholder")}
-            placeholderTextColor={tokens.textMute + "88"}
-            autoCapitalize="words"
-            autoCorrect={false}
-            returnKeyType="done"
-            onSubmitEditing={handleNameBlur}
-            style={{
-              color: tokens.text,
-              fontFamily: fonts.body,
-              fontSize: 18,
-              borderBottomWidth: 1,
-              borderBottomColor: tokens.textMute + "55",
-              paddingVertical: 8,
-            }}
+          <NameTextInput
+            value={nameDraft.value}
+            onChangeText={nameDraft.onChangeText}
+            onBlur={nameDraft.onBlur}
           />
           <Text
             style={{

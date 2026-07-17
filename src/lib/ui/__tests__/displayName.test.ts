@@ -23,13 +23,14 @@ jest.mock("expo-router", () => ({
   },
 }));
 
-import { renderHook, waitFor } from "@testing-library/react-native";
+import { act, renderHook, waitFor } from "@testing-library/react-native";
 
 import {
   parseDisplayNameFromDevice,
   persistDisplayName,
   resolveDisplayName,
   useDisplayName,
+  useNameDraft,
 } from "@/lib/ui/displayName";
 import { getDisplayName, setDisplayName } from "@/lib/storage/storage";
 
@@ -153,6 +154,33 @@ describe("useDisplayName", () => {
     const { result } = renderHook(() => useDisplayName());
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.name).toBe("Set");
+  });
+});
+
+describe("useNameDraft", () => {
+  beforeEach(() => {
+    mockGet.mockReset();
+    mockSet.mockReset();
+    mockSet.mockResolvedValue(undefined);
+    mockDeviceName = null;
+  });
+
+  it("pre-fills the draft from the resolved stored name", async () => {
+    mockGet.mockResolvedValue("Omer");
+    const { result } = renderHook(() => useNameDraft());
+    await waitFor(() => expect(result.current.value).toBe("Omer"));
+  });
+
+  it("persists the current draft on blur", async () => {
+    mockGet.mockResolvedValue(null);
+    const { result } = renderHook(() => useNameDraft());
+    await waitFor(() => expect(mockGet).toHaveBeenCalled());
+
+    act(() => result.current.onChangeText("Dana"));
+    await waitFor(() => expect(result.current.value).toBe("Dana"));
+
+    act(() => result.current.onBlur());
+    await waitFor(() => expect(mockSet).toHaveBeenCalledWith("Dana"));
   });
 });
 

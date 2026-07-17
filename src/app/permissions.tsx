@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { ForwardCta } from "@/components/common/ForwardCta";
+import { ForwardCtaFooter } from "@/components/common/ForwardCtaFooter";
 import { Icon } from "@/components/common/Icon";
 import { useSwipeForward } from "@/hooks/useSwipeForward";
 import * as healthKit from "@/lib/integrations/healthKit";
@@ -291,9 +292,9 @@ export default function Permissions() {
           (outside the ScrollView) so Continue sits at the same screen
           position as Welcome's Begin regardless of how much permission-row
           content is above it. */}
-      <View style={{ paddingHorizontal: 32, paddingBottom: 48 }}>
+      <ForwardCtaFooter>
         <ForwardCta label={t("permissions.continue")} onPress={handleContinue} />
-      </View>
+      </ForwardCtaFooter>
       </View>
       </GestureDetector>
     </SafeAreaView>

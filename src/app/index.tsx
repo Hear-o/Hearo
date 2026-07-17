@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { ForwardCta } from "@/components/common/ForwardCta";
+import { ForwardCtaFooter } from "@/components/common/ForwardCtaFooter";
 import { useSwipeForward } from "@/hooks/useSwipeForward";
 import {
   getClinicalScreeningResult,
@@ -70,9 +71,9 @@ export default function Welcome() {
           </Text>
         </View>
 
-        <View className="pb-12">
+        <ForwardCtaFooter>
           <ForwardCta label={t("welcome.begin")} onPress={handleBegin} />
-        </View>
+        </ForwardCtaFooter>
       </View>
       </GestureDetector>
     </SafeAreaView>

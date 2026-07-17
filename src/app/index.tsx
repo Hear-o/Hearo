@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { I18nManager, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GestureDetector } from "react-native-gesture-handler";
 import { useTranslation } from "react-i18next";
@@ -73,7 +73,7 @@ export default function Welcome() {
           </Text>
         </View>
 
-        <View className="pb-12">
+        <View className="pb-12" style={{ alignItems: I18nManager.isRTL ? "flex-end" : "flex-start" }}>
           <Pressable onPress={handleBegin}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
               <Text

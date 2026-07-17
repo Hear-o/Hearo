@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { Linking, Platform, Pressable, Text, View } from "react-native";
+import { Linking, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GestureDetector } from "react-native-gesture-handler";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
 import { useSwipeForward } from "@/hooks/useSwipeForward";
 import * as healthKit from "@/lib/integrations/healthKit";
@@ -192,10 +192,19 @@ export default function Permissions() {
   return (
     <SafeAreaView className="flex-1 bg-bg">
       <GestureDetector gesture={swipeGesture}>
-      <View className="flex-1 px-8">
-        <View className="pt-2 flex-row">
-          <CrisisAffordance />
-        </View>
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 32 }}
+        showsVerticalScrollIndicator={true}
+      >
+        <ScreenHeader
+          paddingX={0}
+          left={
+            <Pressable onPress={() => router.back()} hitSlop={12}>
+              <Icon name="arrow-left" size={20} color={tokens.accent} />
+            </Pressable>
+          }
+        />
         <View className="pt-4">
           <View style={{ width: 28, height: 1, backgroundColor: tokens.accent }} />
         </View>
@@ -275,25 +284,16 @@ export default function Permissions() {
             users skip the questionnaire. The screening route itself routes
             back to /setup (any outcome) — Above-threshold users see a
             clinician-recommendation card first, but it's advisory, not a
-            block. See openspec/changes/add-clinical-screening/. */}
-        <View
-          style={{
-            paddingBottom: 16,
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <Pressable onPress={() => router.back()} hitSlop={12}>
-            <Icon name="arrow-left" size={20} color={tokens.accent} />
-          </Pressable>
+            block. See openspec/changes/add-clinical-screening/. Back nav
+            moved into ScreenHeader (v1.2.x) to match the rest of the app. */}
+        <View style={{ paddingBottom: 48, alignItems: "flex-end" }}>
           <Pressable onPress={handleContinue} hitSlop={8}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
               <Text
                 style={{
                   color: tokens.accent,
                   fontFamily: fonts.body,
-                  fontSize: 22,
+                  fontSize: 24,
                 }}
               >
                 {t("permissions.continue")}
@@ -302,7 +302,7 @@ export default function Permissions() {
             </View>
           </Pressable>
         </View>
-      </View>
+      </ScrollView>
       </GestureDetector>
     </SafeAreaView>
   );

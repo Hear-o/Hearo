@@ -268,7 +268,7 @@ export function SettingsSheet() {
 
         <ScrollView
           contentContainerStyle={{ paddingBottom: 12 }}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true}
           keyboardShouldPersistTaps="handled"
         >
           <Text

@@ -3,7 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
 import { SceneCarousel } from "@/components/features/setup/SceneCarousel";
 import { getScene, getSound, localize } from "@/lib/content/content";
@@ -72,16 +72,17 @@ export default function Setup() {
           (or swipe forward from /home once they reach it) instead. */}
       <ScrollView
         contentContainerStyle={{ paddingBottom: 24 }}
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={true}
       >
         {/* Nav element on the leading edge — LEFT in LTR, RIGHT in RTL.
             Crisis on the trailing edge. flex-row auto-flips via I18nManager. */}
-        <View className="px-8 pt-4 flex-row justify-between items-center">
-          <Pressable onPress={() => router.back()} hitSlop={12}>
-            <Icon name="arrow-left" size={22} color={tokens.text} />
-          </Pressable>
-          <CrisisAffordance />
-        </View>
+        <ScreenHeader
+          left={
+            <Pressable onPress={() => router.back()} hitSlop={12}>
+              <Icon name="arrow-left" size={22} color={tokens.accent} />
+            </Pressable>
+          }
+        />
 
         <View className="px-8 pt-6">
           <View style={{ width: 28, height: 1, backgroundColor: tokens.accent }} />

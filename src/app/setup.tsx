@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import { ScreenHeader } from "@/components/common/ScreenHeader";
+import { ForwardCta } from "@/components/common/ForwardCta";
 import { Icon } from "@/components/common/Icon";
 import { SceneCarousel } from "@/components/features/setup/SceneCarousel";
 import { getScene, getSound, localize } from "@/lib/content/content";
@@ -284,24 +285,11 @@ export default function Setup() {
         </View>
 
         <View className="px-8 pt-12 pb-6">
-          <Pressable
+          <ForwardCta
+            label={t("setup.ready")}
             onPress={handleReady}
-            hitSlop={8}
-            style={{ opacity: sounds.length === 0 ? 0.4 : 1 }}
-          >
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-              <Text
-                style={{
-                  color: tokens.accent,
-                  fontFamily: fonts.body,
-                  fontSize: 22,
-                }}
-              >
-                {t("setup.ready")}
-              </Text>
-              <Icon name="arrow-right" size={20} color={tokens.accent} />
-            </View>
-          </Pressable>
+            disabled={sounds.length === 0}
+          />
 
           <Pressable
             onPress={() => router.push("/psychoed")}

@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
 import {
   CompanionCarousel,
@@ -62,12 +62,13 @@ export default function CompanionIndex() {
 
   return (
     <SafeAreaView className="flex-1 bg-bg">
-      <View className="px-8 pt-4 flex-row justify-between items-center">
-        <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Icon name="arrow-left" size={22} color={tokens.text} />
-        </Pressable>
-        <CrisisAffordance />
-      </View>
+      <ScreenHeader
+        left={
+          <Pressable onPress={() => router.back()} hitSlop={12}>
+            <Icon name="arrow-left" size={22} color={tokens.accent} />
+          </Pressable>
+        }
+      />
 
       <View className="px-8 pt-6">
         <View style={{ width: 28, height: 1, backgroundColor: tokens.sage }} />

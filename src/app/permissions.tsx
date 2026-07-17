@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Linking, Platform, Pressable, Text, View } from "react-native";
+import { I18nManager, Linking, Platform, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GestureDetector } from "react-native-gesture-handler";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
@@ -279,7 +279,10 @@ export default function Permissions() {
         <Pressable
           onPress={handleContinue}
           hitSlop={8}
-          style={{ paddingBottom: 16 }}
+          style={{
+            paddingBottom: 16,
+            alignItems: I18nManager.isRTL ? "flex-end" : "flex-start",
+          }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
             <Text

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { I18nManager, Linking, Platform, Pressable, Text, View } from "react-native";
+import { Linking, Platform, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GestureDetector } from "react-native-gesture-handler";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
@@ -193,7 +193,10 @@ export default function Permissions() {
     <SafeAreaView className="flex-1 bg-bg">
       <GestureDetector gesture={swipeGesture}>
       <View className="flex-1 px-8">
-        <View className="pt-2 flex-row">
+        <View className="pt-2 flex-row justify-between items-center">
+          <Pressable onPress={() => router.back()} hitSlop={12}>
+            <Icon name="arrow-left" size={20} color={tokens.accent} />
+          </Pressable>
           <CrisisAffordance />
         </View>
         <View className="pt-4">
@@ -281,7 +284,7 @@ export default function Permissions() {
           hitSlop={8}
           style={{
             paddingBottom: 16,
-            alignItems: I18nManager.isRTL ? "flex-end" : "flex-start",
+            alignItems: "flex-end",
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>

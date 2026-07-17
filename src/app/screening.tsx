@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
+import { Icon } from "@/components/common/Icon";
 import { Pcl4Form } from "@/components/features/screening/Pcl4Form";
 import {
   computeClinicalScreeningOutcome,
@@ -79,6 +80,9 @@ export default function Screening() {
   return (
     <SafeAreaView className="flex-1 bg-bg">
       <View className="flex-row justify-between items-center pt-2 px-8">
+        <Pressable onPress={() => router.back()} hitSlop={12}>
+          <Icon name="arrow-left" size={20} color={tokens.accent} />
+        </Pressable>
         <CrisisAffordance />
       </View>
 

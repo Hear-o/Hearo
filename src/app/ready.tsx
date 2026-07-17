@@ -4,7 +4,7 @@ import { GestureDetector } from "react-native-gesture-handler";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
 import { useSwipeForward } from "@/hooks/useSwipeForward";
 import { getScene, getSound, localize } from "@/lib/content/content";
@@ -62,16 +62,18 @@ export default function Ready() {
     <SafeAreaView className="flex-1 bg-bg">
       <GestureDetector gesture={swipeGesture}>
         <View className="flex-1 px-8">
-          <View className="flex-row justify-between items-center pt-2">
-            <Pressable
-              hitSlop={16}
-              onPress={() => useSettingsSheetStore.getState().open()}
-              accessibilityLabel={t("settings.open")}
-            >
-              <Icon name="settings" size={28} color={tokens.text} />
-            </Pressable>
-            <CrisisAffordance />
-          </View>
+          <ScreenHeader
+            paddingX={0}
+            left={
+              <Pressable
+                hitSlop={16}
+                onPress={() => useSettingsSheetStore.getState().open()}
+                accessibilityLabel={t("settings.open")}
+              >
+                <Icon name="settings" size={28} color={tokens.text} />
+              </Pressable>
+            }
+          />
 
           <View className="pt-10">
             <View style={{ width: 28, height: 1, backgroundColor: tokens.accent }} />

@@ -3,7 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
 import { CalmingProtocol } from "@/components/features/calming/CalmingProtocol";
-import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
 import { useCalmingOverlay } from "@/hooks/useCalmingOverlay";
 import { useSessionStore } from "@/lib/storage/session-store";
@@ -42,12 +42,13 @@ export default function Calming() {
     <SafeAreaView className="flex-1 bg-bg">
       {/* Header — nav element (close) on the leading edge, crisis on the
           trailing edge. Same LTR/RTL convention as Setup/Home/Session. */}
-      <View className="flex-row justify-between items-center pt-2 px-8">
-        <Pressable hitSlop={16} onPress={handleExit} accessibilityLabel="exit calming">
-          <Icon name="close" size={20} color={tokens.text} />
-        </Pressable>
-        <CrisisAffordance />
-      </View>
+      <ScreenHeader
+        left={
+          <Pressable hitSlop={16} onPress={handleExit} accessibilityLabel="exit calming">
+            <Icon name="close" size={22} color={tokens.text} />
+          </Pressable>
+        }
+      />
       <CalmingProtocol onProtocolEnd={handleProtocolEnd} />
     </SafeAreaView>
   );

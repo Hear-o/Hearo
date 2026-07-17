@@ -110,7 +110,7 @@ export default function Screening() {
         left={
           isLongStep ? (
             <Pressable onPress={goBack} hitSlop={12}>
-              <Icon name="arrow-left" size={20} color={tokens.accent} />
+              <Icon name="arrow-left" size={22} color={tokens.accent} />
             </Pressable>
           ) : undefined
         }
@@ -331,7 +331,7 @@ function ProseOutcome({
       </View>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
         <Pressable onPress={onBack} hitSlop={12}>
-          <Icon name="arrow-left" size={20} color={tokens.accent} />
+          <Icon name="arrow-left" size={22} color={tokens.accent} />
         </Pressable>
         <Pressable
           onPress={onContinue}

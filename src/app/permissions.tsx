@@ -7,6 +7,7 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import { ScreenHeader } from "@/components/common/ScreenHeader";
+import { ForwardCta } from "@/components/common/ForwardCta";
 import { Icon } from "@/components/common/Icon";
 import { useSwipeForward } from "@/hooks/useSwipeForward";
 import * as healthKit from "@/lib/integrations/healthKit";
@@ -192,6 +193,7 @@ export default function Permissions() {
   return (
     <SafeAreaView className="flex-1 bg-bg">
       <GestureDetector gesture={swipeGesture}>
+      <View className="flex-1">
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 32 }}
@@ -201,7 +203,7 @@ export default function Permissions() {
           paddingX={0}
           left={
             <Pressable onPress={() => router.back()} hitSlop={12}>
-              <Icon name="arrow-left" size={20} color={tokens.accent} />
+              <Icon name="arrow-left" size={22} color={tokens.accent} />
             </Pressable>
           }
         />
@@ -278,31 +280,21 @@ export default function Permissions() {
         >
           {t("permissions.privacy")}
         </Text>
-
-        {/* B-01: clinical screening gate. First-launch users (no stored
-            screening result) go through PC-PTSD-5 before Setup; returning
-            users skip the questionnaire. The screening route itself routes
-            back to /setup (any outcome) — Above-threshold users see a
-            clinician-recommendation card first, but it's advisory, not a
-            block. See openspec/changes/add-clinical-screening/. Back nav
-            moved into ScreenHeader (v1.2.x) to match the rest of the app. */}
-        <View style={{ paddingBottom: 48, alignItems: "flex-end" }}>
-          <Pressable onPress={handleContinue} hitSlop={8}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-              <Text
-                style={{
-                  color: tokens.accent,
-                  fontFamily: fonts.body,
-                  fontSize: 24,
-                }}
-              >
-                {t("permissions.continue")}
-              </Text>
-              <Icon name="arrow-right" size={20} color={tokens.accent} />
-            </View>
-          </Pressable>
-        </View>
       </ScrollView>
+
+      {/* B-01: clinical screening gate. First-launch users (no stored
+          screening result) go through PC-PTSD-5 before Setup; returning
+          users skip the questionnaire. The screening route itself routes
+          back to /setup (any outcome) — Above-threshold users see a
+          clinician-recommendation card first, but it's advisory, not a
+          block. See openspec/changes/add-clinical-screening/. Fixed footer
+          (outside the ScrollView) so Continue sits at the same screen
+          position as Welcome's Begin regardless of how much permission-row
+          content is above it. */}
+      <View style={{ paddingHorizontal: 32, paddingBottom: 48 }}>
+        <ForwardCta label={t("permissions.continue")} onPress={handleContinue} />
+      </View>
+      </View>
       </GestureDetector>
     </SafeAreaView>
   );

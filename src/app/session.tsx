@@ -7,7 +7,7 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 
 import { BreathingCircle } from "@/components/features/session/BreathingCircle";
 import { ExitSessionConfirm } from "@/components/features/session/ExitSessionConfirm";
-import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
 import { SceneBackground } from "@/components/features/session/SceneBackground";
 import { VoiceLine } from "@/components/features/session/VoiceLine";
@@ -719,12 +719,15 @@ export default function Session() {
           {/* Header — nav element (close) on the leading edge so it reads
               correctly across both reading directions: LEFT in LTR English,
               RIGHT in RTL Hebrew (auto-flipped via I18nManager). */}
-          <View className="flex-row justify-between items-center pt-2">
-            <Pressable hitSlop={16} onPress={handleEndSessionPress}>
-              <Icon name="close" size={20} color={tokens.sceneText} />
-            </Pressable>
-            <CrisisAffordance tone="on-scene" />
-          </View>
+          <ScreenHeader
+            paddingX={0}
+            tone="on-scene"
+            left={
+              <Pressable hitSlop={16} onPress={handleEndSessionPress}>
+                <Icon name="close" size={22} color={tokens.sceneText} />
+              </Pressable>
+            }
+          />
 
           {/* Watch status banner */}
           {watchBanner !== null && (

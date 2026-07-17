@@ -5,7 +5,7 @@ import { GestureDetector } from "react-native-gesture-handler";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { useSwipeForward } from "@/hooks/useSwipeForward";
 import { releaseAudioEngine } from "@/lib/audio/audio-engine-host";
 import { incrementSessionsCompleted } from "@/lib/storage/storage";
@@ -40,9 +40,7 @@ export default function After() {
     <SafeAreaView className="flex-1 bg-bg">
       <GestureDetector gesture={swipeGesture}>
       <View className="flex-1 px-8">
-        <View className="pt-2 flex-row justify-end">
-          <CrisisAffordance />
-        </View>
+        <ScreenHeader paddingX={0} />
 
         <View className="pt-10">
           <View style={{ width: 28, height: 1, backgroundColor: tokens.accent }} />

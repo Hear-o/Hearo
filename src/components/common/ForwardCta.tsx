@@ -25,9 +25,16 @@ export function ForwardCta({ label, onPress, disabled, accessibilityHint, testID
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: !!disabled }}
       testID={testID}
-      style={{ alignSelf: "flex-end", opacity: disabled ? 0.4 : 1 }}
+      style={{ opacity: disabled ? 0.4 : 1 }}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          gap: 12,
+        }}
+      >
         <Text
           style={{
             color: tokens.accent,

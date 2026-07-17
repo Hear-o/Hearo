@@ -27,9 +27,11 @@ import {
 } from "@/lib/integrations/reminders";
 import { useSettingsSheetStore } from "@/lib/storage/settings-sheet-store";
 import {
+  getReminderTime,
   LanguagePreference,
   ReminderSchedule,
   setLanguagePreference,
+  setReminderTime,
 } from "@/lib/storage/storage";
 import { persistDisplayName, useDisplayName } from "@/lib/ui/displayName";
 import { fonts, tokens } from "@/lib/ui/tokens";
@@ -112,19 +114,25 @@ export function SettingsSheet() {
   // makes on/off the headline control and the inline scroller lets the user
   // dial the time without opening a separate modal step.
   const [reminder, setReminder] = useState<ReminderSchedule | null>(null);
+  // The last time the user picked, remembered even while the reminder is off so
+  // re-enabling restores it instead of snapping back to the 9:00 default.
+  const [lastTime, setLastTime] = useState<ReminderSchedule | null>(null);
   // Android-only: the legacy modal flow is preserved behind a press handler
   // since RN's DateTimePicker on Android has no inline display mode.
   const [androidPickerOpen, setAndroidPickerOpen] = useState(false);
   useEffect(() => {
     if (isOpen) {
       void getSchedule().then(setReminder);
+      void getReminderTime().then(setLastTime);
     }
   }, [isOpen]);
 
   async function commitTime(date: Date) {
     const next: ReminderSchedule = { hour: date.getHours(), minute: date.getMinutes() };
     await setSchedule(next);
+    await setReminderTime(next); // remember it even if the reminder is later turned off
     setReminder(next);
+    setLastTime(next);
   }
 
   // Default time when the Switch is first turned on — 9:00 AM is a generally
@@ -136,10 +144,15 @@ export function SettingsSheet() {
 
   async function handleReminderToggle(next: boolean) {
     if (next) {
-      const initial = reminder ?? defaultReminderTime();
+      // Restore the last time the user picked (survives toggling off + restart);
+      // fall back to 9:00 only if they've never set one.
+      const initial = reminder ?? lastTime ?? defaultReminderTime();
       await setSchedule(initial);
+      await setReminderTime(initial);
       setReminder(initial);
+      setLastTime(initial);
     } else {
+      // Turn the reminder off but keep the remembered time (lastTime/storage).
       await clearSchedule();
       setReminder(null);
     }

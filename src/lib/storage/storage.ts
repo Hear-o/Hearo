@@ -12,6 +12,7 @@ const KEYS = {
   displayName: `${PREFIX}displayName`,
   displayNameResolved: `${PREFIX}displayNameResolved`,
   reminderSchedule: `${PREFIX}reminderSchedule`,
+  reminderTime: `${PREFIX}reminderTime`,
   trustedContactIds: `${PREFIX}trustedContactIds`,
   healthKitGranted: `${PREFIX}healthKitGranted`,
   psychoEducationSeen: `${PREFIX}psychoEducationSeen`,
@@ -80,6 +81,26 @@ export async function setReminderSchedule(schedule: ReminderSchedule | null): Pr
   } else {
     await AsyncStorage.setItem(KEYS.reminderSchedule, JSON.stringify(schedule));
   }
+}
+
+/** The last time the user picked for their reminder, kept even while reminders
+ *  are OFF. `reminderSchedule` being null (off) used to lose the chosen time, so
+ *  re-enabling reset to the 9:00 default; this remembers it across toggles and
+ *  restarts. `null` means the user has never picked a time. */
+export async function getReminderTime(): Promise<ReminderSchedule | null> {
+  const raw = await AsyncStorage.getItem(KEYS.reminderTime);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as ReminderSchedule;
+    if (typeof parsed.hour !== "number" || typeof parsed.minute !== "number") return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export async function setReminderTime(time: ReminderSchedule): Promise<void> {
+  await AsyncStorage.setItem(KEYS.reminderTime, JSON.stringify(time));
 }
 
 /** Stable contact IDs the user has nominated as trusted. Order is preserved

@@ -7,6 +7,8 @@ import {
   setDisplayName,
   getReminderSchedule,
   setReminderSchedule,
+  getReminderTime,
+  setReminderTime,
   getTrustedContactIds,
   setTrustedContactIds,
   getHealthKitGranted,
@@ -86,6 +88,36 @@ describe("storage / reminder schedule", () => {
       JSON.stringify({ hour: "nine" }),
     );
     expect(await getReminderSchedule()).toBeNull();
+  });
+});
+
+// The last-picked time persists independently of on/off, so re-enabling a
+// reminder restores it instead of resetting to the 9:00 default.
+describe("storage / reminder time (last-picked)", () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it("returns null when no time has ever been picked", async () => {
+    expect(await getReminderTime()).toBeNull();
+  });
+
+  it("round-trips the last-picked time", async () => {
+    await setReminderTime({ hour: 7, minute: 15 });
+    expect(await getReminderTime()).toEqual({ hour: 7, minute: 15 });
+  });
+
+  it("survives the reminder schedule being cleared (off)", async () => {
+    await setReminderTime({ hour: 7, minute: 15 });
+    await setReminderSchedule(null); // reminder turned off
+    expect(await getReminderTime()).toEqual({ hour: 7, minute: 15 });
+  });
+
+  it("returns null for invalid JSON or wrong shape", async () => {
+    await AsyncStorage.setItem("hearo:reminderTime", "not-json");
+    expect(await getReminderTime()).toBeNull();
+    await AsyncStorage.setItem("hearo:reminderTime", JSON.stringify({ hour: "seven" }));
+    expect(await getReminderTime()).toBeNull();
   });
 });
 

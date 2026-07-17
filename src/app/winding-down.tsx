@@ -13,10 +13,13 @@ import {
   getVoiceScript,
   isPlaceholderSource,
   SceneKey,
+  SCENE_ORDER,
 } from "@/lib/content/content";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
-const VALID_SCENES: SceneKey[] = ["beach", "park", "cafe", "road"];
+// All Practice scenes are valid — derive from SCENE_ORDER so v1.2.0 scenes
+// don't fall back to the default scene on the wind-down screen.
+const VALID_SCENES: readonly SceneKey[] = SCENE_ORDER;
 
 // Time between mount and starting the wind-down voice. Lines up with the
 // 3-second ambient fade in engine.fadeOutAll(), with a 200ms cushion.

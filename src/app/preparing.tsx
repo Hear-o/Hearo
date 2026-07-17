@@ -12,10 +12,13 @@ import {
   getVoiceClips,
   isPlaceholderSource,
   SceneKey,
+  SCENE_ORDER,
 } from "@/lib/content/content";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
-const VALID_SCENES: SceneKey[] = ["beach", "park", "cafe", "road"];
+// All Practice scenes are valid — derive from SCENE_ORDER so v1.2.0 scenes
+// don't fall back to the default (which rendered the wrong scene image/audio).
+const VALID_SCENES: readonly SceneKey[] = SCENE_ORDER;
 
 // Minimum time the user sees the preparing screen, even if prep finishes
 // faster. Without this, on bundled-asset builds the cache step is a no-op

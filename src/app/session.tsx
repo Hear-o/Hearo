@@ -12,7 +12,7 @@ import { Icon } from "@/components/common/Icon";
 import { SceneBackground } from "@/components/features/session/SceneBackground";
 import { VoiceLine } from "@/components/features/session/VoiceLine";
 import { useSessionStore } from "@/lib/storage/session-store";
-import { getScene, getVoiceScript, localize, SceneKey, isPlaceholderSource, getAmbientTrack, getVoiceClips, getSound } from "@/lib/content/content";
+import { getScene, getVoiceScript, localize, SceneKey, SCENE_ORDER, isPlaceholderSource, getAmbientTrack, getVoiceClips, getSound } from "@/lib/content/content";
 import { dBToGain } from "@/lib/audio/audio-engine";
 import { audioTrace, audioWarn } from "@/lib/audio/audio-log";
 import { useCrisisStore } from "@/lib/storage/crisis-store";
@@ -23,7 +23,10 @@ import { ensureAssets, AssetManifest } from "@/lib/audio/asset-cache";
 
 // ── Constants ────────────────────────────────────────────────────────────
 
-const VALID_SCENES: SceneKey[] = ["beach", "park", "cafe", "road"];
+// Every Practice scene is valid here — derive from SCENE_ORDER so newly-added
+// scenes (v1.2.0 train/bus/quiet-bar/house-party/supermarket) route correctly
+// instead of falling back to the default and rendering the wrong scene.
+const VALID_SCENES: readonly SceneKey[] = SCENE_ORDER;
 
 // AMBIENT_FADE_IN is the first 20% of the session — long enough at every
 // duration (≥36s at 3 min) for the pulse monitor to collect a stable baseline

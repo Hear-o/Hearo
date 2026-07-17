@@ -33,4 +33,18 @@ describe("ForwardCta", () => {
     fireEvent.press(screen.getByText("Ready"));
     expect(onPress).not.toHaveBeenCalled();
   });
+
+  // Screen position is `alignSelf: "flex-end"`, unconditionally. Under the
+  // app's native RTL (forceRTL=true, makeRTLFlipLeftAndRightStyles=false —
+  // see plugins/withRtl.js) Yoga mirrors flex alignment, so flex-end pins
+  // physical right in English and physical left in Hebrew from one value,
+  // no isRTL branch. IMPORTANT: this asserts the literal style only. jsdom
+  // does NOT apply Yoga's RTL mirroring, so no jest test can prove the
+  // physical left/right result — that is device-verified (npx expo run:ios).
+  // The guard here is that the value stays writing-direction-relative and
+  // never regresses to a hard-coded left/right or an inverted isRTL branch.
+  it("uses alignSelf flex-end so RTL mirroring pins it correctly", () => {
+    render(<ForwardCta label="Begin" onPress={() => {}} />);
+    expect(screen.getByRole("button")).toHaveStyle({ alignSelf: "flex-end" });
+  });
 });

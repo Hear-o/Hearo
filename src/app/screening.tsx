@@ -32,6 +32,25 @@ export default function Screening() {
   const lang = i18n.language;
   const content = getClinicalScreening();
   const [step, setStep] = useState<ScreenStep>({ kind: "intro" });
+  const [history, setHistory] = useState<ScreenStep[]>([]);
+
+  /** Advance to the next step, remembering the current one so `goBack` can
+   *  return to it instead of just exiting the questionnaire. */
+  function goTo(next: ScreenStep) {
+    setHistory((prev) => [...prev, step]);
+    setStep(next);
+  }
+
+  /** Step back within the questionnaire; exits to Permissions only from the
+   *  first step (empty history). */
+  function goBack() {
+    if (history.length === 0) {
+      router.back();
+      return;
+    }
+    setStep(history[history.length - 1]);
+    setHistory(history.slice(0, -1));
+  }
 
   /** Step 1 → trauma-exposure answered. Persist immediately for "no" path
    *  (items not administered); transition to items for "yes". */
@@ -48,10 +67,10 @@ export default function Screening() {
         outcome,
         takenAt: Date.now(),
       });
-      setStep({ kind: "outcome", outcome });
+      goTo({ kind: "outcome", outcome });
       return;
     }
-    setStep({ kind: "items" });
+    goTo({ kind: "items" });
   }
 
   /** Step 2 → 4 Likert items answered. Score, persist, transition to outcome. */
@@ -67,7 +86,7 @@ export default function Screening() {
       outcome,
       takenAt: Date.now(),
     });
-    setStep({ kind: "outcome", outcome });
+    goTo({ kind: "outcome", outcome });
   }
 
   /** Step 3 → user dismisses the outcome card. Onboarding ends on the intro
@@ -77,13 +96,23 @@ export default function Screening() {
     router.replace({ pathname: "/psychoed", params: { from: "onboarding" } });
   }
 
+  // Long, scrollable steps get the back arrow in the header (opposite the
+  // "i" icon, which stays put); short prose-outcome cards get it inline at
+  // continue-button height instead.
+  const isLongStep =
+    step.kind === "intro" ||
+    step.kind === "items" ||
+    (step.kind === "outcome" && step.outcome === "above-threshold");
+
   return (
     <SafeAreaView className="flex-1 bg-bg">
       <View className="flex-row justify-between items-center pt-2 px-8">
-        <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Icon name="arrow-left" size={20} color={tokens.accent} />
-        </Pressable>
         <CrisisAffordance />
+        {isLongStep && (
+          <Pressable onPress={goBack} hitSlop={12}>
+            <Icon name="arrow-left" size={20} color={tokens.accent} />
+          </Pressable>
+        )}
       </View>
 
       {step.kind === "intro" && (
@@ -93,11 +122,11 @@ export default function Screening() {
       {step.kind === "items" && <Pcl4Form onSubmit={handleItemsSubmit} />}
 
       {step.kind === "outcome" && step.outcome === "no-trauma" && (
-        <NoTraumaOutcome lang={lang} onContinue={handleContinue} />
+        <NoTraumaOutcome lang={lang} onContinue={handleContinue} onBack={goBack} />
       )}
 
       {step.kind === "outcome" && step.outcome === "below-threshold" && (
-        <BelowThresholdOutcome lang={lang} onContinue={handleContinue} />
+        <BelowThresholdOutcome lang={lang} onContinue={handleContinue} onBack={goBack} />
       )}
 
       {step.kind === "outcome" && step.outcome === "above-threshold" && (
@@ -215,14 +244,48 @@ function IntroStep({
 
 // ── Step 3: outcome screens ───────────────────────────────────────────────────
 
-function NoTraumaOutcome({ lang, onContinue }: { lang: string; onContinue: () => void }) {
+function NoTraumaOutcome({
+  lang,
+  onContinue,
+  onBack,
+}: {
+  lang: string;
+  onContinue: () => void;
+  onBack: () => void;
+}) {
   const c = getClinicalScreening().outcomes.noTrauma;
-  return <ProseOutcome lang={lang} heading={c.heading} body={c.body} continueLabel={c.continueLabel} onContinue={onContinue} />;
+  return (
+    <ProseOutcome
+      lang={lang}
+      heading={c.heading}
+      body={c.body}
+      continueLabel={c.continueLabel}
+      onContinue={onContinue}
+      onBack={onBack}
+    />
+  );
 }
 
-function BelowThresholdOutcome({ lang, onContinue }: { lang: string; onContinue: () => void }) {
+function BelowThresholdOutcome({
+  lang,
+  onContinue,
+  onBack,
+}: {
+  lang: string;
+  onContinue: () => void;
+  onBack: () => void;
+}) {
   const c = getClinicalScreening().outcomes.belowThreshold;
-  return <ProseOutcome lang={lang} heading={c.heading} body={c.body} continueLabel={c.continueLabel} onContinue={onContinue} />;
+  return (
+    <ProseOutcome
+      lang={lang}
+      heading={c.heading}
+      body={c.body}
+      continueLabel={c.continueLabel}
+      onContinue={onContinue}
+      onBack={onBack}
+    />
+  );
 }
 
 function ProseOutcome({
@@ -231,12 +294,14 @@ function ProseOutcome({
   body,
   continueLabel,
   onContinue,
+  onBack,
 }: {
   lang: string;
   heading: { en: string; he: string };
   body: { en: string; he: string };
   continueLabel: { en: string; he: string };
   onContinue: () => void;
+  onBack: () => void;
 }) {
   return (
     <View className="flex-1 px-8 pt-6 pb-6">
@@ -263,22 +328,28 @@ function ProseOutcome({
           {localize(body, lang)}
         </Text>
       </View>
-      <Pressable
-        onPress={onContinue}
-        hitSlop={8}
-        accessibilityRole="button"
-        style={{
-          borderWidth: 1,
-          borderColor: tokens.accent,
-          borderRadius: 999,
-          paddingVertical: 16,
-          alignItems: "center",
-        }}
-      >
-        <Text style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 18 }}>
-          {localize(continueLabel, lang)}
-        </Text>
-      </Pressable>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
+        <Pressable onPress={onBack} hitSlop={12}>
+          <Icon name="arrow-left" size={20} color={tokens.accent} />
+        </Pressable>
+        <Pressable
+          onPress={onContinue}
+          hitSlop={8}
+          accessibilityRole="button"
+          style={{
+            flex: 1,
+            borderWidth: 1,
+            borderColor: tokens.accent,
+            borderRadius: 999,
+            paddingVertical: 16,
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 18 }}>
+            {localize(continueLabel, lang)}
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 }

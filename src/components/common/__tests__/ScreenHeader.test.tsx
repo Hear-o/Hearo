@@ -11,11 +11,7 @@ jest.mock("../../../../test/assetMock.js", () => {
 import { ScreenHeader } from "../ScreenHeader";
 import { useCrisisStore } from "@/lib/storage/crisis-store";
 
-// ScreenHeader exists to give the crisis "i" a single, predictable home on
-// every screen (see the header-drift fix). The contract: the crisis
-// affordance always renders and stays reachable, an optional left slot
-// renders next to it, and tone forwards through to CrisisAffordance for the
-// on-scene (session) case.
+// ScreenHeader gives the crisis "i" one predictable position across every screen.
 describe("ScreenHeader", () => {
   it("always renders the crisis affordance, reachable by assistive tech", () => {
     render(<ScreenHeader />);

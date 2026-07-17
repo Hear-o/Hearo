@@ -69,9 +69,11 @@ export default function Screening() {
     setStep({ kind: "outcome", outcome });
   }
 
-  /** Step 3 → user dismisses the outcome card and continues into Setup. */
+  /** Step 3 → user dismisses the outcome card. Onboarding ends on the intro
+   *  (psychoeducation), which then lands on /home so the user chooses Practice
+   *  vs Companion — rather than being dropped straight into Practice setup. */
   function handleContinue() {
-    router.replace("/setup");
+    router.replace({ pathname: "/psychoed", params: { from: "onboarding" } });
   }
 
   return (

@@ -71,7 +71,7 @@ export default function Welcome() {
           </Text>
         </View>
 
-        <ForwardCtaFooter>
+        <ForwardCtaFooter paddingX={0}>
           <ForwardCta label={t("welcome.begin")} onPress={handleBegin} />
         </ForwardCtaFooter>
       </View>

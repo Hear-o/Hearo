@@ -510,49 +510,45 @@ export default function Session() {
 
   useEffect(() => {
     if (machineState !== "WIND_DOWN") return;
+    // Silence the active session before the wind-down screen takes over: stop
+    // the in-flight voice (so a mantra doesn't talk over the wind-down clip)
+    // and the trigger scheduler (so bursts/ambient don't bleed into the
+    // transition + end screens). /winding-down fades the ambient out.
+    engine.stopVoice();
+    engine.stopTriggerScheduler();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     router.replace({ pathname: "/winding-down" as any, params: { scene } });
-  }, [machineState, router, scene]);
+  }, [machineState, router, scene, engine]);
 
-  // ── Crisis sheet pause/resume ─────────────────────────────────────────
-
+  // ── Suspend session audio when it isn't the active foreground ──────────
+  //
+  // Two independent reasons to suspend the audio graph: the crisis sheet is
+  // open, or another screen (e.g. /calming from "I need a moment") is pushed
+  // on top and /session is blurred. Audio must stay paused while EITHER holds
+  // and resume only when BOTH clear — otherwise closing the crisis sheet while
+  // /calming is still on top would resume ambient/triggers behind the calming
+  // screen (and drag them into the session-end screen). A single pausedSince
+  // ref also freezes the elapsed clock across the pause.
+  const [isFocused, setIsFocused] = useState(true);
+  useFocusEffect(
+    useCallback(() => {
+      setIsFocused(true);
+      return () => setIsFocused(false);
+    }, []),
+  );
   useEffect(() => {
-    if (isCrisisOpen) {
-      pausedSince.current = Date.now();
-      engine.pauseAll();
+    const shouldPause = isCrisisOpen || !isFocused;
+    if (shouldPause) {
+      if (pausedSince.current === null) {
+        pausedSince.current = Date.now();
+        void engine.pauseAll();
+      }
     } else if (pausedSince.current !== null) {
       startedAt.current += Date.now() - pausedSince.current;
       pausedSince.current = null;
-      engine.resumeAll();
+      void engine.resumeAll();
     }
-  }, [isCrisisOpen, engine]);
-
-  // ── Focus-based pause/resume (v1.1.0: "Need a moment" → /calming push) ──
-  //
-  // When /calming is pushed on top, /session blurs (still mounted, not focused).
-  // Suspend the audio graph + freeze the elapsed timer; on return-to-focus,
-  // resume + add the pause duration back to startedAt so the visible clock
-  // doesn't jump. Uses the same pausedSince ref the crisis-sheet path uses —
-  // they're mutually exclusive in practice (you can't open the crisis sheet
-  // and navigate away simultaneously).
-  useFocusEffect(
-    useCallback(() => {
-      // Returning to focus: if we were paused via blur, resume.
-      if (pausedSince.current !== null) {
-        startedAt.current += Date.now() - pausedSince.current;
-        pausedSince.current = null;
-        engine.resumeAll();
-      }
-      return () => {
-        // On blur: only pause if the crisis sheet didn't already take the
-        // pause baton (its useEffect runs first when isCrisisOpen flips).
-        if (pausedSince.current === null) {
-          pausedSince.current = Date.now();
-          engine.pauseAll();
-        }
-      };
-    }, [engine]),
-  );
+  }, [isCrisisOpen, isFocused, engine]);
 
   // ── Elapsed timer ─────────────────────────────────────────────────────
   //

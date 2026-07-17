@@ -13,21 +13,26 @@ import { fonts, tokens } from "@/lib/ui/tokens";
 export default function PsychoEducation() {
   const router = useRouter();
   const { i18n } = useTranslation();
-  const params = useLocalSearchParams<{ scene?: string }>();
+  const params = useLocalSearchParams<{ scene?: string; from?: string }>();
 
   const content = getPsychoEducation();
   const lang = i18n.language;
 
-  // The scene param is optional — present when reached from the Home Begin
-  // flow (route to /session next), absent when re-read from /setup (route
-  // back when done).
+  // Three entry contexts:
+  //  - scene param present → the Home Begin flow; continue into /preparing.
+  //  - from=onboarding → shown once after screening; land on /home so the user
+  //    chooses Practice vs Companion.
+  //  - neither → re-read from /setup; go back when done.
   const sceneParam = params.scene as SceneKey | undefined;
+  const fromOnboarding = params.from === "onboarding";
 
   async function handleContinue() {
     await setPsychoEducationSeen(true);
     if (sceneParam) {
       // /preparing now pre-loads the audio engine; /session lands ready.
       router.replace({ pathname: "/preparing", params: { scene: sceneParam } });
+    } else if (fromOnboarding) {
+      router.replace("/home");
     } else {
       router.back();
     }

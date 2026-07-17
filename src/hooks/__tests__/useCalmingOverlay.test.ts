@@ -28,7 +28,12 @@ describe("useCalmingOverlay", () => {
     expect(c.createBufferSource).toHaveBeenCalledTimes(1);
     const src = c.sources[0];
     expect(src.loop).toBe(true);
-    expect(src.start).toHaveBeenCalledWith(0);
+    // v1.2.x: the music enters after a short delay (not at t=0) and fades in to
+    // a low target level rather than starting at full gain.
+    expect(src.start).toHaveBeenCalled();
+    expect(src.start.mock.calls[0][0]).toBeGreaterThan(0);
+    const gain = c.gains[0];
+    expect(gain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(0.22, expect.any(Number));
   });
 
   it("stops the source + closes the context on unmount", async () => {

@@ -15,9 +15,13 @@ import { activateAudioSession } from "@/lib/audio/audio-session";
 const CALMING_SOURCE = require("@/assets/sounds/calming/neo-classical.mp3");
 
 // Soft level — the protocol narration (text today, voice later) is the
-// foreground; this is the ambient bed underneath. Tuned by ear; we can
-// move it once Roy delivers the narration recordings and we hear them mixed.
-const PLAYBACK_GAIN = 0.5;
+// foreground; this is the ambient bed underneath. v1.2.x: dropped 0.5 → 0.22
+// and added a delayed fade-in per tester feedback that the music entered too
+// loud and too abruptly when "I need a moment" opened.
+const PLAYBACK_GAIN = 0.22;
+// Let the calming screen settle before the music enters, then rise gently.
+const START_DELAY_S = 1.2;
+const FADE_IN_S = 2.5;
 
 /** Plays a soothing looping track for the lifetime of the screen that mounts
  *  this hook. Used by /calming.
@@ -70,7 +74,7 @@ export function useCalmingOverlay(): void {
         }
 
         const gain: GainNode = ctx.createGain();
-        gain.gain.value = PLAYBACK_GAIN;
+        gain.gain.value = 0; // start silent; ramp up after the delay
         gain.connect(ctx.destination);
 
         const src: AudioBufferSourceNode = ctx.createBufferSource();
@@ -79,7 +83,13 @@ export function useCalmingOverlay(): void {
         src.loopStart = 0;
         src.loopEnd = buffer.duration;
         src.connect(gain);
-        src.start(0);
+
+        // Delay entry so the music doesn't hit the moment the screen opens, then
+        // fade gently up to the (low) target instead of starting at full level.
+        const startAt = ctx.currentTime + START_DELAY_S;
+        src.start(startAt);
+        gain.gain.setValueAtTime(0, startAt);
+        gain.gain.linearRampToValueAtTime(PLAYBACK_GAIN, startAt + FADE_IN_S);
         sourceRef.current = src;
         audioTrace("calming overlay: playing", "duration=", buffer.duration);
       } catch (e) {

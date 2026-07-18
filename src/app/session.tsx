@@ -729,16 +729,96 @@ export default function Session() {
             }
           />
 
-          {/* Watch status banner */}
-          {watchBanner !== null && (
-            <View style={{ marginTop: 8, padding: 8, backgroundColor: "rgba(0,0,0,0.4)", borderRadius: 8 }}>
-              <Text style={{ color: tokens.sceneText, fontFamily: fonts.body, fontSize: 12 }}>
-                {watchBanner === "no-watch"
-                  ? t("session.noWatch")
-                  : t("session.watchDisconnected")}
-              </Text>
-            </View>
-          )}
+          {/* Session progress — thin horizontal bar. Track and fill are
+              SIBLINGS with their own opacities (nesting multiplies them and
+              hides the fill). direction:"ltr" keeps the fill growing from the
+              physical-left edge in Hebrew too. marginTop gives it clear air
+              below the header icons instead of crowding the X / i. */}
+          <View
+            style={{ marginTop: 24, position: "relative", height: 3, direction: "ltr" }}
+          >
+            <View
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 3,
+                backgroundColor: tokens.sceneText,
+                opacity: 0.25,
+                borderRadius: 1.5,
+              }}
+            />
+            <View
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: `${Math.min(100, (elapsed / TOTAL_SESSION_MS) * 100)}%`,
+                height: 3,
+                backgroundColor: tokens.sceneText,
+                opacity: 0.85,
+                borderRadius: 1.5,
+              }}
+            />
+          </View>
+          {/* Dual timer — elapsed physical-left, total duration physical-right.
+              direction:"ltr" pins the sides in Hebrew too, matching the bar. */}
+          <View
+            style={{
+              marginTop: 6,
+              direction: "ltr",
+              flexDirection: "row",
+              justifyContent: "space-between",
+            }}
+          >
+            <Text
+              style={{
+                color: tokens.sceneText,
+                fontFamily: fonts.body,
+                fontSize: 12,
+                opacity: 0.65,
+              }}
+            >
+              {formatElapsed(elapsed)}
+            </Text>
+            <Text
+              style={{
+                color: tokens.sceneText,
+                fontFamily: fonts.body,
+                fontSize: 12,
+                opacity: 0.65,
+              }}
+            >
+              {formatElapsed(TOTAL_SESSION_MS)}
+            </Text>
+          </View>
+
+          {/* Watch status banner — floated as an absolute overlay inside a
+              zero-height anchor so it never pushes the scene label / narrator /
+              breathing circle down, and leaves no reserved gap when absent. */}
+          <View style={{ position: "relative", height: 0 }}>
+            {watchBanner !== null && (
+              <View
+                style={{
+                  position: "absolute",
+                  top: 8,
+                  left: 0,
+                  right: 0,
+                  zIndex: 10,
+                  padding: 8,
+                  backgroundColor: "rgba(0,0,0,0.4)",
+                  borderRadius: 8,
+                }}
+              >
+                <Text style={{ color: tokens.sceneText, fontFamily: fonts.body, fontSize: 12 }}>
+                  {watchBanner === "no-watch"
+                    ? t("session.noWatch")
+                    : t("session.watchDisconnected")}
+                </Text>
+              </View>
+            )}
+          </View>
 
           {/* Scene label */}
           <View className="pt-8">
@@ -746,10 +826,10 @@ export default function Session() {
               style={{
                 color: tokens.sceneText,
                 fontFamily: fonts.body,
-                fontSize: 13,
+                fontSize: 18,
                 letterSpacing: 1.6,
                 textTransform: "uppercase",
-                opacity: 0.65,
+                opacity: 0.85,
                 textAlign: "left",
               }}
             >
@@ -759,8 +839,10 @@ export default function Session() {
 
           {/* Voice caption. Hidden while a voice clip is audibly playing —
               Roy's recordings aren't verbatim reads of the script and showing
-              the script during playback creates a read/listen mismatch. */}
-          <View className="pt-16">
+              the script during playback creates a read/listen mismatch.
+              Fixed-height box (always rendered, even when empty) so the
+              breathing circle below never jumps as text comes and goes. */}
+          <View style={{ marginTop: 48, height: 160 }}>
             {/* voiceText is "" for scenes without recorded narration (v1.2.0
                 newer scenes) — hide the caption entirely rather than render a
                 blank line so those sessions read as intentionally quiet. */}
@@ -796,59 +878,12 @@ export default function Session() {
             </View>
           )}
 
-          {/* Session progress — horizontal bar across the bottom, fills
-              left-to-right as session elapses. Track and fill are SIBLINGS
-              with their own opacities so the fill renders at full opacity
-              over a faded track. Previous version nested fill inside track,
-              which multiplied the opacities and made the fill invisible. */}
-          <View className="pt-6" style={{ position: "relative", height: 4 }}>
-            <View
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 4,
-                backgroundColor: tokens.sceneText,
-                opacity: 0.25,
-                borderRadius: 2,
-              }}
-            />
-            <View
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: `${Math.min(100, (elapsed / TOTAL_SESSION_MS) * 100)}%`,
-                height: 4,
-                backgroundColor: tokens.sceneText,
-                opacity: 0.85,
-                borderRadius: 2,
-              }}
-            />
-          </View>
-          <Text
-            style={{
-              color: tokens.sceneText,
-              fontFamily: fonts.body,
-              fontSize: 12,
-              opacity: 0.65,
-              marginTop: 6,
-            }}
-          >
-            {formatElapsed(elapsed)}
-          </Text>
-
-          {/* "I need a moment" — calming-protocol entry, always visible
-              during a session. Per UI QA pass 2: shown throughout, not
-              just after the trigger has played. The original gating was
-              based on an exposure-first clinical claim; the product
-              direction now prioritizes user control + visible escape
-              hatch from the start. LOADING/DISCLAIMER already return
-              their own screens earlier so we don't render here in those. */}
-          <View style={{ alignItems: "center", paddingBottom: 4 }}>
+          {/* Bottom actions — the break button (calming-protocol entry) is
+              the prominent primary: warm sceneAccent fill so it clearly reads
+              as the "I need to pause" affordance, above a quieter, faded
+              End-session pill. Both full-width and stacked. */}
+          <View style={{ paddingTop: 4, paddingBottom: 24, gap: 12 }}>
             <Pressable
-              hitSlop={12}
               onPress={() => {
                 // v1.1.0: pause-and-return instead of teardown-and-route.
                 // Cut any in-flight voice clip immediately (otherwise the
@@ -859,38 +894,37 @@ export default function Session() {
                 engine.stopVoice();
                 router.push("/calming");
               }}
-            >
-              <Text style={{ color: tokens.sceneText, fontFamily: fonts.body, fontSize: 14, opacity: 0.75 }}>
-                {t("home.needAMoment")}
-              </Text>
-            </Pressable>
-          </View>
-
-          {/* Bottom row — pulse metric removed per UI QA. Pulse is still
-              read internally to drive auto-attenuate behavior, but no
-              longer displayed to the user. */}
-          {/* End session — was a barely-visible bracketed text. Now a
-              bordered pill on sceneText color so it reads cleanly on
-              both light and dark scene overlays. */}
-          <View className="flex-row justify-end items-center pt-4 pb-6">
-            <Pressable
-              hitSlop={12}
-              onPress={handleEndSessionPress}
+              accessibilityRole="button"
               style={{
-                borderWidth: 1,
-                borderColor: tokens.sceneText,
+                backgroundColor: tokens.sceneAccent,
                 borderRadius: 999,
-                paddingHorizontal: 18,
-                paddingVertical: 8,
+                paddingVertical: 15,
+                alignItems: "center",
+                shadowColor: tokens.sceneAccent,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.35,
+                shadowRadius: 12,
+                elevation: 6,
               }}
             >
-              <Text
-                style={{
-                  color: tokens.sceneText,
-                  fontFamily: fonts.body,
-                  fontSize: 15,
-                }}
-              >
+              <Text style={{ color: tokens.text, fontFamily: fonts.bodyMedium, fontSize: 17 }}>
+                {t("session.needABreak")}
+              </Text>
+            </Pressable>
+
+            {/* End session — enlarged, faded light pill (sceneText @ 70%) so
+                it reads as a real button but stays secondary to the break CTA. */}
+            <Pressable
+              onPress={handleEndSessionPress}
+              accessibilityRole="button"
+              style={{
+                backgroundColor: "rgba(244,238,227,0.70)",
+                borderRadius: 999,
+                paddingVertical: 14,
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ color: tokens.text, fontFamily: fonts.bodyMedium, fontSize: 16 }}>
                 {t("session.end")}
               </Text>
             </Pressable>

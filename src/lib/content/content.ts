@@ -1296,9 +1296,9 @@ const CLINICAL_SCREENING: Pcl4Content = {
         he: "האפליקציה שלנו יכולה לנסות לתמוך ולעזור בהתמודדות. אפשר להשתמש בה גם לצד טיפול, או בנפרד. האפליקציה נבנתה בשיתוף מרכז מטיב ונוכל לחבר אותך למרכז אם תצטרך.",
       },
       continueLabel: {
-        en: "Continue to the app",
+        en: "Continue",
         // TODO(hirschman-review)
-        he: "המשך לאפליקציה",
+        he: "המשך",
       },
     },
   },

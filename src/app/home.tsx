@@ -1,9 +1,10 @@
 import { useCallback, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { I18nManager, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GestureDetector } from "react-native-gesture-handler";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
+import Svg, { Path } from "react-native-svg";
 
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
@@ -94,6 +95,8 @@ export default function Home() {
               color: tokens.text,
               fontFamily: fonts.display,
               ...typeScale.hero,
+              fontSize: 44,
+              lineHeight: 54,
               marginTop: 24,
             }}
           >
@@ -110,8 +113,8 @@ export default function Home() {
               style={{
                 color: tokens.textMute,
                 fontFamily: fonts.body,
-                fontSize: 13,
-                letterSpacing: 1.6,
+                fontSize: 15,
+                letterSpacing: 1.2,
                 textTransform: "uppercase",
                 marginBottom: 10,
                 textAlign: "left",
@@ -124,6 +127,8 @@ export default function Home() {
                 color: tokens.text,
                 fontFamily: fonts.body,
                 ...typeScale.body,
+                fontSize: 21,
+                lineHeight: 29,
                 opacity: 0.85,
               }}
             >
@@ -133,13 +138,13 @@ export default function Home() {
 
           {/* Sessions-completed counter — the only progress surface we ship
               in v1.1.0. Trend/streak/minutes are backlog. */}
-          <View style={{ marginTop: 32 }}>
+          <View style={{ marginTop: 56 }}>
             <Text
               style={{
                 color: tokens.textMute,
                 fontFamily: fonts.body,
-                fontSize: 13,
-                letterSpacing: 1.6,
+                fontSize: 15,
+                letterSpacing: 1.2,
                 textTransform: "uppercase",
                 marginBottom: 8,
                 textAlign: "left",
@@ -152,7 +157,7 @@ export default function Home() {
                 color: tokens.text,
                 fontFamily: fonts.display,
                 fontSize: 44,
-                lineHeight: 50,
+                lineHeight: 54,
                 textAlign: "left",
               }}
             >
@@ -167,43 +172,53 @@ export default function Home() {
               with a BETA tag while clinical review is pending). Cards stack
               vertically rather than side-by-side so labels stay readable in
               Hebrew and don't get truncated on small phones. */}
-          <View className="pb-2" style={{ gap: 12 }}>
+          <View className="pb-10" style={{ gap: 20 }}>
             <Pressable
               onPress={handleBegin}
               accessibilityRole="button"
               accessibilityHint="Tap or swipe to begin a practice session"
               hitSlop={8}
               style={{
-                borderWidth: 1,
-                borderColor: tokens.accent,
                 borderRadius: 20,
                 paddingVertical: 20,
                 paddingHorizontal: 24,
-                backgroundColor: tokens.accent + "12",
+                backgroundColor: tokens.accent,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                shadowColor: tokens.accent,
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.45,
+                shadowRadius: 18,
+                elevation: 6,
               }}
             >
-              <Text
-                style={{
-                  color: tokens.accent,
-                  fontFamily: fonts.display,
-                  fontSize: 22,
-                  lineHeight: 28,
-                  textAlign: "left",
-                }}
-              >
-                {t("companion.practiceCta")}
-              </Text>
-              <Text
-                style={{
-                  color: tokens.textMute,
-                  fontFamily: fonts.body,
-                  fontSize: 13,
-                  marginTop: 4,
-                  textAlign: "left",
-                }}
-              >
-                {t("companion.practiceHint")}
-              </Text>
+              <View>
+                <Text
+                  style={{
+                    color: tokens.sceneText,
+                    fontFamily: fonts.displayMedium,
+                    fontSize: 26,
+                    lineHeight: 28,
+                    textAlign: "left",
+                  }}
+                >
+                  {t("companion.practiceCta")}
+                </Text>
+                <Text
+                  style={{
+                    color: tokens.sceneTextMute,
+                    fontFamily: fonts.body,
+                    fontSize: 13,
+                    marginTop: 4,
+                    textAlign: "left",
+                  }}
+                >
+                  {t("companion.practiceHint")}
+                </Text>
+              </View>
+              <ArrowChip />
             </Pressable>
 
             <Pressable
@@ -213,61 +228,102 @@ export default function Home() {
               accessibilityLabel={t("companion.companionCta")}
               hitSlop={8}
               style={{
-                borderWidth: 1,
-                borderColor: tokens.sage,
                 borderRadius: 20,
                 paddingVertical: 20,
                 paddingHorizontal: 24,
-                backgroundColor: tokens.sage + "12",
+                backgroundColor: tokens.sage,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                shadowColor: tokens.sage,
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.45,
+                shadowRadius: 18,
+                elevation: 6,
               }}
             >
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <View>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Text
+                    style={{
+                      color: tokens.sceneText,
+                      fontFamily: fonts.displayMedium,
+                      fontSize: 26,
+                      lineHeight: 28,
+                      textAlign: "left",
+                    }}
+                  >
+                    {t("companion.companionCta")}
+                  </Text>
+                  <View
+                    style={{
+                      backgroundColor: "rgba(244,238,227,0.24)",
+                      borderRadius: 4,
+                      paddingHorizontal: 6,
+                      paddingVertical: 2,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: tokens.sceneText,
+                        fontFamily: fonts.bodyMedium,
+                        fontSize: 10,
+                        letterSpacing: 1,
+                      }}
+                    >
+                      {t("companion.beta")}
+                    </Text>
+                  </View>
+                </View>
                 <Text
                   style={{
-                    color: tokens.sage,
-                    fontFamily: fonts.display,
-                    fontSize: 22,
-                    lineHeight: 28,
+                    color: tokens.sceneTextMute,
+                    fontFamily: fonts.body,
+                    fontSize: 13,
+                    marginTop: 4,
                     textAlign: "left",
                   }}
                 >
-                  {t("companion.companionCta")}
+                  {t("companion.companionHint")}
                 </Text>
-                <View
-                  style={{
-                    backgroundColor: tokens.sage,
-                    borderRadius: 4,
-                    paddingHorizontal: 6,
-                    paddingVertical: 2,
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: tokens.bg,
-                      fontFamily: fonts.bodyMedium,
-                      fontSize: 10,
-                      letterSpacing: 1,
-                    }}
-                  >
-                    {t("companion.beta")}
-                  </Text>
-                </View>
               </View>
-              <Text
-                style={{
-                  color: tokens.textMute,
-                  fontFamily: fonts.body,
-                  fontSize: 13,
-                  marginTop: 4,
-                  textAlign: "left",
-                }}
-              >
-                {t("companion.companionHint")}
-              </Text>
+              <ArrowChip />
             </Pressable>
           </View>
         </View>
       </GestureDetector>
     </SafeAreaView>
+  );
+}
+
+// Bolder stroke than the shared arrow-right asset (Icon.tsx), scoped to this
+// chip only. Reuses that asset's own path/flip logic rather than a new file.
+function ArrowChip() {
+  const flip = I18nManager.isRTL;
+  return (
+    <View
+      style={{
+        width: 32,
+        height: 32,
+        borderRadius: 999,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "rgba(244,238,227,0.18)",
+      }}
+    >
+      <View style={flip ? { transform: [{ scaleX: -1 }] } : undefined}>
+        <Svg width={16} height={16} viewBox="0 0 24 24">
+          <Path
+            fill="none"
+            stroke={tokens.sceneText}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={3.5}
+            d="M.75 12h22.5m-10.5 10.5L23.25 12L12.75 1.5"
+          />
+        </Svg>
+      </View>
+    </View>
   );
 }

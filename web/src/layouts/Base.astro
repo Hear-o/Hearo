@@ -6,11 +6,14 @@ interface Props {
   description?: string;
 }
 
-const { title, description = "A quiet place to be again. Gradual, consent-based sound exposure for veterans living with combat-related PTSD." } = Astro.props;
+const {
+  title,
+  description = "מקום שקט להיות בו שוב. חשיפה הדרגתית ומבוססת־הסכמה לצלילים, למי שחי עם פוסט־טראומה קרבית.",
+} = Astro.props;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="he" dir="rtl">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -37,16 +40,16 @@ const { title, description = "A quiet place to be again. Gradual, consent-based 
             height="40"
             class="h-9 w-9 sm:h-10 sm:w-10"
           />
-          <span class="font-display text-3xl sm:text-4xl tracking-tight leading-none">
+          <span class="font-display text-3xl sm:text-4xl tracking-tight leading-none" dir="ltr">
             Hear<span class="text-accent">O</span>
           </span>
         </a>
         <div class="flex items-center gap-6">
           <a href="/about" class="text-base text-text-mute hover:text-text transition-colors">
-            About
+            אודות
           </a>
           <a href="/privacy" class="text-base text-text-mute hover:text-text transition-colors">
-            Privacy
+            פרטיות
           </a>
         </div>
       </nav>
@@ -61,14 +64,14 @@ const { title, description = "A quiet place to be again. Gradual, consent-based 
         <div>
           <div class="flex items-center gap-2 mb-1">
             <img src="/logo.png" alt="" width="24" height="24" class="h-6 w-6" />
-            <p class="font-display text-base text-text">HearO</p>
+            <p class="font-display text-base text-text" dir="ltr">HearO</p>
           </div>
-          <p>A quiet place to be again.</p>
+          <p>מקום שקט להיות בו שוב.</p>
         </div>
         <div class="flex gap-6">
-          <a href="/" class="hover:text-text transition-colors">Home</a>
-          <a href="/about" class="hover:text-text transition-colors">About</a>
-          <a href="/privacy" class="hover:text-text transition-colors">Privacy</a>
+          <a href="/" class="hover:text-text transition-colors">בית</a>
+          <a href="/about" class="hover:text-text transition-colors">אודות</a>
+          <a href="/privacy" class="hover:text-text transition-colors">פרטיות</a>
         </div>
       </div>
     </footer>

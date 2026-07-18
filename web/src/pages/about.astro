@@ -3,166 +3,184 @@ import Base from "../layouts/Base.astro";
 ---
 
 <Base
-  title="About HearO"
-  description="Who's behind HearO, what we're building, and what we're not."
+  title="אודות HearO"
+  description="מי עומד מאחורי HearO, מה אנחנו בונים, ומה לא."
 >
   <article class="px-6 sm:px-12 py-16 sm:py-20">
     <div class="max-w-3xl mx-auto">
-      <p class="text-sm uppercase tracking-[0.18em] text-text-mute mb-4">About</p>
-      <h1 class="font-display text-3xl sm:text-4xl mb-3">A quiet place,<br />made by people who care.</h1>
+      <p class="text-sm uppercase tracking-[0.18em] text-text-mute mb-4">אודות</p>
+      <h1 class="font-display text-3xl sm:text-4xl mb-3">מקום שקט,<br />שנבנה על ידי אנשים שאכפת להם.</h1>
 
       <div class="space-y-12 leading-relaxed text-text-mute mt-12">
         <section>
-          <h2 class="font-display text-xl text-text mb-3">What HearO is</h2>
+          <h2 class="font-display text-xl text-text mb-3">מה זה HearO</h2>
           <p>
-            HearO is a mobile app for veterans living with combat-related PTSD. It delivers gradual, consent-based <strong class="text-text">sound exposure</strong>. An ambient soundscape layered with sounds you've chosen to encounter, guided by a calm voice and watched over by your Apple Watch pulse. When your body starts to spike, the app responds: the voice softens, breathing slows, intensity drops. No popups. No alarms. The app does the work you shouldn't have to.
+            HearO היא אפליקציה למי שחי עם פוסט־טראומה קרבית. היא מציעה
+            <strong class="text-text">חשיפה לצלילים</strong> — הדרגתית ומבוססת־הסכמה. נוף קול
+            סביבתי שמעליו נשזרים הצלילים שבחרת לפגוש, בליווי קול רגוע ובהשגחת הדופק מ־Apple Watch.
+            כשהגוף מתחיל להתחזק, האפליקציה מגיבה: הקול מתרכך, הנשימה מאטה, העוצמה יורדת. בלי חלונות
+            קופצים, בלי התראות. האפליקציה עושה את העבודה שלא צריך ליפול עליך.
           </p>
         </section>
 
         <section>
-          <h2 class="font-display text-xl text-text mb-3">Why we built it</h2>
+          <h2 class="font-display text-xl text-text mb-3">למה בנינו את זה</h2>
           <p>
-            Combat triggers don't keep a schedule. A motorcycle backfire on the way to the supermarket, a helicopter overhead at a kid's birthday, fireworks on a Saturday night. Clinical Prolonged Exposure therapy is the most evidence-supported treatment for PTSD, and one of the hardest to access and stay in. HearO sits between imaginal and in-vivo exposure: concrete enough to engage the autonomic response that drives habituation, light enough to deliver through a phone.
+            טריגרים קרביים לא שומרים על לוח זמנים. אגזוז אופנוע בדרך לסופר, מסוק מעל יום הולדת של
+            ילד, זיקוקים במוצאי שבת. טיפול בחשיפה ממושכת הוא הטיפול המבוסס־ראיות ביותר לפוסט־טראומה,
+            ואחד הקשים ביותר להגיע אליו ולהתמיד בו. HearO יושבת בין חשיפה בדמיון לחשיפה במציאות:
+            מוחשית מספיק כדי לעורר את התגובה האוטונומית שמניעה הרגלה, וקלה מספיק כדי לעבור דרך טלפון.
           </p>
           <p class="mt-4">
-            The goal isn't to make sounds stop bothering you. The goal is to widen the window in which a trigger is <em>a sound</em>, not <em>a flashback trigger</em>, and to keep you demonstrably in control the whole time.
+            המטרה היא לא לגרום לצלילים להפסיק להטריד. המטרה היא להרחיב את החלון שבו טריגר הוא
+            <em>צליל</em>, ולא <em>מפעיל של פלאשבק</em> — ולשמור אותך בשליטה מוכחת לכל האורך.
           </p>
         </section>
 
         <section>
-          <h2 class="font-display text-xl text-text mb-3">What HearO is not</h2>
-          <ul class="list-disc list-outside pl-6 space-y-2">
-            <li><span class="text-text">Not a replacement for clinical therapy.</span> If you're working with a clinician, HearO complements that work; it doesn't replace it.</li>
-            <li><span class="text-text">Not a regulated medical device.</span> No FDA, CE, or AMAR clearance. Not diagnostic.</li>
-            <li><span class="text-text">Not for acute crisis.</span> Every screen carries a one-tap line to ERAN 1201, Israel's free, 24/7, anonymous emotional first-aid line. Crisis taps are never logged.</li>
-            <li><span class="text-text">Not surveillance.</span> Your pulse stays on your device. Your sessions belong to you.</li>
+          <h2 class="font-display text-xl text-text mb-3">מה HearO לא</h2>
+          <ul class="list-disc list-outside ps-6 space-y-2">
+            <li><span class="text-text">לא תחליף לטיפול קליני.</span> אם את/ה בטיפול, HearO משלימה את העבודה הזו; היא לא מחליפה אותה.</li>
+            <li><span class="text-text">לא מכשיר רפואי מפוקח.</span> ללא אישור FDA, CE או אמ"ר. לא כלי אבחון.</li>
+            <li><span class="text-text">לא מיועדת למצבי חירום חריפים.</span> בכל מסך יש קו בנגיעה אחת לער"ן 1201 — קו העזרה הרגשית הראשונה של ישראל, חינם, 24/7, אנונימי. נגיעות במצוקה לעולם לא נרשמות.</li>
+            <li><span class="text-text">לא מעקב.</span> הדופק שלך נשאר במכשיר שלך. הסשנים שלך שייכים לך.</li>
           </ul>
         </section>
 
         <section>
-          <h2 class="font-display text-xl text-text mb-3">Who we are</h2>
+          <h2 class="font-display text-xl text-text mb-3">מי אנחנו</h2>
           <p>
-            Four childhood friends who've known each other for fifteen years. We grew up together, and like so many in Israel the last two years brought reality close to us, and to the people we love, through post-trauma and anxiety. We decided to stop talking about it and combine what each of us has built professionally to take our angle and try to help.
+            ארבעה חברי ילדות שמכירים חמש עשרה שנה. גדלנו יחד, וכמו כל כך הרבה בישראל, השנתיים
+            האחרונות קירבו את המציאות אלינו, ואל האנשים שאנחנו אוהבים, דרך פוסט־טראומה וחרדה.
+            החלטנו להפסיק לדבר על זה ולחבר את מה שכל אחד מאיתנו בנה מקצועית, כדי לקחת את הזווית שלנו
+            ולנסות לעזור.
           </p>
           <p class="mt-4">
-            HearO is built as part of <span class="text-text">techHeal</span>, a small project combining business experience, product, and engineering to ship something useful, not just talk.
+            HearO נבנית כחלק מ־<span class="text-text">techHeal</span>, פרויקט קטן שמחבר ניסיון עסקי,
+            מוצר והנדסה כדי לשלוח משהו שימושי — לא רק לדבר.
           </p>
 
           <div class="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-10">
             <div class="flex flex-col items-start">
               <img
                 src="/team/roy-meir.jpeg"
-                alt="Roy Meir"
+                alt="רועי מאיר"
                 width="160"
                 height="160"
                 class="rounded-full w-32 h-32 sm:w-36 sm:h-36 object-cover mb-4"
                 loading="lazy"
               />
-              <p class="font-display text-lg text-text">Roy Meir</p>
+              <p class="font-display text-lg text-text">רועי מאיר</p>
               <p class="text-sm uppercase tracking-[0.14em] text-accent mt-1 mb-2">
-                Business &amp; Sales
+                עסקים ומכירות
               </p>
               <p class="text-sm">
-                VP Sales &amp; Business Development. Designs growth strategies, leads complex commercial processes, and builds partnerships across markets.
+                סמנכ"ל מכירות ופיתוח עסקי. בונה אסטרטגיות צמיחה, מוביל תהליכים מסחריים מורכבים,
+                ויוצר שותפויות בין שווקים.
               </p>
             </div>
 
             <div class="flex flex-col items-start">
               <img
                 src="/team/omer.png"
-                alt="Omer Keinan"
+                alt="עומר קינן"
                 width="160"
                 height="160"
                 class="rounded-full w-32 h-32 sm:w-36 sm:h-36 object-cover mb-4"
                 loading="lazy"
               />
-              <p class="font-display text-lg text-text">Omer Keinan</p>
+              <p class="font-display text-lg text-text">עומר קינן</p>
               <p class="text-sm uppercase tracking-[0.14em] text-accent mt-1 mb-2">
-                Product &amp; Engineering
+                מוצר והנדסה
               </p>
               <p class="text-sm">
-                CTO Office at Guardz. Developer and product manager with a SIGINT and cyber background; takes projects from idea through code to working product in the field.
+                משרד ה־CTO ב־Guardz. מפתח ומנהל מוצר עם רקע ב־SIGINT וסייבר; לוקח פרויקטים מרעיון,
+                דרך קוד, למוצר עובד בשטח.
               </p>
             </div>
 
             <div class="flex flex-col items-start">
               <img
                 src="/team/ido.jpeg"
-                alt="Ido Hirschman"
+                alt="עידו הירשמן"
                 width="160"
                 height="160"
                 class="rounded-full w-32 h-32 sm:w-36 sm:h-36 object-cover mb-4"
                 loading="lazy"
               />
-              <p class="font-display text-lg text-text">Ido Hirschman</p>
+              <p class="font-display text-lg text-text">עידו הירשמן</p>
               <p class="text-sm uppercase tracking-[0.14em] text-accent mt-1 mb-2">
-                Engineering
+                הנדסה
               </p>
               <p class="text-sm">
-                Software engineer at Check Point. Specializes in designing and shipping complex, secure, high-performance systems.
+                מהנדס תוכנה ב־Check Point. מתמחה בתכנון ובהשקה של מערכות מורכבות, מאובטחות וביצועיות.
               </p>
             </div>
 
             <div class="flex flex-col items-start">
               <img
                 src="/team/roy-davidovic.jpeg"
-                alt="Roy Davidovic"
+                alt="רועי דוידוביץ'"
                 width="160"
                 height="160"
                 class="rounded-full w-32 h-32 sm:w-36 sm:h-36 object-cover mb-4"
                 loading="lazy"
               />
-              <p class="font-display text-lg text-text">Roy Davidovic</p>
+              <p class="font-display text-lg text-text">רועי דוידוביץ'</p>
               <p class="text-sm uppercase tracking-[0.14em] text-accent mt-1 mb-2">
-                Engineering &amp; Integration
+                הנדסה ואינטגרציה
               </p>
               <p class="text-sm">
-                Third-year computer science student. Integration background from Innoviz Technologies; now moving into business-side automation and integration. Learning in the field, from the field.
+                סטודנט שנה ג' למדעי המחשב. רקע באינטגרציה מ־Innoviz Technologies; עובר לאוטומציה
+                ואינטגרציה בצד העסקי. לומד בשטח, מהשטח.
               </p>
             </div>
           </div>
 
           <div class="mt-12 pt-10 border-t border-text-mute/15">
-            <p class="text-sm uppercase tracking-[0.14em] text-text-mute mb-6">Mentor</p>
+            <p class="text-sm uppercase tracking-[0.14em] text-text-mute mb-6">מנטור</p>
             <div class="flex flex-col sm:flex-row gap-6">
               <img
                 src="/team/dekel.jpeg"
-                alt="Dekel Assaf"
+                alt="דקל אסף"
                 width="160"
                 height="160"
                 class="rounded-full w-32 h-32 sm:w-36 sm:h-36 object-cover shrink-0"
                 loading="lazy"
               />
               <div>
-                <p class="font-display text-lg text-text">Dekel Assaf</p>
+                <p class="font-display text-lg text-text">דקל אסף</p>
                 <p class="text-sm uppercase tracking-[0.14em] text-accent mt-1 mb-2">
-                  R&amp;D &amp; AI Orchestration
+                  מו"פ ותזמור AI
                 </p>
                 <p class="text-sm">
-                  Senior R&amp;D director and technology strategist with ~20 years leading engineering organizations, system architecture, and AI Orchestration / agentic workflows. M.A. in Economics. Mentors the techHeal project, sharing what he's learned to lift up the next round of developers and leaders.
+                  מנהל מו"פ בכיר ואסטרטג טכנולוגי עם כ־20 שנות ניסיון בהובלת ארגוני הנדסה,
+                  ארכיטקטורת מערכות ותזמור AI וזרימות עבודה אג'נטיות. תואר שני בכלכלה. מלווה כמנטור
+                  את פרויקט techHeal, ומשתף מהניסיון שלו כדי להרים את הדור הבא של המפתחים והמובילים.
                 </p>
               </div>
             </div>
           </div>
 
           <div class="mt-10 pt-10 border-t border-text-mute/15">
-            <p class="text-sm uppercase tracking-[0.14em] text-text-mute mb-6">Clinical advisor</p>
+            <p class="text-sm uppercase tracking-[0.14em] text-text-mute mb-6">יועץ קליני</p>
             <div class="flex flex-col sm:flex-row gap-6">
               <img
                 src="/team/dudi.jpeg"
-                alt="Dudi Efrati"
+                alt="דודי אפרתי"
                 width="160"
                 height="160"
                 class="rounded-full w-32 h-32 sm:w-36 sm:h-36 object-contain shrink-0 bg-bg-elev"
                 loading="lazy"
               />
               <div>
-                <p class="font-display text-lg text-text">Dudi Efrati</p>
+                <p class="font-display text-lg text-text">דודי אפרתי</p>
                 <p class="text-sm uppercase tracking-[0.14em] text-accent mt-1 mb-2">
-                  Clinical psychology &amp; trauma research
+                  פסיכולוגיה קלינית ומחקר טראומה
                 </p>
                 <p class="text-sm">
-                  Director of research at the Mativ Institute. Clinical psychologist in specialization. Brings the exposure-therapy clinical lens to HearO.
+                  מנהל המחקר במכון מטיב. פסיכולוג קליני בהתמחות. מביא ל־HearO את הפרספקטיבה הקלינית
+                  של טיפול בחשיפה.
                 </p>
               </div>
             </div>

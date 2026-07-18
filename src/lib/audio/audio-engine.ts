@@ -10,8 +10,8 @@
 //   1. new AudioEngine()
 //   2. await engine.loadAmbientAndVoice(ambientSrc, voiceSrcs)
 //   3. await engine.loadTrigger(triggerSrc)
-//   4. engine.startAmbient()               — call at AMBIENT_FADE_IN entry
-//   5. engine.startTriggerScheduler(cfg)   — call at ADAPTIVE_LOOP entry
+//   4. engine.startAmbient()               — call at INTRO entry
+//   5. engine.startTriggerScheduler(cfg)   — call at TRIGGER_ZONE entry
 //   6. engine.onSpike() / onNormalized()   — driven by usePulseMonitor
 //   7. engine.playVoiceClip(index)         — DISCLAIMER / MID_SESSION / WIND_DOWN
 //   8. engine.destroy()                    — on unmount or session end
@@ -36,9 +36,8 @@ export function dBToGain(dB: number): number {
 // v1.1.3: how much we duck the ambient bed while a trigger burst is playing.
 // -3 dB halves power without halving perceived loudness — the scene stays
 // audibly present so the trigger feels like an event INSIDE the scene rather
-// than a replacement for it. Combined with the lower trigger ceiling
-// (session.tsx DEFAULT_CEILING_DB = -9 dB), this gets us to a mix where the
-// burst pops above the scene without drowning it.
+// than a replacement for it. Combined with the trigger peak of -18 dB
+// (session.tsx TRIGGER_PEAK_DB), this keeps bursts present but gentle.
 const AMBIENT_DUCK_GAIN = dBToGain(-3);
 
 // v1.1.6 → v1.1.8: ambient duck during voice. Hili's UX review (2026-06-29)
@@ -69,10 +68,21 @@ function randomBetween(minMs: number, maxMs: number): number {
 
 /** Configuration for the intermittent trigger burst scheduler. */
 export interface TriggerSchedulerConfig {
-  /** Minimum wait between the end of one burst and the start of the next (ms). */
+  /** Minimum wait between the end of one burst and the start of the next (ms).
+   *  Ignored when fixedIntervalMs is set. */
   intervalMinMs: number;
-  /** Maximum wait between bursts (ms). Actual interval is randomized in this range. */
+  /** Maximum wait between bursts (ms). Actual interval is randomized in this range.
+   *  Ignored when fixedIntervalMs is set. */
   intervalMaxMs: number;
+  /** Fixed target interval between consecutive burst START times (ms). When set,
+   *  replaces the random min/max scheduling with deterministic even spacing. */
+  fixedIntervalMs?: number;
+  /** Override the delay before the very first burst (ms). Only used when
+   *  fixedIntervalMs is also set. Defaults to fixedIntervalMs when omitted. */
+  initialDelayMs?: number;
+  /** Maximum number of bursts to fire in this scheduler run. When reached,
+   *  no further bursts are scheduled (scheduler goes quiet). */
+  maxBursts?: number;
   /** How long each burst plays at full gain before fading out (ms). */
   burstDurationMs: number;
   /** Fade-in duration for each burst (ms). Smooths the onset. */
@@ -135,6 +145,10 @@ export class AudioEngine {
   private _burstActive = false;
   private _schedulerPaused = false;
   private _graceTimer: ReturnType<typeof setTimeout> | null = null;
+  // Fixed-count scheduling: how many bursts have fired this run, and when
+  // the most recent burst started (for computing evenly-spaced next delays).
+  private _burstsFired = 0;
+  private _lastBurstStartedAt = 0;
   // The ambient gain we duck DOWN from at burst start, restored at burst end.
   // Captured per-burst so a user adjustment mid-session (rare) isn't clobbered.
   private _ambientGainPreDuck: number | null = null;
@@ -168,7 +182,7 @@ export class AudioEngine {
   // ── Buffer loading ──────────────────────────────────────────────────────
 
   // Two-phase loading: ambient + voice clips are needed for DISCLAIMER;
-  // the trigger buffer is only needed at ADAPTIVE_LOOP entry.
+  // the trigger buffer is only needed at TRIGGER_ZONE entry.
 
   async loadAmbientAndVoice(
     ambientSource: number | string,
@@ -296,6 +310,8 @@ export class AudioEngine {
     }
     this._config = { ...config };
     this._schedulerPaused = false;
+    this._burstsFired = 0;
+    this._lastBurstStartedAt = 0;
     this._scheduleNextBurst();
   }
 
@@ -307,11 +323,28 @@ export class AudioEngine {
 
   private _scheduleNextBurst(): void {
     if (this._schedulerPaused || !this._config) return;
-    const delay = randomBetween(this._config.intervalMinMs, this._config.intervalMaxMs);
+
+    // Stop if the configured burst quota has been reached.
+    if (this._config.maxBursts !== undefined && this._burstsFired >= this._config.maxBursts) return;
+
+    let delay: number;
+    if (this._config.fixedIntervalMs !== undefined) {
+      if (this._burstsFired === 0) {
+        // First burst: use initialDelayMs if provided, otherwise half the fixed interval.
+        delay = this._config.initialDelayMs ?? this._config.fixedIntervalMs;
+      } else {
+        // Subsequent bursts: target fixedIntervalMs from the last burst's START time
+        // so bursts are evenly spaced regardless of how long the burst lifecycle takes.
+        const timeSinceBurstStart = Date.now() - this._lastBurstStartedAt;
+        delay = Math.max(100, this._config.fixedIntervalMs - timeSinceBurstStart);
+      }
+    } else {
+      delay = randomBetween(this._config.intervalMinMs, this._config.intervalMaxMs);
+    }
 
     // Lead-in heads-up: fire `leadInMs` before the burst, so the screen layer
     // gets a window to switch its caption / queue a pre-burst voice clip. If
-    // the random interval came in smaller than the lead-in window, fire the
+    // the interval came in smaller than the lead-in window, fire the
     // heads-up immediately (still better than no anticipation phase).
     const leadInMs = this._config.leadInMs ?? 0;
     if (leadInMs > 0 && this._config.onBurstApproaching) {
@@ -339,6 +372,8 @@ export class AudioEngine {
     }
 
     const cfg = this._config;
+    this._burstsFired++;
+    this._lastBurstStartedAt = Date.now();
     const now = this.ctx.currentTime;
     const fadeInSec = cfg.fadeInMs / 1000;
 

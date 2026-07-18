@@ -9,9 +9,7 @@ import { VoiceLine } from "@/components/features/session/VoiceLine";
 import { useAudioEngine } from "@/hooks/useAudioEngine";
 import {
   getScene,
-  getVoiceClips,
   getVoiceScript,
-  isPlaceholderSource,
   SceneKey,
   SCENE_ORDER,
 } from "@/lib/content/content";
@@ -27,14 +25,10 @@ const VOICE_DELAY_MS = 3_200;
 
 /** End-of-session transition screen (v1.1.0).
  *
- *  Previously the wind-down narration played on the session screen itself
- *  before the feedback overlay took over. The user asked for a distinct
- *  transition moment between the active session and the feedback form, so
- *  this screen now owns:
- *  1. Cross-fade ambient to silence (engine.fadeOutAll).
- *  2. Play the wind-down voice clip over the still scene background.
- *  3. When the voice finishes, render the feedback form in-place.
- *  4. On submit/skip → /after.
+ *  Fades out all audio, holds on the scene for a moment, then shows the
+ *  feedback form. The outro narration (voice[2]) already played during the
+ *  session's OUTRO zone — this screen is purely the visual transition and
+ *  feedback handoff. On submit/skip → /after.
  *
  *  Engine is the shared singleton via useAudioEngine, so the buffers loaded
  *  in /preparing are still here. We don't release the engine — /after's
@@ -55,42 +49,22 @@ export default function WindingDown() {
 
   useEffect(() => {
     let cancelled = false;
-    let voiceTimer: ReturnType<typeof setTimeout> | undefined;
-    let fallbackTimer: ReturnType<typeof setTimeout> | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
-    // Step 1: ramp ambient + trigger to silence (300ms trigger, 3s ambient).
+    // Ramp ambient + trigger to silence (300ms trigger, 3s ambient), then
+    // show the feedback form. The outro narration already played during the
+    // session's OUTRO zone — nothing more to play here.
     engine.fadeOutAll(3);
 
-    // Step 2: after the fade completes, play the wind-down voice clip.
-    voiceTimer = setTimeout(() => {
-      if (cancelled) return;
-      const voiceClips = getVoiceClips(scene, i18n.language);
-      const windDownClip = voiceClips[2];
-
-      if (isPlaceholderSource(windDownClip.source)) {
-        // No recorded voice for this scene/lang — short pause then show feedback.
-        fallbackTimer = setTimeout(() => {
-          if (!cancelled) setVoiceDone(true);
-        }, 800);
-        return;
-      }
-
-      engine
-        .playVoiceClip(2)
-        .then(() => {
-          if (!cancelled) setVoiceDone(true);
-        })
-        .catch(() => {
-          if (!cancelled) setVoiceDone(true);
-        });
+    timer = setTimeout(() => {
+      if (!cancelled) setVoiceDone(true);
     }, VOICE_DELAY_MS);
 
     return () => {
       cancelled = true;
-      if (voiceTimer) clearTimeout(voiceTimer);
-      if (fallbackTimer) clearTimeout(fallbackTimer);
+      if (timer) clearTimeout(timer);
     };
-  }, [engine, scene, i18n.language]);
+  }, [engine]);
 
   const handleFeedbackSubmit = useCallback(
     (_answers: FeedbackAnswers) => {
@@ -104,8 +78,7 @@ export default function WindingDown() {
     router.replace("/after");
   }, [router]);
 
-  // Once the voice finishes (or there was no voice to play), swap the
-  // narration view for the inline feedback form.
+  // After the ambient fade completes, swap the scene view for the feedback form.
   if (voiceDone) {
     return (
       <PostSessionFeedback

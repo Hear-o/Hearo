@@ -6,19 +6,27 @@ import Base from "../layouts/Base.astro";
   <section class="px-6 sm:px-12 py-16 sm:py-24">
     <div class="max-w-3xl mx-auto">
       <p class="text-sm uppercase tracking-[0.18em] text-text-mute mb-6">
-        למי שחי עם פוסט־טראומה קרבית
+        למי שמתמודד עם פוסט טראומה
       </p>
       <h1 class="font-display text-4xl sm:text-5xl leading-tight mb-8">
-        מקום שקט
+        מקום שקט,
         <br />
         להיות בו שוב.
       </h1>
-      <p class="text-lg leading-relaxed text-text-mute max-w-2xl">
-        HearO מציעה חשיפה הדרגתית ומבוססת־הסכמה לצלילים. נוף קול סביבתי שמעליו נשזרים
-        הצלילים שבחרת לפגוש, בליווי קול רגוע ובהשגחת הדופק מ־Apple Watch. כשהגוף מתחיל
-        להתחזק, האפליקציה מגיבה: הקול מתרכך, הנשימה מאטה, העוצמה יורדת. בלי חלונות קופצים,
-        בלי התראות. האפליקציה עושה את העבודה שלא צריך ליפול עליך.
-      </p>
+      <div class="text-lg leading-relaxed text-text-mute max-w-2xl space-y-4">
+        <p>
+          HearO מציעה דרך הדרגתית ובטוחה לפגוש צלילים שקשה לך לשמוע. במהלך התרגול, הצלילים שתבחר
+          משתלבים בתוך סביבה קולית רגועה, לצד קול מלווה ובהתאם לדופק שנמדד דרך ה־Apple Watch שלך.
+        </p>
+        <p>
+          כשהמערכת מזהה שהגוף שלך מתחיל להגיב בעוצמה, היא מתאימה את התרגול באופן אוטומטי: הקול נעשה
+          רגוע יותר, קצב הנשימה מואט ועוצמת הצלילים יורדת.
+        </p>
+        <p>
+          בלי חלונות קופצים ובלי התראות שמפריעות לתהליך. HearO מתאימה את עצמה בזמן אמת, כדי לאפשר
+          לך להישאר בתוך התרגול ולהתמקד בעצמך.
+        </p>
+      </div>
 
       <div class="mt-12 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
         <a
@@ -26,7 +34,7 @@ import Base from "../layouts/Base.astro";
           target="_blank"
           rel="noopener noreferrer"
           class="inline-block transition-opacity hover:opacity-90"
-          aria-label="הורדת HearO מ־App Store"
+          aria-label="הורדה מ־App Store"
         >
           <img src="/appstore-badge.svg" alt="הורדה מ־App Store" class="h-[52px] w-auto" />
         </a>
@@ -35,7 +43,7 @@ import Base from "../layouts/Base.astro";
           target="_blank"
           rel="noopener noreferrer"
           class="inline-block transition-opacity hover:opacity-90"
-          aria-label="הורדת HearO מ־Google Play"
+          aria-label="הורדה מ־Google Play"
         >
           <img src="/googleplay-badge.svg" alt="הורדה מ־Google Play" class="h-[52px] w-auto" />
         </a>
@@ -46,42 +54,48 @@ import Base from "../layouts/Base.astro";
   <section class="px-6 sm:px-12 py-16 border-t border-text-mute/15">
     <div class="max-w-3xl mx-auto">
       <h2 class="font-display text-2xl sm:text-3xl mb-10">
-        איך עובד סשן.
+        איך עובד סשן?
       </h2>
 
       <div class="space-y-10">
         <div>
           <p class="text-sm uppercase tracking-[0.16em] text-accent mb-2">בחירת הסצנה</p>
           <p class="leading-relaxed text-text-mute">
-            בוחרים מקום: חוף בשקיעה, פארק, כביש שקט, בית קפה בבוקר. ואת הצלילים שמוכנים לשמוע —
-            אופנוע, מסוק, זיקוקים, סירנה. אתם מחליטים. שום דבר לא מגיע בלי שהסכמתם לו.
+            בוחרים את הסביבה שבה תרצו להיות: חוף בשקיעה, פארק, כביש שקט או בית קפה בבוקר. לאחר מכן
+            בוחרים את הצלילים שאיתם תרצו להתמודד, כמו אופנוע, מסוק, זיקוקים או סירנה. הבחירה היא
+            שלכם, ושום צליל לא יושמע בלי שבחרתם בו מראש.
           </p>
         </div>
 
         <div>
           <p class="text-sm uppercase tracking-[0.16em] text-accent mb-2">קול שנשאר איתך</p>
           <p class="leading-relaxed text-text-mute">
-            אוזניות באוזניים. נוף הקול הסביבתי מתנגן. קול שקט מתאר את הסצנה בגוף שני, ברוך.
-            כדקה לתוך הסשן הצליל שבחרתם נכנס לתמהיל. בלי ספירה לאחור, בלי דרמה. הקול נשאר איתכם
-            לאורך כל הדרך.
+            מרכיבים את האוזניות ונכנסים לסביבה שבחרתם. ברקע מתנגן נוף קולי שמתאים לסצנה, וקול רגוע
+            מלווה אתכם לאורך התרגול. לאחר כדקה, הצליל שבחרתם משתלב בהדרגה בסביבה. בלי ספירה לאחור
+            ובלי התראות שמושכות את תשומת הלב. הקול המלווה נשאר איתכם לאורך כל הסשן.
           </p>
         </div>
 
         <div>
-          <p class="text-sm uppercase tracking-[0.16em] text-accent mb-2">שתי שכבות שליטה — שתיהן רק מרככות</p>
+          <p class="text-sm uppercase tracking-[0.16em] text-accent mb-2">התאמה בזמן אמת</p>
           <p class="leading-relaxed text-text-mute">
-            אפשר להחליק בכל רגע סליידר שגלוי תמיד כדי להנמיך את הצליל. במקביל, האפליקציה עוקבת
-            אחרי הדופק. אם הגוף חוצה סף, הקול מתרכך, מעגל הנשימה מאט, והצליל המטריד נחלש
-            אוטומטית. שתי שכבות השליטה רק מרככות. אף פעם לא מגבירות. השליטה תמיד נשארת אצלכם.
+            במהלך הסשן, האפליקציה עוקבת אחר הדופק ומתאימה את התרגול בהתאם לתגובות הגוף. כשהיא מזהה
+            צורך בכך, היא מרככת את התרגול באופן אוטומטי: הקול המלווה נעשה רגוע יותר, קצב הנשימה מואט
+            ועוצמת הצליל יורדת.
+          </p>
+          <p class="leading-relaxed text-text-mute mt-4">
+            אם בכל זאת תרגישו שאתם זקוקים להפסקה, תוכלו ללחוץ בכל רגע על לחצן המצוקה. הלחיצה תעביר
+            את הסשן למצב רגוע ותאפשר לכם לעצור לרגע, לנשום ולהתרענן לפני שממשיכים.
           </p>
         </div>
 
         <div>
           <p class="text-sm uppercase tracking-[0.16em] text-accent mb-2">נגיעה אחת לער"ן</p>
           <p class="leading-relaxed text-text-mute">
-            בכל מסך יש <span class="font-mono">i</span> קטן בפינה. נגיעה בו עוצרת את הסשן ופותחת
-            חלון שקט שמחייג ישירות לער"ן 1201 — קו העזרה הרגשית הראשונה של ישראל, חינם, 24/7,
-            אנונימי. נגיעות במצוקה לעולם לא נרשמות.
+            בכל מסך מופיע כפתור מידע (<span class="font-mono">i</span>) בפינה. לחיצה עליו עוצרת את
+            הסשן ומאפשרת ליצור קשר ישירות עם ער"ן בטלפון 1201 — קו העזרה הרגשית הראשונה של ישראל,
+            המיועד לקבלת סיוע רגשי אנונימי, בחינם, 24/7. השימוש באפשרות הזו כמובן אינו מתועד
+            באפליקציה.
           </p>
         </div>
       </div>
@@ -91,21 +105,23 @@ import Base from "../layouts/Base.astro";
   <section class="px-6 sm:px-12 py-16 border-t border-text-mute/15">
     <div class="max-w-3xl mx-auto">
       <h2 class="font-display text-2xl sm:text-3xl mb-6">
-        מה זה, ומה זה לא.
+        מה זה, ומה זה לא
       </h2>
       <div class="grid sm:grid-cols-2 gap-x-12 gap-y-6 text-text-mute leading-relaxed">
         <div>
           <p class="font-display text-base text-text mb-2">זה כן</p>
           <p>
-            מלווה בין מפגשים, או כלי לשימוש עצמאי למי שאינו נמצא כרגע בטיפול, שנועד להוריד את
-            המחיר היומיומי של חשיפה לטריגרים במינונים בטוחים.
+            כלי שיכול ללוות אתכם בין מפגשים טיפוליים, או לשמש באופן עצמאי בתקופות שבהן אינכם נמצאים
+            בטיפול. המטרה היא לעזור לכם להתמודד בהדרגה עם צלילים שמעוררים קושי, בסביבה מבוקרת ובקצב
+            שמותאם לתהליך.
           </p>
         </div>
         <div>
           <p class="font-display text-base text-text mb-2">זה לא</p>
           <p>
-            תחליף לטיפול קליני. לא אושר על ידי אף רגולטור רפואי. לא מיועד למצבי חירום חריפים —
-            בשביל זה קיים חלון החירום. לא כלי אבחון.
+            HearO אינה תחליף לטיפול מקצועי ואינה כלי לאבחון. היא אינה מאושרת כיום כמכשיר רפואי על
+            ידי גוף רגולטורי, ואינה מיועדת לתת מענה למצבי חירום או למצוקה חריפה. במצבים כאלה ניתן
+            להשתמש באפשרות החירום באפליקציה כדי לפנות לקבלת סיוע.
           </p>
         </div>
       </div>

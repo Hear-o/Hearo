@@ -17,9 +17,20 @@ jest.mock("@/lib/integrations/reminders", () => ({
   reassertSchedule: jest.fn(),
 }));
 
+// The Settings watch row reuses the Permissions HealthKit flow; mock the module
+// so tests don't touch the native pulse adapter.
+jest.mock("@/lib/integrations/healthKit", () => ({
+  getAuthorizationStatus: jest.fn().mockResolvedValue("undetermined"),
+  requestAuthorization: jest.fn().mockResolvedValue("requested"),
+}));
+
+import * as healthKit from "@/lib/integrations/healthKit";
+
 const mockGetSchedule = getSchedule as jest.Mock;
 const mockSetSchedule = setSchedule as jest.Mock;
 const mockClearSchedule = clearSchedule as jest.Mock;
+const mockGetAuthStatus = healthKit.getAuthorizationStatus as jest.Mock;
+const mockRequestAuth = healthKit.requestAuthorization as jest.Mock;
 
 describe("SettingsSheet", () => {
   beforeEach(() => {
@@ -27,6 +38,8 @@ describe("SettingsSheet", () => {
     mockGetSchedule.mockResolvedValue(null);
     mockSetSchedule.mockResolvedValue(undefined);
     mockClearSchedule.mockResolvedValue(undefined);
+    mockGetAuthStatus.mockResolvedValue("undetermined");
+    mockRequestAuth.mockResolvedValue("requested");
   });
 
   it("renders the settings sections when open", () => {
@@ -83,5 +96,37 @@ describe("SettingsSheet", () => {
     fireEvent(screen.getByLabelText("Toggle daily reminder"), "valueChange", false);
     await waitFor(() => expect(mockClearSchedule).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.getByText(/Off/)).toBeTruthy());
+  });
+
+  it("shows the watch connect row and connects via the HealthKit flow", async () => {
+    act(() => {
+      useSettingsSheetStore.setState({ isOpen: true });
+    });
+    render(<SettingsSheet />);
+    const connect = await screen.findByText("Connect heart rate");
+
+    fireEvent.press(connect);
+    await waitFor(() => expect(mockRequestAuth).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(screen.getByText("✓  Connect heart rate")).toBeTruthy(),
+    );
+  });
+
+  it("opens the iOS picker on toggle-on and dismisses it via Done", async () => {
+    mockGetSchedule.mockResolvedValue(null);
+    act(() => {
+      useSettingsSheetStore.setState({ isOpen: true });
+    });
+    render(<SettingsSheet />);
+    await waitFor(() => expect(screen.getByLabelText("Toggle daily reminder")).toBeTruthy());
+
+    fireEvent(screen.getByLabelText("Toggle daily reminder"), "valueChange", true);
+    // Picker opens → Done button visible.
+    const done = await screen.findByText("Done");
+
+    fireEvent.press(done);
+    // Dismissed → Done gone, "change time" link back.
+    await waitFor(() => expect(screen.queryByText("Done")).toBeNull());
+    expect(screen.getByText("Change time")).toBeTruthy();
   });
 });

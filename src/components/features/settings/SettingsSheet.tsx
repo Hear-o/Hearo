@@ -506,6 +506,7 @@ export function SettingsSheet() {
               letterSpacing: 1.4,
               textTransform: "uppercase",
               marginBottom: 10,
+              textAlign: "left",
             }}
           >
             {t("reminders.sectionLabel")}

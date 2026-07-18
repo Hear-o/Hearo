@@ -1,12 +1,10 @@
 import { Image, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { GestureDetector } from "react-native-gesture-handler";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
-import { useSwipeForward } from "@/hooks/useSwipeForward";
 import { getScene, getSound, localize } from "@/lib/content/content";
 import { useDisplayName } from "@/lib/ui/displayName";
 import { useSessionStore } from "@/lib/storage/session-store";
@@ -56,11 +54,8 @@ export default function Ready() {
     }
   }
 
-  const swipeGesture = useSwipeForward(handleBegin);
-
   return (
     <SafeAreaView className="flex-1 bg-bg">
-      <GestureDetector gesture={swipeGesture}>
         <View className="flex-1 px-8">
           <ScreenHeader
             paddingX={0}
@@ -170,7 +165,7 @@ export default function Ready() {
             <Pressable
               onPress={handleBegin}
               accessibilityRole="button"
-              accessibilityHint="Tap or swipe to begin today's session"
+              accessibilityHint="Begin today's session"
               hitSlop={8}
               style={{
                 borderWidth: 1,
@@ -208,7 +203,6 @@ export default function Ready() {
             </Text>
           </Pressable>
         </View>
-      </GestureDetector>
     </SafeAreaView>
   );
 }

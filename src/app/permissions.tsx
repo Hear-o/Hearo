@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Linking, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { GestureDetector } from "react-native-gesture-handler";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -11,7 +10,6 @@ import { ForwardCta } from "@/components/common/ForwardCta";
 import { ForwardCtaFooter } from "@/components/common/ForwardCtaFooter";
 import { Icon } from "@/components/common/Icon";
 import { NameTextInput } from "@/components/common/NameTextInput";
-import { useSwipeForward } from "@/hooks/useSwipeForward";
 import * as healthKit from "@/lib/integrations/healthKit";
 import * as reminders from "@/lib/integrations/reminders";
 import { getClinicalScreeningResult } from "@/lib/storage/storage";
@@ -155,8 +153,6 @@ export default function Permissions() {
     }
   }, [router]);
 
-  const swipeGesture = useSwipeForward(handleContinue);
-
   const onPulsePress = async () => {
     const status = await healthKit.requestAuthorization();
     // "requested" means the dialog was shown; we can't confirm the outcome.
@@ -197,7 +193,6 @@ export default function Permissions() {
 
   return (
     <SafeAreaView className="flex-1 bg-bg">
-      <GestureDetector gesture={swipeGesture}>
       <View className="flex-1">
       <ScrollView
         className="flex-1"
@@ -333,7 +328,6 @@ export default function Permissions() {
         <ForwardCta label={t("permissions.continue")} onPress={handleContinue} />
       </ForwardCtaFooter>
       </View>
-      </GestureDetector>
     </SafeAreaView>
   );
 }

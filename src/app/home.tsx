@@ -1,14 +1,12 @@
 import { useCallback, useState } from "react";
 import { I18nManager, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { GestureDetector } from "react-native-gesture-handler";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import Svg, { Path } from "react-native-svg";
 
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
-import { useSwipeForward } from "@/hooks/useSwipeForward";
 import { getDailyAffirmation } from "@/lib/content/content";
 import { useDisplayName } from "@/lib/ui/displayName";
 import { useSettingsSheetStore } from "@/lib/storage/settings-sheet-store";
@@ -59,7 +57,6 @@ export default function Home() {
   // "Ready" pushes /ready (the preview with scene image), which then goes to
   // /preparing → /session.
   const handleBegin = () => router.push("/setup");
-  const swipeGesture = useSwipeForward(handleBegin);
 
   // Pluralization is i18next's job; we still need a small helper for the
   // "0 sessions" / "1 session" / "N sessions" English forms. i18next handles
@@ -71,7 +68,6 @@ export default function Home() {
 
   return (
     <SafeAreaView className="flex-1 bg-bg">
-      <GestureDetector gesture={swipeGesture}>
         <View className="flex-1 px-8">
           <ScreenHeader
             paddingX={0}
@@ -176,7 +172,7 @@ export default function Home() {
             <Pressable
               onPress={handleBegin}
               accessibilityRole="button"
-              accessibilityHint="Tap or swipe to begin a practice session"
+              accessibilityHint="Begin a practice session"
               hitSlop={8}
               style={{
                 borderRadius: 20,
@@ -292,7 +288,6 @@ export default function Home() {
             </Pressable>
           </View>
         </View>
-      </GestureDetector>
     </SafeAreaView>
   );
 }

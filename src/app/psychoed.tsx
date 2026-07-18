@@ -1,11 +1,9 @@
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { GestureDetector } from "react-native-gesture-handler";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import { ScreenHeader } from "@/components/common/ScreenHeader";
-import { useSwipeForward } from "@/hooks/useSwipeForward";
 import { getPsychoEducation, localize, SceneKey } from "@/lib/content/content";
 import { setPsychoEducationSeen } from "@/lib/storage/storage";
 import { fonts, tokens } from "@/lib/ui/tokens";
@@ -38,11 +36,8 @@ export default function PsychoEducation() {
     }
   }
 
-  const swipeGesture = useSwipeForward(handleContinue);
-
   return (
     <SafeAreaView className="flex-1 bg-bg">
-      <GestureDetector gesture={swipeGesture}>
       <View className="flex-1 px-8">
         <ScreenHeader paddingX={0} />
 
@@ -119,7 +114,6 @@ export default function PsychoEducation() {
           </Pressable>
         </View>
       </View>
-      </GestureDetector>
     </SafeAreaView>
   );
 }

@@ -2,13 +2,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { GestureDetector } from "react-native-gesture-handler";
 import { useTranslation } from "react-i18next";
 
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { ForwardCta } from "@/components/common/ForwardCta";
 import { ForwardCtaFooter } from "@/components/common/ForwardCtaFooter";
-import { useSwipeForward } from "@/hooks/useSwipeForward";
 import {
   getClinicalScreeningResult,
   getOnboardedAt,
@@ -18,7 +16,6 @@ export default function Welcome() {
   const router = useRouter();
   const { t } = useTranslation();
   const handleBegin = () => router.push("/permissions");
-  const swipe = useSwipeForward(handleBegin);
 
   // v1.1.0: if onboarding is already complete, skip straight to /home on
   // launch. Two signals count as "onboarded":
@@ -55,7 +52,6 @@ export default function Welcome() {
 
   return (
     <SafeAreaView className="flex-1 bg-bg">
-      <GestureDetector gesture={swipe}>
       <View className="flex-1 px-8 justify-between">
         <ScreenHeader paddingX={0} />
         <View className="absolute left-8 top-24">
@@ -75,7 +71,6 @@ export default function Welcome() {
           <ForwardCta label={t("welcome.begin")} onPress={handleBegin} />
         </ForwardCtaFooter>
       </View>
-      </GestureDetector>
     </SafeAreaView>
   );
 }

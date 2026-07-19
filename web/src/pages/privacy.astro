@@ -1,125 +1,170 @@
 ---
 import Base from "../layouts/Base.astro";
 
-const lastUpdated = "1 June 2026";
+const lastUpdated = "1 ביוני 2026";
 ---
 
 <Base
-  title="Privacy policy. HearO"
-  description="What HearO collects, what stays on your device, who we share with, and how to delete your data."
+  title="מדיניות פרטיות. HearO"
+  description="מה HearO אוספת, מה נשאר במכשיר שלך, עם מי אנחנו משתפים, ואיך למחוק את הנתונים שלך."
 >
   <article class="px-6 sm:px-12 py-16 sm:py-20">
     <div class="max-w-3xl mx-auto">
-      <p class="text-sm uppercase tracking-[0.18em] text-text-mute mb-4">Privacy</p>
-      <h1 class="font-display text-3xl sm:text-4xl mb-3">Privacy policy</h1>
+      <p class="text-sm uppercase tracking-[0.18em] text-text-mute mb-4">פרטיות</p>
+      <h1 class="font-display text-3xl sm:text-4xl mb-3">מדיניות פרטיות</h1>
       <p class="text-sm text-text-mute mb-12">
-        Last updated: {lastUpdated}.
+        עודכן לאחרונה: {lastUpdated}.
         <span class="block mt-1 italic">
-          Draft. Pending legal review before App Store submission.
+          טיוטה. ממתינה לבדיקה משפטית לפני פרסום והגשה לחנות.
         </span>
       </p>
 
       <div class="space-y-10 leading-relaxed text-text-mute">
         <section>
-          <h2 class="font-display text-xl text-text mb-3">In plain language</h2>
+          <h2 class="font-display text-xl text-text mb-3">בשפה פשוטה</h2>
           <p>
-            HearO is an exposure-therapy tool for veterans living with combat-related PTSD. We collect the minimum required to make the app remember your preferences between sessions and let you see your own progress over time. Your real-time pulse from Apple Health stays on your device. We never log when you open the crisis sheet or call ERAN.
+            HearO היא כלי שנועד לאנשים המתמודדים עם פוסט טראומה על רקע שירות צבאי. אנחנו אוספים רק
+            את המידע שנדרש כדי להפעיל את האפליקציה, לזכור את ההעדפות שלכם בין סשנים, להתאים את
+            התרגול ולאפשר לכם לראות את ההתקדמות שלכם לאורך זמן.
+          </p>
+          <p class="mt-3">
+            אנחנו לא מתעדים מתי פתחתם את אפשרות החירום או מתי בחרתם ליצור קשר עם ער"ן.
           </p>
         </section>
 
         <section>
-          <h2 class="font-display text-xl text-text mb-3">Who we are</h2>
+          <h2 class="font-display text-xl text-text mb-3">מי אנחנו?</h2>
           <p>
-            HearO is published by the HearO project team. For privacy questions, write to <a class="text-accent hover:underline" href="mailto:privacy@hearo.app">privacy@hearo.app</a>.
+            HearO מפורסמת ומופעלת על ידי צוות הפרויקט של HearO. לשאלות בנושא פרטיות ניתן לפנות אלינו
+            בכתובת <a class="text-accent hover:underline" href="mailto:privacy@hearo.app">privacy@hearo.app</a>.
           </p>
         </section>
 
         <section>
-          <h2 class="font-display text-xl text-text mb-3">What data we collect</h2>
-          <p class="mb-3">When you create an account and use the app, we store the following on our backend (Supabase, hosted in the EU):</p>
-          <ul class="list-disc list-outside pl-6 space-y-2">
-            <li><span class="text-text">Account</span>: your email address (via Apple, Google, or email/password sign-in) and a display name. We use this to identify your account and nothing else.</li>
-            <li><span class="text-text">Preferences</span>: the scene you've chosen, the list of trigger sounds you've consented to hear, and the intensity-ceiling value you ended your last session on per sound. So the app remembers where you left off.</li>
-            <li><span class="text-text">Session records</span>: for each completed session: which scene, which sounds played, your pulse sampled at ~4 Hz across the session, and the three-option reflection you chose at the end. So you can see your own progress over time.</li>
-            <li><span class="text-text">Reminder schedule</span>: if you enable daily reminders, the time and timezone you chose. So we can send the push at the right hour.</li>
+          <h2 class="font-display text-xl text-text mb-3">אילו נתונים אנחנו אוספים?</h2>
+          <p class="mb-3">כאשר אתם פותחים חשבון ומשתמשים באפליקציה, אנחנו עשויים לשמור את המידע הבא:</p>
+          <ul class="list-disc list-outside ps-6 space-y-2">
+            <li><span class="text-text">פרטי חשבון</span>: כתובת האימייל שלכם, באמצעות התחברות עם Apple, Google או אימייל וסיסמה, וכן את שם התצוגה שלכם. מידע זה משמש אותנו לצורך זיהוי וניהול החשבון.</li>
+            <li><span class="text-text">העדפות</span>: הסצנות שבחרתם, הצלילים שבחרתם לפגוש ומידע הנדרש כדי לזכור את נקודת ההתקדמות שלכם עבור כל צליל. מידע זה מאפשר לאפליקציה להמשיך את התהליך מהמקום שבו עצרתם.</li>
+            <li><span class="text-text">מידע על סשנים</span>: עבור סשנים שהושלמו, אנחנו עשויים לשמור מידע כמו הסצנה שנבחרה, הצלילים שהושמעו והמשוב שניתן בסיום הסשן. מידע זה משמש כדי לאפשר לכם לעקוב אחר ההתקדמות שלכם וכדי לעזור למערכת להתאים את הסשנים הבאים.</li>
+            <li><span class="text-text">העדפות תזכורת</span>: אם בחרתם להפעיל תזכורות, אנחנו עשויים לשמור את השעה ואת אזור הזמן שבחרתם, כדי לשלוח את התזכורת בזמן המתאים.</li>
           </ul>
         </section>
 
         <section>
-          <h2 class="font-display text-xl text-text mb-3">What stays on your device, and never reaches us</h2>
-          <ul class="list-disc list-outside pl-6 space-y-2">
-            <li><span class="text-text">Your real-time pulse from Apple Health.</span> The live heart-rate stream from your Apple Watch is read by the app on your device to drive the breathing animation and auto-soften logic. It is only ever transmitted to our backend as the sampled curve at session end, and only because that's how progress tracking works. If you don't want any pulse data leaving your device, turn off pulse permission and the rest of the app still works.</li>
-            <li><span class="text-text">Crisis sheet taps and calls to ERAN.</span> When you tap the <span class="font-mono">i</span> icon to open the crisis sheet, or when you tap "Call ERAN 1201", the app does not send a request to our backend. This is a deliberate privacy choice. You must be able to trust that asking for help is not surveilled.</li>
-            <li><span class="text-text">Audio playback.</span> The trigger sounds and voice narration play locally on your device. We don't track which sounds you encountered in real time; only the per-session record at the end carries that information.</li>
+          <h2 class="font-display text-xl text-text mb-3">אפשרות החירום</h2>
+          <p>
+            כאשר אתם פותחים את אפשרות החירום באפליקציה או בוחרים ליצור קשר עם ער"ן, HearO אינה
+            מתעדת את הפעולה הזו ואינה שומרת אותה כחלק מהיסטוריית השימוש שלכם.
+          </p>
+          <p class="mt-3">
+            החלטנו על כך במכוון. אנחנו מאמינים שפנייה לעזרה צריכה להיות אפשרית מבלי שהפעולה עצמה
+            תהפוך לנתון שנשמר על המשתמש.
+          </p>
+        </section>
+
+        <section>
+          <h2 class="font-display text-xl text-text mb-3">השמעת האודיו</h2>
+          <p>
+            הצלילים והקול המלווה מתנגנים דרך האפליקציה. איננו עוקבים בזמן אמת אחר האופן שבו אתם
+            מאזינים להם. מידע על הצלילים שנכללו בסשן עשוי להישמר כחלק מסיכום הסשן, לצורך מעקב אחר
+            ההתקדמות והתאמת התרגולים הבאים.
+          </p>
+        </section>
+
+        <section>
+          <h2 class="font-display text-xl text-text mb-3">עם מי אנחנו משתפים מידע?</h2>
+          <p class="mb-3">
+            כברירת מחדל, אנחנו לא משתפים את המידע האישי שלכם עם גורמים אחרים, למעט ספקי שירות
+            הנדרשים לצורך הפעלת האפליקציה.
+          </p>
+          <ul class="list-disc list-outside ps-6 space-y-2">
+            <li>אנחנו לא מוכרים או משכירים את המידע שלכם.</li>
+            <li>אנחנו לא משתמשים ברשתות פרסום של צדדים שלישיים, ובאפליקציה אין פרסומות.</li>
+            <li>אנחנו לא משתמשים ב־SDKs של צדדים שלישיים לצורך יצירת פרופיל פרסומי או מעקב אחריכם בין שירותים שונים.</li>
+            <li>Supabase משמשת אותנו לצורכי מסד נתונים ואימות משתמשים ומעבדת מידע עבורנו במסגרת הפעלת השירות.</li>
+            <li>אם נהיה מחויבים על פי חוק למסור מידע, נעשה זאת בהתאם לדרישות הדין ובהיקף הנדרש.</li>
           </ul>
         </section>
 
         <section>
-          <h2 class="font-display text-xl text-text mb-3">Who we share with</h2>
-          <p class="mb-3">No one, by default. Specifically:</p>
-          <ul class="list-disc list-outside pl-6 space-y-2">
-            <li>We do not sell or rent your data.</li>
-            <li>We do not use third-party advertising networks. The app contains no ads.</li>
-            <li>We do not use third-party analytics SDKs that fingerprint or profile you. If we add basic product analytics later (e.g. PostHog), it will be limited to non-identifying event metadata and your account ID, and we will update this policy before turning it on.</li>
-            <li>Supabase (our database and authentication provider) stores your data on our behalf. They are a sub-processor; their privacy commitments are at <a class="text-accent hover:underline" href="https://supabase.com/privacy" rel="noopener noreferrer">supabase.com/privacy</a>.</li>
-            <li>If the law compels us to disclose data (lawful subpoena, court order), we will only do so for the minimum scope required and notify you where permitted.</li>
-          </ul>
-        </section>
-
-        <section>
-          <h2 class="font-display text-xl text-text mb-3">Where your data lives</h2>
+          <h2 class="font-display text-xl text-text mb-3">היכן המידע שלכם נשמר?</h2>
           <p>
-            Account and session data live in Supabase, hosted in the European Union. Apple Health data stays on your device. Audio assets and voice narration clips are bundled in the app. They don't sit on a server you talk to.
+            נתוני החשבון, ההעדפות ומידע הסשנים שנשמר נשמרים באמצעות Supabase, בסביבת אחסון הממוקמת
+            באיחוד האירופי.
           </p>
         </section>
 
         <section>
-          <h2 class="font-display text-xl text-text mb-3">How long we keep it</h2>
+          <h2 class="font-display text-xl text-text mb-3">כמה זמן אנחנו שומרים את המידע?</h2>
           <p>
-            For as long as your account exists. If you delete your account in the app or by email, we delete your profile, preferences, session records, and reminder schedule within 30 days. Anonymized aggregates (e.g., "how many sessions ran this month") may survive in our system for product analysis; nothing tied to you personally.
+            אנחנו שומרים את המידע שלכם כל עוד החשבון שלכם פעיל או כל עוד הוא נדרש לצורך הפעלת השירות.
+          </p>
+          <p class="mt-3">
+            אם תמחקו את החשבון דרך האפליקציה או באמצעות פנייה אלינו, נפעל למחיקת הפרופיל, ההעדפות
+            ומידע הסשנים המשויך לחשבון בהתאם למדיניות המחיקה שלנו.
+          </p>
+          <p class="mt-3">
+            מידע מצטבר ואנונימי שאינו מאפשר לזהות אתכם באופן אישי עשוי להישמר לצורך ניתוח ושיפור
+            המוצר.
           </p>
         </section>
 
         <section>
-          <h2 class="font-display text-xl text-text mb-3">Your rights</h2>
-          <p class="mb-3">Under GDPR (if you're in the EU/UK), Israel's Protection of Privacy Law, and most other modern privacy frameworks, you have the right to:</p>
-          <ul class="list-disc list-outside pl-6 space-y-2">
-            <li><span class="text-text">Access</span>: see what we have on you. Email us and we'll send you a copy.</li>
-            <li><span class="text-text">Correct</span>: fix anything that's wrong. Most of it you can change in the app directly.</li>
-            <li><span class="text-text">Delete</span>: wipe your account and everything tied to it. In-app, or by email.</li>
-            <li><span class="text-text">Object / restrict</span>: tell us to stop processing some category of data. We'll figure out together what that means in your case.</li>
-            <li><span class="text-text">Portability</span>: get your data in a machine-readable format (JSON). Email us.</li>
-          </ul>
-          <p class="mt-4">
-            Email <a class="text-accent hover:underline" href="mailto:privacy@hearo.app">privacy@hearo.app</a> for any of these. If we don't resolve your concern, you can complain to your local data protection authority.
+          <h2 class="font-display text-xl text-text mb-3">הזכויות שלכם</h2>
+          <p>
+            בהתאם לדין החל עליכם, ייתכן שעומדות לרשותכם זכויות שונות בנוגע למידע האישי שלכם, ובהן
+            הזכות לבקש גישה למידע, לתקן מידע שגוי, לבקש מחיקה של מידע או לקבל עותק של המידע שלכם.
+          </p>
+          <p class="mt-3">
+            ניתן לפנות אלינו בכתובת <a class="text-accent hover:underline" href="mailto:privacy@hearo.app">privacy@hearo.app</a>,
+            בכל בקשה הנוגעת למידע האישי שלכם.
           </p>
         </section>
 
         <section>
-          <h2 class="font-display text-xl text-text mb-3">Children</h2>
+          <h2 class="font-display text-xl text-text mb-3">קטינים</h2>
           <p>
-            HearO is built for adults. The persona is combat veterans. The app is not directed at children under 18, and we do not knowingly collect data from anyone under 18. If you believe a child has signed up, email us and we'll delete the account.
+            HearO נועדה לשימוש של מבוגרים ואינה מיועדת לילדים מתחת לגיל 18.
+          </p>
+          <p class="mt-3">
+            איננו אוספים ביודעין מידע אישי מילדים מתחת לגיל 18. אם נודע לכם כי קטין מתחת לגיל 18
+            פתח חשבון באפליקציה, ניתן לפנות אלינו ונבחן את הבקשה ונטפל במידע בהתאם.
           </p>
         </section>
 
         <section>
-          <h2 class="font-display text-xl text-text mb-3">Not medical advice</h2>
+          <h2 class="font-display text-xl text-text mb-3">לא תחליף לטיפול מקצועי</h2>
           <p>
-            HearO is a wellness tool grounded in exposure-therapy principles. It is not a medical device, has not been evaluated by any health regulator, and does not provide diagnosis or treatment. If you are in acute distress, the crisis sheet calls ERAN 1201 (or your equivalent local hotline). If you are in immediate danger, call your local emergency number.
+            HearO אינה תחליף לטיפול מקצועי ואינה כלי לאבחון. היא אינה מאושרת כיום כמכשיר רפואי על
+            ידי גוף רגולטורי ואינה מיועדת לתת מענה למצבי חירום או למצוקה חריפה.
+          </p>
+          <p class="mt-3">
+            במצבים כאלה ניתן להשתמש באפשרות החירום באפליקציה כדי לפנות לקבלת סיוע. במקרה של סכנה
+            מיידית, יש לפנות לשירותי החירום המתאימים באזורכם.
           </p>
         </section>
 
         <section>
-          <h2 class="font-display text-xl text-text mb-3">Changes to this policy</h2>
+          <h2 class="font-display text-xl text-text mb-3">שינויים במדיניות</h2>
           <p>
-            When this policy changes, we update the "Last updated" date at the top and notify active users in the app the next time they open it. For material changes (new data we collect, new third parties involved), we will require a fresh acceptance before continuing.
+            אם נעדכן את מדיניות הפרטיות הזו, נעדכן את תאריך "עודכן לאחרונה" בראש העמוד.
+          </p>
+          <p class="mt-3">
+            במקרה של שינוי מהותי באופן שבו אנחנו אוספים או משתמשים במידע האישי שלכם, נציג הודעה
+            מתאימה באפליקציה ונבקש הסכמה נוספת כאשר הדבר נדרש על פי דין.
           </p>
         </section>
 
         <section>
-          <h2 class="font-display text-xl text-text mb-3">Contact</h2>
+          <h2 class="font-display text-xl text-text mb-3">יצירת קשר</h2>
           <p>
-            <a class="text-accent hover:underline" href="mailto:privacy@hearo.app">privacy@hearo.app</a> for privacy questions. <a class="text-accent hover:underline" href="mailto:hello@hearo.app">hello@hearo.app</a> for anything else.
+            לשאלות ובקשות בנושא פרטיות:
+            <a class="text-accent hover:underline" href="mailto:privacy@hearo.app">privacy@hearo.app</a>
+          </p>
+          <p class="mt-2">
+            לכל דבר אחר:
+            <a class="text-accent hover:underline" href="mailto:hello@hearo.app">hello@hearo.app</a>
           </p>
         </section>
       </div>

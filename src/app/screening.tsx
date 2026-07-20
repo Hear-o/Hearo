@@ -56,10 +56,15 @@ export default function Screening() {
   }, []);
 
   /** Advance to the next step, remembering the current one so `goBack` can
-   *  return to it instead of just exiting the questionnaire. */
+   *  return to it instead of just exiting the questionnaire. Both state
+   *  updates go through functional updaters so a rapid double-tap can't push
+   *  duplicate history entries from a stale closure. */
   function goTo(next: ScreenStep) {
-    setHistory((prev) => [...prev, step]);
-    setStep(next);
+    setStep((current) => {
+      if (current.kind === next.kind) return current;
+      setHistory((prev) => [...prev, current]);
+      return next;
+    });
     fadeIn();
   }
 
@@ -70,8 +75,11 @@ export default function Screening() {
       router.back();
       return;
     }
-    setStep(history[history.length - 1]);
-    setHistory(history.slice(0, -1));
+    setHistory((prev) => {
+      if (prev.length === 0) return prev;
+      setStep(prev[prev.length - 1]);
+      return prev.slice(0, -1);
+    });
     fadeIn();
   }
 

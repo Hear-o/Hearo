@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -34,11 +35,32 @@ export default function Screening() {
   const [step, setStep] = useState<ScreenStep>({ kind: "intro" });
   const [history, setHistory] = useState<ScreenStep[]>([]);
 
+  // Opacity is reset synchronously (not in a useEffect) so the shared value
+  // is already 0 before React mounts the new step's content - resetting it
+  // post-paint let heavier steps (e.g. Pcl4Form) flash at the old opacity
+  // for a frame before snapping back to 0, which read as a jump.
+  const opacity = useSharedValue(0);
+  const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+  function fadeIn() {
+    opacity.value = 0;
+    opacity.value = withTiming(1, { duration: 260 });
+  }
+
+  // goTo/goBack cover step-to-step fades, but the very first mount (landing
+  // on "intro" straight from Permissions) never calls either - without this,
+  // opacity stays at its initial 0 and the intro step never becomes visible.
+  useEffect(() => {
+    fadeIn();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /** Advance to the next step, remembering the current one so `goBack` can
    *  return to it instead of just exiting the questionnaire. */
   function goTo(next: ScreenStep) {
     setHistory((prev) => [...prev, step]);
     setStep(next);
+    fadeIn();
   }
 
   /** Step back within the questionnaire; exits to Permissions only from the
@@ -50,14 +72,17 @@ export default function Screening() {
     }
     setStep(history[history.length - 1]);
     setHistory(history.slice(0, -1));
+    fadeIn();
   }
 
-  /** Step 1 → trauma-exposure answered. Persist immediately for "no" path
-   *  (items not administered); transition to items for "yes". */
-  async function handleTraumaExposureAnswer(traumaExposure: boolean) {
+  /** Step 1 → trauma-exposure answered. Transition immediately for both
+   *  answers so "no" doesn't stall on the "yes" path; the "no" path's result
+   *  (items not administered) persists in the background after navigating. */
+  function handleTraumaExposureAnswer(traumaExposure: boolean) {
     if (!traumaExposure) {
       const { score, outcome } = computeClinicalScreeningOutcome(false, [], content.cutoff);
-      await setClinicalScreeningResult({
+      goTo({ kind: "outcome", outcome });
+      void setClinicalScreeningResult({
         instrument: "pc-ptsd-5",
         version: content.version,
         traumaExposure: false,
@@ -67,7 +92,6 @@ export default function Screening() {
         outcome,
         takenAt: Date.now(),
       });
-      goTo({ kind: "outcome", outcome });
       return;
     }
     goTo({ kind: "items" });
@@ -116,23 +140,25 @@ export default function Screening() {
         }
       />
 
-      {step.kind === "intro" && (
-        <IntroStep lang={lang} onAnswer={handleTraumaExposureAnswer} />
-      )}
+      <Animated.View style={[{ flex: 1 }, animatedStyle]}>
+        {step.kind === "intro" && (
+          <IntroStep lang={lang} onAnswer={handleTraumaExposureAnswer} />
+        )}
 
-      {step.kind === "items" && <Pcl4Form onSubmit={handleItemsSubmit} />}
+        {step.kind === "items" && <Pcl4Form onSubmit={handleItemsSubmit} />}
 
-      {step.kind === "outcome" && step.outcome === "no-trauma" && (
-        <NoTraumaOutcome lang={lang} onContinue={handleContinue} />
-      )}
+        {step.kind === "outcome" && step.outcome === "no-trauma" && (
+          <NoTraumaOutcome lang={lang} onContinue={handleContinue} />
+        )}
 
-      {step.kind === "outcome" && step.outcome === "below-threshold" && (
-        <BelowThresholdOutcome lang={lang} onContinue={handleContinue} />
-      )}
+        {step.kind === "outcome" && step.outcome === "below-threshold" && (
+          <BelowThresholdOutcome lang={lang} onContinue={handleContinue} />
+        )}
 
-      {step.kind === "outcome" && step.outcome === "above-threshold" && (
-        <AboveThresholdOutcome lang={lang} onContinue={handleContinue} />
-      )}
+        {step.kind === "outcome" && step.outcome === "above-threshold" && (
+          <AboveThresholdOutcome lang={lang} onContinue={handleContinue} />
+        )}
+      </Animated.View>
     </SafeAreaView>
   );
 }

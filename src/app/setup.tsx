@@ -73,20 +73,21 @@ export default function Setup() {
           carousel's pan recognizer — see #58 review. Users tap "Ready"
           (or swipe forward from /home once they reach it) instead. */}
       <View className="flex-1">
+      {/* Nav element on the leading edge — LEFT in LTR, RIGHT in RTL.
+          Crisis on the trailing edge. flex-row auto-flips via I18nManager.
+          Fixed above the ScrollView so the crisis affordance stays reachable
+          while scrolling instead of scrolling out of view. */}
+      <ScreenHeader
+        left={
+          <Pressable onPress={() => router.back()} hitSlop={12}>
+            <Icon name="arrow-left" size={22} color={tokens.accent} />
+          </Pressable>
+        }
+      />
       <ScrollView
         contentContainerStyle={{ paddingBottom: 24 }}
         showsVerticalScrollIndicator={true}
       >
-        {/* Nav element on the leading edge — LEFT in LTR, RIGHT in RTL.
-            Crisis on the trailing edge. flex-row auto-flips via I18nManager. */}
-        <ScreenHeader
-          left={
-            <Pressable onPress={() => router.back()} hitSlop={12}>
-              <Icon name="arrow-left" size={22} color={tokens.accent} />
-            </Pressable>
-          }
-        />
-
         <View className="px-8 pt-6">
           <View style={{ width: 28, height: 1, backgroundColor: tokens.accent }} />
         </View>

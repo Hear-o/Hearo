@@ -113,18 +113,20 @@ export default function CompanionRoadmap() {
 
   return (
     <SafeAreaView className="flex-1 bg-bg">
+      <View className="flex-1">
+      {/* Fixed above the ScrollView so the crisis affordance stays reachable
+          while scrolling instead of scrolling out of view. */}
+      <ScreenHeader
+        left={
+          <Pressable onPress={() => router.back()} hitSlop={12}>
+            <Icon name="arrow-left" size={22} color={tokens.accent} />
+          </Pressable>
+        }
+      />
       <ScrollView
         contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={true}
       >
-        <ScreenHeader
-          left={
-            <Pressable onPress={() => router.back()} hitSlop={12}>
-              <Icon name="arrow-left" size={22} color={tokens.accent} />
-            </Pressable>
-          }
-        />
-
         <View className="px-8 pt-6">
           <View style={{ width: 28, height: 1, backgroundColor: tokens.sage }} />
         </View>
@@ -173,6 +175,7 @@ export default function CompanionRoadmap() {
           ))}
         </View>
       </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }

@@ -229,19 +229,20 @@ export default function Permissions() {
   return (
     <SafeAreaView className="flex-1 bg-bg">
       <View className="flex-1">
+      {/* Fixed above the ScrollView so the crisis affordance stays reachable
+          while scrolling instead of scrolling out of view. */}
+      <ScreenHeader
+        left={
+          <Pressable onPress={() => router.back()} hitSlop={12}>
+            <Icon name="arrow-left" size={22} color={tokens.accent} />
+          </Pressable>
+        }
+      />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 32 }}
         showsVerticalScrollIndicator={true}
       >
-        <ScreenHeader
-          paddingX={0}
-          left={
-            <Pressable onPress={() => router.back()} hitSlop={12}>
-              <Icon name="arrow-left" size={22} color={tokens.accent} />
-            </Pressable>
-          }
-        />
         <View className="pt-4">
           <View style={{ width: 28, height: 1, backgroundColor: tokens.accent }} />
         </View>

@@ -994,7 +994,7 @@ const PSYCHO_EDUCATION: PsychoEducationContent = {
     },
     {
       en: "After the danger passes, the alarm stays sensitive. A sound, a smell, a place can still set it off. That's not broken — it's a protection system that adapted.",
-      he: "אחרי שהסכנה חולפת, האזעקה נשארת רגישה. צליל, ריח או מקום עוד יכולים להפעיל אותה. זה לא קלקול, אלא מערכת הגנה שהתאימה את עצמה.",
+      he: "אחרי שהסכנה חולפת, הגוף נשאר דרוך. צליל ,ריח או מקום יכולים להפעיל מחדש את המנגנון, זה תפקוד תקין לחלוטין של מערכת ההגנה שלנו.",
     },
     {
       en: "Here, gradually and in a safe space, we'll teach the system that the danger has passed.",

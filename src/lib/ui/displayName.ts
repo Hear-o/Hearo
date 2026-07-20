@@ -127,10 +127,9 @@ export function useNameDraft(): {
   const { name: storedName } = useDisplayName();
   const [value, setValue] = useState<string>(storedName ?? "");
   useEffect(() => {
-    if (storedName !== null && storedName !== undefined && value === "") {
-      setValue(storedName);
+    if (storedName !== null && storedName !== undefined) {
+      setValue((prev) => (prev === "" ? storedName : prev));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storedName]);
 
   return {

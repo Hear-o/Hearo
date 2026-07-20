@@ -118,7 +118,12 @@ export default function CompanionRoadmap() {
           while scrolling instead of scrolling out of view. */}
       <ScreenHeader
         left={
-          <Pressable onPress={() => router.back()} hitSlop={12}>
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel={t("setup.back")}
+          >
             <Icon name="arrow-left" size={22} color={tokens.accent} />
           </Pressable>
         }

@@ -116,6 +116,7 @@ const resources = {
         mediaMissing: "This photo or video is no longer available.",
       },
       calming: {
+        exit: "Exit calming",
         breatheIn: "Breathe in",
         breatheOut: "Breathe out",
         hold: "Hold",
@@ -318,6 +319,7 @@ const resources = {
       },
 
       calming: {
+        exit: "יציאה מהרגעה",
         breatheIn: "שאיפה",
         breatheOut: "נשיפה",
         hold: "החזקה",

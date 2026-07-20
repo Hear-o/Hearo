@@ -8,6 +8,7 @@ import { Icon } from "@/components/common/Icon";
 import { SceneCarousel } from "@/components/features/setup/SceneCarousel";
 import { getScene, getSound, localize } from "@/lib/content/content";
 import { useSessionStore, SessionDurationMinutes } from "@/lib/storage/session-store";
+import { fonts, tokens, type as typeScale } from "@/lib/ui/tokens";
 
 // Maximum selectable sounds = one per minute of trigger zone.
 // Trigger zone = totalMs − 30 s intro − 30 s outro.
@@ -17,7 +18,6 @@ function maxSoundsForDuration(durationMinutes: SessionDurationMinutes): number {
   const triggerZoneMs = durationMinutes * 60_000 - 60_000;
   return Math.max(1, Math.floor(triggerZoneMs / 60_000));
 }
-import { fonts, tokens, type as typeScale } from "@/lib/ui/tokens";
 
 const DURATION_CHOICES: SessionDurationMinutes[] = [3, 5, 7];
 

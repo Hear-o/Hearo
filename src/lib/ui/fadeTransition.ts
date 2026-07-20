@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useCallback } from "react";
+import { useFocusEffect } from "expo-router";
 import {
   runOnJS,
   useAnimatedStyle,
@@ -14,19 +15,27 @@ import {
 // goes through this shared Reanimated-driven fade for identical timing on
 // both platforms. See FadeScreen.tsx (page-level) and screening.tsx's
 // useCrossfade() usage (in-screen step swaps).
-export const FADE_DURATION_MS = 600;
+export const FADE_DURATION_MS = 1000;
 
-/** Mount-only fade-in, 0→1 over FADE_DURATION_MS. For page-level screens: an
- *  incoming screen can only fade itself in — the outgoing one is unmounted
- *  instantly by the navigator, so a true cross-screen crossfade isn't
- *  achievable without wrapping the whole navigator (out of scope). */
+/** Fade-in, 0→1 over FADE_DURATION_MS, replayed on every focus — not just
+ *  first mount. React Navigation keeps popped-to screens mounted, so a plain
+ *  mount-only effect only fires on the initial push; navigating *back* to an
+ *  already-mounted screen would otherwise snap into view with no fade at
+ *  all. useFocusEffect covers both the initial push and every subsequent
+ *  return to this screen. For page-level screens: an incoming screen can
+ *  only fade itself in — the outgoing one is unmounted/hidden instantly by
+ *  the navigator, so a true cross-screen crossfade isn't achievable without
+ *  wrapping the whole navigator (out of scope). */
 export function useFadeIn() {
   const opacity = useSharedValue(0);
 
-  useEffect(() => {
-    opacity.value = withTiming(1, { duration: FADE_DURATION_MS });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      opacity.value = 0;
+      opacity.value = withTiming(1, { duration: FADE_DURATION_MS });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  );
 
   return useAnimatedStyle(() => ({ opacity: opacity.value }));
 }

@@ -48,7 +48,9 @@ export default function Screening() {
 
   function fadeIn() {
     opacity.value = 0;
-    opacity.value = withTiming(1, { duration: 260 });
+    // Matches _layout.tsx's page-to-page animationDuration so these in-screen
+    // step transitions feel the same speed as the surrounding navigation.
+    opacity.value = withTiming(1, { duration: 600 });
   }
 
   // goTo/goBack cover step-to-step fades, but the very first mount (landing

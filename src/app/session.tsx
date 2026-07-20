@@ -163,14 +163,15 @@ export default function Session() {
   const isCrisisOpen = useCrisisStore((s) => s.isOpen);
 
   // Lock the duration once at mount — a Setup change mid-session must not
-  // retroactively shorten/lengthen the timers. useRef captures the live store
-  // value at mount and never re-reads.
-  const sessionTimingRef = useRef(
+  // retroactively shorten/lengthen the timers. Lazy useState initializer
+  // captures the live store value at mount and never re-reads, without the
+  // render-phase ref access a useRef here would require.
+  const [sessionTiming] = useState(() =>
     deriveSessionTiming(useSessionStore.getState().durationMinutes),
   );
-  const AMBIENT_FADE_IN_MS = sessionTimingRef.current.ambientMs;
-  const ADAPTIVE_LOOP_MS = sessionTimingRef.current.adaptiveMs;
-  const TOTAL_SESSION_MS = sessionTimingRef.current.totalMs;
+  const AMBIENT_FADE_IN_MS = sessionTiming.ambientMs;
+  const ADAPTIVE_LOOP_MS = sessionTiming.adaptiveMs;
+  const TOTAL_SESSION_MS = sessionTiming.totalMs;
 
   // Keep the screen on for the duration of the session.
   useEffect(() => {

@@ -31,11 +31,19 @@ type ScreenStep =
 
 export default function Screening() {
   const router = useRouter();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const lang = i18n.language;
   const content = getClinicalScreening();
-  const [step, setStep] = useState<ScreenStep>({ kind: "intro" });
-  const [history, setHistory] = useState<ScreenStep[]>([]);
+
+  // step and history are combined into one state object updated by a single
+  // setter. Nesting setHistory inside setStep's updater (or vice versa)
+  // violates React's purity rule for updaters — React can invoke an updater
+  // more than once (notably in Strict Mode), so a side-effecting nested
+  // setState there can produce duplicate history entries.
+  const [{ step, history }, setScreenState] = useState<{
+    step: ScreenStep;
+    history: ScreenStep[];
+  }>({ step: { kind: "intro" }, history: [] });
 
   // True crossfade (fade out → swap step → fade in) instead of a plain
   // fade-in, so step transitions don't read as an instant cut. Shared with
@@ -44,16 +52,15 @@ export default function Screening() {
   const { animatedStyle, transition } = useCrossfade();
 
   /** Advance to the next step, remembering the current one so `goBack` can
-   *  return to it instead of just exiting the questionnaire. Both state
-   *  updates go through functional updaters so a rapid double-tap can't push
-   *  duplicate history entries from a stale closure. The actual state change
-   *  runs inside transition() once the fade-out completes. */
+   *  return to it instead of just exiting the questionnaire. The state
+   *  update is atomic so a rapid double-tap can't push duplicate history
+   *  entries from a stale closure. The actual state change runs inside
+   *  transition() once the fade-out completes. */
   function goTo(next: ScreenStep) {
     transition(() => {
-      setStep((current) => {
-        if (current.kind === next.kind) return current;
-        setHistory((prev) => [...prev, current]);
-        return next;
+      setScreenState((prev) => {
+        if (prev.step.kind === next.kind) return prev;
+        return { step: next, history: [...prev.history, prev.step] };
       });
     });
   }
@@ -66,10 +73,12 @@ export default function Screening() {
       return;
     }
     transition(() => {
-      setHistory((prev) => {
-        if (prev.length === 0) return prev;
-        setStep(prev[prev.length - 1]);
-        return prev.slice(0, -1);
+      setScreenState((prev) => {
+        if (prev.history.length === 0) return prev;
+        return {
+          step: prev.history[prev.history.length - 1],
+          history: prev.history.slice(0, -1),
+        };
       });
     });
   }
@@ -141,7 +150,12 @@ export default function Screening() {
       <ScreenHeader
         left={
           isLongStep ? (
-            <Pressable onPress={goBack} hitSlop={12}>
+            <Pressable
+              onPress={goBack}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel={t("setup.back")}
+            >
               <Icon name="arrow-left" size={22} color={tokens.accent} />
             </Pressable>
           ) : undefined

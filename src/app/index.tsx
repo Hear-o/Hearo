@@ -4,6 +4,7 @@ import { Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 
+import { FadeScreen } from "@/components/common/FadeScreen";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { ForwardCta } from "@/components/common/ForwardCta";
 import { ForwardCtaFooter } from "@/components/common/ForwardCtaFooter";
@@ -51,26 +52,28 @@ export default function Welcome() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-bg">
-      <View className="flex-1 px-8 justify-between">
-        <ScreenHeader paddingX={0} />
-        <View className="absolute left-8 top-24">
-          <View className="w-8 h-px bg-accent" />
-        </View>
+    <FadeScreen>
+      <SafeAreaView className="flex-1 bg-bg">
+        <View className="flex-1 px-8 justify-between">
+          <ScreenHeader paddingX={0} />
+          <View className="absolute left-8 top-24">
+            <View className="w-8 h-px bg-accent" />
+          </View>
 
-        <View className="flex-1 justify-center">
-          <Text
-            className="text-text font-display text-4xl leading-[44px]"
-            style={{ fontFamily: "FrankRuhlLibre_400Regular", textAlign: "left" }}
-          >
-            {t("welcome.line")}
-          </Text>
-        </View>
+          <View className="flex-1 justify-center">
+            <Text
+              className="text-text font-display text-4xl leading-[44px]"
+              style={{ fontFamily: "FrankRuhlLibre_400Regular", textAlign: "left" }}
+            >
+              {t("welcome.line")}
+            </Text>
+          </View>
 
-        <ForwardCtaFooter paddingX={0}>
-          <ForwardCta label={t("welcome.begin")} onPress={handleBegin} />
-        </ForwardCtaFooter>
-      </View>
-    </SafeAreaView>
+          <ForwardCtaFooter paddingX={0}>
+            <ForwardCta label={t("welcome.begin")} onPress={handleBegin} />
+          </ForwardCtaFooter>
+        </View>
+      </SafeAreaView>
+    </FadeScreen>
   );
 }

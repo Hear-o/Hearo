@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import { CalmingProtocol } from "@/components/features/calming/CalmingProtocol";
+import { FadeScreen } from "@/components/common/FadeScreen";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
 import { useCalmingOverlay } from "@/hooks/useCalmingOverlay";
@@ -41,17 +42,19 @@ export default function Calming() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-bg">
-      {/* Header — nav element (close) on the leading edge, crisis on the
-          trailing edge. Same LTR/RTL convention as Setup/Home/Session. */}
-      <ScreenHeader
-        left={
-          <Pressable hitSlop={16} onPress={handleExit} accessibilityLabel={t("calming.exit")}>
-            <Icon name="close" size={22} color={tokens.text} />
-          </Pressable>
-        }
-      />
-      <CalmingProtocol onProtocolEnd={handleProtocolEnd} />
-    </SafeAreaView>
+    <FadeScreen>
+      <SafeAreaView className="flex-1 bg-bg">
+        {/* Header — nav element (close) on the leading edge, crisis on the
+            trailing edge. Same LTR/RTL convention as Setup/Home/Session. */}
+        <ScreenHeader
+          left={
+            <Pressable hitSlop={16} onPress={handleExit} accessibilityLabel={t("calming.exit")}>
+              <Icon name="close" size={22} color={tokens.text} />
+            </Pressable>
+          }
+        />
+        <CalmingProtocol onProtocolEnd={handleProtocolEnd} />
+      </SafeAreaView>
+    </FadeScreen>
   );
 }

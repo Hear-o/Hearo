@@ -6,6 +6,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useTranslation } from "react-i18next";
 
+import { FadeScreen } from "@/components/common/FadeScreen";
 import { Icon } from "@/components/common/Icon";
 import { CompanionTaskMedia, getCompanionTaskMedia } from "@/lib/storage/storage";
 import { fonts, tokens } from "@/lib/ui/tokens";
@@ -31,6 +32,7 @@ export default function CompanionMediaViewer() {
   }, [task]);
 
   return (
+    <FadeScreen>
     <SafeAreaView style={{ flex: 1, backgroundColor: tokens.sceneOverlayBottom }}>
       <View
         style={{
@@ -70,6 +72,7 @@ export default function CompanionMediaViewer() {
         )}
       </View>
     </SafeAreaView>
+    </FadeScreen>
   );
 }
 

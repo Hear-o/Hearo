@@ -3,6 +3,7 @@ import { Text, View } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
+import { FadeScreen } from "@/components/common/FadeScreen";
 import { PostSessionFeedback, FeedbackAnswers } from "@/components/features/post-session";
 import { SceneBackground } from "@/components/features/session/SceneBackground";
 import { VoiceLine } from "@/components/features/session/VoiceLine";
@@ -81,14 +82,17 @@ export default function WindingDown() {
   // After the ambient fade completes, swap the scene view for the feedback form.
   if (voiceDone) {
     return (
-      <PostSessionFeedback
-        onSubmit={handleFeedbackSubmit}
-        onSkip={handleFeedbackSkip}
-      />
+      <FadeScreen>
+        <PostSessionFeedback
+          onSubmit={handleFeedbackSubmit}
+          onSkip={handleFeedbackSkip}
+        />
+      </FadeScreen>
     );
   }
 
   return (
+    <FadeScreen>
     <View className="flex-1 bg-bg">
       {/* No back-swipe out of the wind-down — this is the closing moment of
           the session; the user moves forward to feedback, not backward to
@@ -121,5 +125,6 @@ export default function WindingDown() {
         {closingText ? <VoiceLine text={closingText} /> : null}
       </View>
     </View>
+    </FadeScreen>
   );
 }

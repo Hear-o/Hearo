@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
+import { FadeScreen } from "@/components/common/FadeScreen";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { releaseAudioEngine } from "@/lib/audio/audio-engine-host";
 import { incrementSessionsCompleted } from "@/lib/storage/storage";
@@ -38,6 +39,7 @@ export default function After() {
   }, []);
 
   return (
+    <FadeScreen>
     <SafeAreaView className="flex-1 bg-bg">
       <View className="flex-1 px-8">
         <ScreenHeader paddingX={0} />
@@ -98,5 +100,6 @@ export default function After() {
         </Pressable>
       </View>
     </SafeAreaView>
+    </FadeScreen>
   );
 }

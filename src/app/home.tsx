@@ -5,6 +5,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import Svg, { Path } from "react-native-svg";
 
+import { FadeScreen } from "@/components/common/FadeScreen";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
 import { getDailyAffirmation } from "@/lib/content/content";
@@ -67,6 +68,7 @@ export default function Home() {
   });
 
   return (
+    <FadeScreen>
     <SafeAreaView className="flex-1 bg-bg">
         <View className="flex-1 px-8">
           <ScreenHeader
@@ -289,6 +291,7 @@ export default function Home() {
           </View>
         </View>
     </SafeAreaView>
+    </FadeScreen>
   );
 }
 

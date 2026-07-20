@@ -1,17 +1,15 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
+import { FadeScreen } from "@/components/common/FadeScreen";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
 import { Pcl4Form } from "@/components/features/screening/Pcl4Form";
+import { useCrossfade } from "@/lib/ui/fadeTransition";
 import {
   computeClinicalScreeningOutcome,
   getClinicalScreening,
@@ -39,39 +37,25 @@ export default function Screening() {
   const [step, setStep] = useState<ScreenStep>({ kind: "intro" });
   const [history, setHistory] = useState<ScreenStep[]>([]);
 
-  // Opacity is reset synchronously (not in a useEffect) so the shared value
-  // is already 0 before React mounts the new step's content - resetting it
-  // post-paint let heavier steps (e.g. Pcl4Form) flash at the old opacity
-  // for a frame before snapping back to 0, which read as a jump.
-  const opacity = useSharedValue(0);
-  const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
-
-  function fadeIn() {
-    opacity.value = 0;
-    // Matches _layout.tsx's page-to-page animationDuration so these in-screen
-    // step transitions feel the same speed as the surrounding navigation.
-    opacity.value = withTiming(1, { duration: 600 });
-  }
-
-  // goTo/goBack cover step-to-step fades, but the very first mount (landing
-  // on "intro" straight from Permissions) never calls either - without this,
-  // opacity stays at its initial 0 and the intro step never becomes visible.
-  useEffect(() => {
-    fadeIn();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // True crossfade (fade out → swap step → fade in) instead of a plain
+  // fade-in, so step transitions don't read as an instant cut. Shared with
+  // the page-level FadeScreen wrapper's timing (fadeTransition.ts) so this
+  // feels like the same speed as navigating between screens.
+  const { animatedStyle, transition } = useCrossfade();
 
   /** Advance to the next step, remembering the current one so `goBack` can
    *  return to it instead of just exiting the questionnaire. Both state
    *  updates go through functional updaters so a rapid double-tap can't push
-   *  duplicate history entries from a stale closure. */
+   *  duplicate history entries from a stale closure. The actual state change
+   *  runs inside transition() once the fade-out completes. */
   function goTo(next: ScreenStep) {
-    setStep((current) => {
-      if (current.kind === next.kind) return current;
-      setHistory((prev) => [...prev, current]);
-      return next;
+    transition(() => {
+      setStep((current) => {
+        if (current.kind === next.kind) return current;
+        setHistory((prev) => [...prev, current]);
+        return next;
+      });
     });
-    fadeIn();
   }
 
   /** Step back within the questionnaire; exits to Permissions only from the
@@ -81,12 +65,13 @@ export default function Screening() {
       router.back();
       return;
     }
-    setHistory((prev) => {
-      if (prev.length === 0) return prev;
-      setStep(prev[prev.length - 1]);
-      return prev.slice(0, -1);
+    transition(() => {
+      setHistory((prev) => {
+        if (prev.length === 0) return prev;
+        setStep(prev[prev.length - 1]);
+        return prev.slice(0, -1);
+      });
     });
-    fadeIn();
   }
 
   /** Step 1 → trauma-exposure answered. Transition immediately for both
@@ -151,6 +136,7 @@ export default function Screening() {
     (step.kind === "outcome" && step.outcome === "above-threshold");
 
   return (
+    <FadeScreen>
     <SafeAreaView className="flex-1 bg-bg">
       <ScreenHeader
         left={
@@ -190,6 +176,7 @@ export default function Screening() {
         )}
       </Animated.View>
     </SafeAreaView>
+    </FadeScreen>
   );
 }
 

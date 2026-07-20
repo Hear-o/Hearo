@@ -3,6 +3,7 @@ import { Text, View } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
+import { FadeScreen } from "@/components/common/FadeScreen";
 import { BreathingCircle } from "@/components/features/session/BreathingCircle";
 import { SceneBackground } from "@/components/features/session/SceneBackground";
 import { useAudioEngine } from "@/hooks/useAudioEngine";
@@ -104,6 +105,7 @@ export default function Preparing() {
   }, [engine, scene, i18n.language, router, t]);
 
   return (
+    <FadeScreen>
     <View className="flex-1 bg-bg">
       {/* No back-swipe while we're decoding buffers + activating the audio
           session. Interrupting prep mid-flow puts the engine in a weird
@@ -151,5 +153,6 @@ export default function Preparing() {
         </Text>
       </View>
     </View>
+    </FadeScreen>
   );
 }

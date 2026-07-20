@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
+import { FadeScreen } from "@/components/common/FadeScreen";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
 import {
@@ -61,6 +62,7 @@ export default function CompanionIndex() {
   };
 
   return (
+    <FadeScreen>
     <SafeAreaView className="flex-1 bg-bg">
       <ScreenHeader
         left={
@@ -97,5 +99,6 @@ export default function CompanionIndex() {
         />
       </View>
     </SafeAreaView>
+    </FadeScreen>
   );
 }

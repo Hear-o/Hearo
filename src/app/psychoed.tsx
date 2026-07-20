@@ -3,6 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 
+import { FadeScreen } from "@/components/common/FadeScreen";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { getPsychoEducation, localize, SceneKey } from "@/lib/content/content";
 import { setPsychoEducationSeen } from "@/lib/storage/storage";
@@ -37,6 +38,7 @@ export default function PsychoEducation() {
   }
 
   return (
+    <FadeScreen>
     <SafeAreaView className="flex-1 bg-bg">
       <View className="flex-1 px-8">
         <ScreenHeader paddingX={0} />
@@ -115,5 +117,6 @@ export default function PsychoEducation() {
         </View>
       </View>
     </SafeAreaView>
+    </FadeScreen>
   );
 }

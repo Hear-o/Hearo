@@ -5,6 +5,7 @@ import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/dat
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
+import { FadeScreen } from "@/components/common/FadeScreen";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { ForwardCta } from "@/components/common/ForwardCta";
 import { ForwardCtaFooter } from "@/components/common/ForwardCtaFooter";
@@ -227,6 +228,7 @@ export default function Permissions() {
   }
 
   return (
+    <FadeScreen>
     <SafeAreaView className="flex-1 bg-bg">
       <View className="flex-1">
       {/* Fixed above the ScrollView so the crisis affordance stays reachable
@@ -470,5 +472,6 @@ export default function Permissions() {
       ) : null}
       </View>
     </SafeAreaView>
+    </FadeScreen>
   );
 }

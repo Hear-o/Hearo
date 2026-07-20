@@ -17,6 +17,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 
+import { FadeScreen } from "@/components/common/FadeScreen";
 import { BreathingCircle } from "@/components/features/session/BreathingCircle";
 import { ExitSessionConfirm } from "@/components/features/session/ExitSessionConfirm";
 import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
@@ -771,6 +772,7 @@ export default function Session() {
 
   if (machineState === "LOADING") {
     return (
+      <FadeScreen>
       <View className="flex-1 bg-bg items-center justify-center">
         {loadError ? (
           <>
@@ -809,12 +811,14 @@ export default function Session() {
           </Text>
         )}
       </View>
+      </FadeScreen>
     );
   }
 
   // ── Main session screen ───────────────────────────────────────────────
 
   return (
+    <FadeScreen>
     <View className="flex-1 bg-bg">
       {/* Lock the iOS back-swipe + Android back-gesture while mid-session.
           The only ways out are the close X, the End-session pill, or the
@@ -1053,5 +1057,6 @@ export default function Session() {
         onConfirm={handleExitConfirm}
       />
     </View>
+    </FadeScreen>
   );
 }

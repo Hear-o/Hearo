@@ -3,6 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
+import { FadeScreen } from "@/components/common/FadeScreen";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { ForwardCta } from "@/components/common/ForwardCta";
 import { ForwardCtaFooter } from "@/components/common/ForwardCtaFooter";
@@ -81,6 +82,7 @@ export default function Setup() {
   };
 
   return (
+    <FadeScreen>
     <SafeAreaView className="flex-1 bg-bg">
       {/* Setup is a form with a horizontal scene carousel, scrollable
           checkboxes, a text input, and a time picker. A screen-level
@@ -351,5 +353,6 @@ export default function Setup() {
       </ForwardCtaFooter>
       </View>
     </SafeAreaView>
+    </FadeScreen>
   );
 }

@@ -83,6 +83,7 @@ const resources = {
       companion: {
         practiceCta: "Practice",
         practiceHint: "Sound-exposure session",
+        practiceCtaHint: "Begin a practice session",
         companionCta: "Companion",
         companionHint: "Small steps into your day",
         beta: "BETA",
@@ -282,6 +283,7 @@ const resources = {
       companion: {
         practiceCta: "תרגול",
         practiceHint: "סשן חשיפה לצלילים",
+        practiceCtaHint: "התחלת סשן תרגול",
         companionCta: "ליווי",
         companionHint: "צעדים קטנים אל תוך היום",
         beta: "בטא",

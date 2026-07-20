@@ -172,7 +172,7 @@ export default function Home() {
             <Pressable
               onPress={handleBegin}
               accessibilityRole="button"
-              accessibilityHint="Begin a practice session"
+              accessibilityHint={t("companion.practiceCtaHint")}
               hitSlop={8}
               style={{
                 borderRadius: 20,

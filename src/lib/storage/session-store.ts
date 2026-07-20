@@ -12,8 +12,8 @@ export type { SceneKey, SoundKey };
 export type SessionEndedBy = "natural" | "manual-exit" | "calming-protocol";
 
 /** Total session length in minutes. 3/5/7 are the only valid choices today —
- *  picked at Setup, scaled proportionally across AMBIENT_FADE_IN + ADAPTIVE_LOOP.
- *  See session.tsx for the split math. */
+ *  picked at Setup, determines trigger count and sound-selection cap.
+ *  See session.tsx for the zone split math. */
 export type SessionDurationMinutes = 3 | 5 | 7;
 
 /** Default length when the user lands at Setup without picking. 5 was chosen
@@ -57,6 +57,17 @@ export const useSessionStore = create<SessionState>((set) => ({
         ? state.sounds.filter((s) => s !== sound)
         : [...state.sounds, sound],
     })),
-  setDurationMinutes: (minutes) => set({ durationMinutes: minutes }),
+  // When duration changes, trim the selected sounds to the new cap (1 trigger
+  // per minute of trigger zone) so the user never carries over more sounds
+  // than will fire in the shorter session.
+  setDurationMinutes: (minutes) =>
+    set((state) => {
+      const triggerZoneMs = minutes * 60_000 - 60_000;
+      const maxSounds = Math.max(1, Math.floor(triggerZoneMs / 60_000));
+      return {
+        durationMinutes: minutes,
+        sounds: state.sounds.slice(0, maxSounds),
+      };
+    }),
   setLastEndedBy: (endedBy) => set({ lastEndedBy: endedBy }),
 }));

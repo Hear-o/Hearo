@@ -2,7 +2,7 @@
 //
 // Wraps the pulse source (mock generator today, HealthKit ACL when it lands)
 // and adds:
-//   - Per-session HR baseline measurement during AMBIENT_FADE_IN
+//   - Per-session HR baseline measurement during INTRO
 //   - Spike detection: HR ≥ baseline × 1.15 sustained ≥ 8 s
 //   - Normalization detection: HR ≤ baseline × 0.90
 //   - Chronic high baseline handling (resting HR > 90 BPM)
@@ -14,14 +14,15 @@ import { usePulse, PulsePhase } from '@/lib/integrations/pulse';
 export type SessionState =
   | 'LOADING'
   | 'DISCLAIMER'
-  | 'AMBIENT_FADE_IN'
-  | 'ADAPTIVE_LOOP'
+  | 'INTRO'
+  | 'TRIGGER_ZONE'
+  | 'OUTRO'
   | 'WIND_DOWN'
   | 'POST_SESSION';
 
 export interface PulseMonitorResult {
   pulseBpm: number;
-  /** Baseline HR computed at end of AMBIENT_FADE_IN. Null until ready. */
+  /** Baseline HR computed at end of INTRO. Null until ready. */
   sessionBaseline: number | null;
   /** Currently in a confirmed spike (≥15% above baseline, ≥8 s). */
   isSpiked: boolean;
@@ -46,7 +47,7 @@ const NORMALIZE_RATIO = 0.90;
 const SPIKE_SUSTAIN_MS = 8_000;
 const BLE_TIMEOUT_MS = 8_000;
 const CHRONIC_HIGH_BPM = 90;
-const BASELINE_FALLBACK_BPM = 74; // used when AMBIENT_FADE_IN produces no readings
+const BASELINE_FALLBACK_BPM = 74; // used when INTRO produces no readings
 
 const SAMPLE_INTERVAL_MS = 250;
 const ADAPTIVE_MOCK_PHASE: PulsePhase = 'rising';
@@ -60,7 +61,7 @@ export function usePulseMonitor({
   onWatchReconnected,
 }: Options): PulseMonitorResult {
   const mockPhase: PulsePhase =
-    sessionState === 'ADAPTIVE_LOOP' ? ADAPTIVE_MOCK_PHASE : 'baseline';
+    sessionState === 'TRIGGER_ZONE' ? ADAPTIVE_MOCK_PHASE : 'baseline';
 
   const pulseResult = usePulse({
     active: isSessionActive && sessionState !== 'LOADING',
@@ -69,7 +70,7 @@ export function usePulseMonitor({
   const rawBpm = pulseResult.value;
   // Pulse source — "real" when a watch is feeding HealthKit samples, "mock"
   // otherwise. We skip spike detection on mock because the generator's
-  // ADAPTIVE_LOOP target (rising, ~96 BPM) sits permanently above the spike
+  // TRIGGER_ZONE target (rising, ~96 BPM) sits permanently above the spike
   // threshold (baseline × 1.15) and there's no normalize path — every mock
   // session ended up pausing the trigger scheduler ~30 s in and never
   // resuming. Spike detection is only meaningful with real HR data.
@@ -107,38 +108,38 @@ export function usePulseMonitor({
   useEffect(() => { onWatchDisconnectedRef.current = onWatchDisconnected; }, [onWatchDisconnected]);
   useEffect(() => { onWatchReconnectedRef.current = onWatchReconnected; }, [onWatchReconnected]);
 
-  // ── Baseline collection (AMBIENT_FADE_IN) ───────────────────────────────
+  // ── Baseline collection (INTRO) ─────────────────────────────────────────
 
   // Dep array intentionally excludes rawBpm — interval reads rawBpmRef.current
   // at call time so we get the live value. Including rawBpm here would tear
   // down and re-create the interval every 220 ms, leaving no time to sample.
   useEffect(() => {
-    if (sessionState !== 'AMBIENT_FADE_IN') return;
+    if (sessionState !== 'INTRO') return;
     const id = setInterval(() => {
       baselineReadings.current.push(rawBpmRef.current);
     }, SAMPLE_INTERVAL_MS);
     return () => clearInterval(id);
   }, [sessionState]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // When session enters ADAPTIVE_LOOP, lock the baseline from collected readings.
+  // When session enters TRIGGER_ZONE, lock the baseline from collected readings.
   useEffect(() => {
-    if (sessionState !== 'ADAPTIVE_LOOP') return;
+    if (sessionState !== 'TRIGGER_ZONE') return;
     if (sessionBaselineRef.current !== null) return; // already locked
 
     const readings = baselineReadings.current;
     const baseline =
       readings.length > 0
         ? readings.reduce((sum, v) => sum + v, 0) / readings.length
-        : BASELINE_FALLBACK_BPM; // safety net: if AMBIENT_FADE_IN was too short
+        : BASELINE_FALLBACK_BPM; // safety net: if INTRO was too short
 
     sessionBaselineRef.current = baseline;
     setSessionBaseline(baseline);
   }, [sessionState]);
 
-  // ── Spike state cleanup when leaving ADAPTIVE_LOOP ───────────────────────
+  // ── Spike state cleanup when leaving TRIGGER_ZONE ───────────────────────
 
   useEffect(() => {
-    if (sessionState === 'ADAPTIVE_LOOP') return;
+    if (sessionState === 'TRIGGER_ZONE') return;
     spikeStartedAt.current = null;
     isSpikedRef.current = false;
     pendingManualDistress.current = false;
@@ -166,10 +167,10 @@ export function usePulseMonitor({
     };
   }, [rawBpm]);
 
-  // ── Spike detection (ADAPTIVE_LOOP only) ─────────────────────────────────
+  // ── Spike detection (TRIGGER_ZONE only) ─────────────────────────────────
 
   useEffect(() => {
-    if (sessionState !== 'ADAPTIVE_LOOP') return;
+    if (sessionState !== 'TRIGGER_ZONE') return;
     // Spike detection is real-HR-only. With a mock source, the generator
     // drives the session above the spike threshold and never below the
     // normalize threshold, so detection would fire once and the engine

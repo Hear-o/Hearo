@@ -492,6 +492,56 @@ describe("AudioEngine / gain + lifecycle", () => {
   });
 });
 
+describe("AudioEngine / fixed-interval scheduler", () => {
+  it("fires the first burst at fixedIntervalMs when initialDelayMs is omitted", async () => {
+    const engine = await loadedEngine();
+    engine.startTriggerScheduler({ ...CFG, fixedIntervalMs: 1500 });
+
+    jest.advanceTimersByTime(1499);
+    expect(engine.isBurstActive).toBe(false);
+    jest.advanceTimersByTime(1);
+    expect(engine.isBurstActive).toBe(true);
+  });
+
+  it("fires the first burst at initialDelayMs when provided", async () => {
+    const engine = await loadedEngine();
+    engine.startTriggerScheduler({ ...CFG, fixedIntervalMs: 2000, initialDelayMs: 500 });
+
+    jest.advanceTimersByTime(499);
+    expect(engine.isBurstActive).toBe(false);
+    jest.advanceTimersByTime(1);
+    expect(engine.isBurstActive).toBe(true);
+  });
+
+  it("fires subsequent bursts and stops at maxBursts", async () => {
+    const engine = await loadedEngine();
+    engine.startTriggerScheduler({ ...CFG, fixedIntervalMs: 1000, maxBursts: 2 });
+
+    // First burst fires at t=1000.
+    jest.advanceTimersByTime(1000);
+    expect(engine.isBurstActive).toBe(true);
+
+    // Let it complete: fadeIn(100) + duration(500) + fadeOut(100) + cleanup(50) = 750 ms.
+    // _scheduleNextBurst runs at t=1750; timing-compensation delay = max(100, 1000-750) = 250 ms.
+    jest.advanceTimersByTime(CFG.fadeInMs + CFG.burstDurationMs);
+    jest.advanceTimersByTime(CFG.fadeOutMs + 50);
+    expect(engine.isBurstActive).toBe(false);
+
+    // Second burst fires 250 ms later; advance 300 ms to land clearly inside the burst.
+    jest.advanceTimersByTime(300);
+    expect(engine.isBurstActive).toBe(true);
+
+    // Complete second burst — cleanup calls _scheduleNextBurst which hits maxBursts guard.
+    jest.advanceTimersByTime(CFG.fadeInMs + CFG.burstDurationMs);
+    jest.advanceTimersByTime(CFG.fadeOutMs + 50);
+    expect(engine.isBurstActive).toBe(false);
+
+    // No third burst.
+    jest.advanceTimersByTime(5000);
+    expect(engine.isBurstActive).toBe(false);
+  });
+});
+
 describe("AudioEngine / guard branches", () => {
   it("setTriggerPeakGain updates config without ramping when no burst is active", async () => {
     const engine = await loadedEngine();

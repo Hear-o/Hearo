@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -88,7 +92,11 @@ export default function Screening() {
    *  (items not administered) persists in the background after navigating. */
   function handleTraumaExposureAnswer(traumaExposure: boolean) {
     if (!traumaExposure) {
-      const { score, outcome } = computeClinicalScreeningOutcome(false, [], content.cutoff);
+      const { score, outcome } = computeClinicalScreeningOutcome(
+        false,
+        [],
+        content.cutoff,
+      );
       goTo({ kind: "outcome", outcome });
       void setClinicalScreeningResult({
         instrument: "pc-ptsd-5",
@@ -107,7 +115,11 @@ export default function Screening() {
 
   /** Step 2 → 4 Likert items answered. Score, persist, transition to outcome. */
   async function handleItemsSubmit(answers: number[]) {
-    const { score, outcome } = computeClinicalScreeningOutcome(true, answers, content.cutoff);
+    const { score, outcome } = computeClinicalScreeningOutcome(
+      true,
+      answers,
+      content.cutoff,
+    );
     await setClinicalScreeningResult({
       instrument: "pc-ptsd-5",
       version: content.version,
@@ -156,11 +168,19 @@ export default function Screening() {
         {step.kind === "items" && <Pcl4Form onSubmit={handleItemsSubmit} />}
 
         {step.kind === "outcome" && step.outcome === "no-trauma" && (
-          <NoTraumaOutcome lang={lang} onContinue={handleContinue} />
+          <NoTraumaOutcome
+            lang={lang}
+            onContinue={handleContinue}
+            onBack={goBack}
+          />
         )}
 
         {step.kind === "outcome" && step.outcome === "below-threshold" && (
-          <BelowThresholdOutcome lang={lang} onContinue={handleContinue} />
+          <BelowThresholdOutcome
+            lang={lang}
+            onContinue={handleContinue}
+            onBack={goBack}
+          />
         )}
 
         {step.kind === "outcome" && step.outcome === "above-threshold" && (
@@ -183,7 +203,11 @@ function IntroStep({
   const content = getClinicalScreening();
   return (
     <ScrollView
-      contentContainerStyle={{ paddingHorizontal: 32, paddingTop: 24, paddingBottom: 24 }}
+      contentContainerStyle={{
+        paddingHorizontal: 32,
+        paddingTop: 24,
+        paddingBottom: 24,
+      }}
       showsVerticalScrollIndicator={true}
     >
       <Text
@@ -251,7 +275,13 @@ function IntroStep({
             alignItems: "center",
           }}
         >
-          <Text style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 18 }}>
+          <Text
+            style={{
+              color: tokens.accent,
+              fontFamily: fonts.body,
+              fontSize: 18,
+            }}
+          >
             {localize(content.traumaExposure.yes, lang)}
           </Text>
         </Pressable>
@@ -268,7 +298,9 @@ function IntroStep({
             alignItems: "center",
           }}
         >
-          <Text style={{ color: tokens.text, fontFamily: fonts.body, fontSize: 18 }}>
+          <Text
+            style={{ color: tokens.text, fontFamily: fonts.body, fontSize: 18 }}
+          >
             {localize(content.traumaExposure.no, lang)}
           </Text>
         </Pressable>
@@ -279,7 +311,15 @@ function IntroStep({
 
 // ── Step 3: outcome screens ───────────────────────────────────────────────────
 
-function NoTraumaOutcome({ lang, onContinue }: { lang: string; onContinue: () => void }) {
+function NoTraumaOutcome({
+  lang,
+  onContinue,
+  onBack,
+}: {
+  lang: string;
+  onContinue: () => void;
+  onBack: () => void;
+}) {
   const c = getClinicalScreening().outcomes.noTrauma;
   return (
     <ProseOutcome
@@ -288,11 +328,20 @@ function NoTraumaOutcome({ lang, onContinue }: { lang: string; onContinue: () =>
       body={c.body}
       continueLabel={c.continueLabel}
       onContinue={onContinue}
+      onBack={onBack}
     />
   );
 }
 
-function BelowThresholdOutcome({ lang, onContinue }: { lang: string; onContinue: () => void }) {
+function BelowThresholdOutcome({
+  lang,
+  onContinue,
+  onBack,
+}: {
+  lang: string;
+  onContinue: () => void;
+  onBack: () => void;
+}) {
   const c = getClinicalScreening().outcomes.belowThreshold;
   return (
     <ProseOutcome
@@ -301,6 +350,7 @@ function BelowThresholdOutcome({ lang, onContinue }: { lang: string; onContinue:
       body={c.body}
       continueLabel={c.continueLabel}
       onContinue={onContinue}
+      onBack={onBack}
     />
   );
 }
@@ -311,13 +361,16 @@ function ProseOutcome({
   body,
   continueLabel,
   onContinue,
+  onBack,
 }: {
   lang: string;
   heading: { en: string; he: string };
   body: { en: string; he: string };
   continueLabel: { en: string; he: string };
   onContinue: () => void;
+  onBack: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <View className="flex-1 px-8 pt-6 pb-6">
       <View className="flex-1 justify-center">
@@ -345,31 +398,60 @@ function ProseOutcome({
           {localize(body, lang)}
         </Text>
       </View>
-      <Pressable
-        onPress={onContinue}
-        hitSlop={8}
-        accessibilityRole="button"
-        style={{
-          borderWidth: 1,
-          borderColor: tokens.accent,
-          borderRadius: 999,
-          paddingVertical: 16,
-          alignItems: "center",
-        }}
-      >
-        <Text style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 18 }}>
-          {localize(continueLabel, lang)}
-        </Text>
-      </Pressable>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+        <Pressable
+          onPress={onBack}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel={t("setup.back")}
+        >
+          <Icon name="arrow-left" size={22} color={tokens.accent} />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Pressable
+            onPress={onContinue}
+            hitSlop={8}
+            accessibilityRole="button"
+            style={{
+              borderWidth: 1,
+              borderColor: tokens.accent,
+              borderRadius: 999,
+              paddingVertical: 16,
+              alignItems: "center",
+            }}
+          >
+            <Text
+              style={{
+                color: tokens.accent,
+                fontFamily: fonts.body,
+                fontSize: 18,
+              }}
+            >
+              {localize(continueLabel, lang)}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
     </View>
   );
 }
 
-function AboveThresholdOutcome({ lang, onContinue }: { lang: string; onContinue: () => void }) {
+function AboveThresholdOutcome({
+  lang,
+  onContinue,
+}: {
+  lang: string;
+  onContinue: () => void;
+}) {
   const c = getClinicalScreening().outcomes.aboveThreshold;
   return (
     <ScrollView
-      contentContainerStyle={{ paddingHorizontal: 32, paddingTop: 24, paddingBottom: 24, flexGrow: 1 }}
+      contentContainerStyle={{
+        paddingHorizontal: 32,
+        paddingTop: 24,
+        paddingBottom: 24,
+        flexGrow: 1,
+      }}
       showsVerticalScrollIndicator={true}
     >
       <View className="flex-1 justify-center">
@@ -415,7 +497,9 @@ function AboveThresholdOutcome({ lang, onContinue }: { lang: string; onContinue:
           alignItems: "center",
         }}
       >
-        <Text style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 18 }}>
+        <Text
+          style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 18 }}
+        >
           {localize(c.continueLabel, lang)}
         </Text>
       </Pressable>

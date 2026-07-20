@@ -88,7 +88,7 @@ export default function RootLayout() {
           headerShown: false,
           contentStyle: { backgroundColor: "#F2EBDD" },
           animation: "fade",
-          animationDuration: 300,
+          animationDuration: 600,
         }}
       />
       <CrisisSheet />

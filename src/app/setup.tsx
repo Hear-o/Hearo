@@ -10,6 +10,15 @@ import { getScene, getSound, localize } from "@/lib/content/content";
 import { useSessionStore, SessionDurationMinutes } from "@/lib/storage/session-store";
 import { fonts, tokens, type as typeScale } from "@/lib/ui/tokens";
 
+// Maximum selectable sounds = one per minute of trigger zone.
+// Trigger zone = totalMs − 30 s intro − 30 s outro.
+// Matches the per-minute trigger count computed in session.tsx so the user
+// can always expect to hear every sound they picked at least once.
+function maxSoundsForDuration(durationMinutes: SessionDurationMinutes): number {
+  const triggerZoneMs = durationMinutes * 60_000 - 60_000;
+  return Math.max(1, Math.floor(triggerZoneMs / 60_000));
+}
+
 const DURATION_CHOICES: SessionDurationMinutes[] = [3, 5, 7];
 
 // v1.0.9 — Name input + Reminder schedule moved out of Setup and into the
@@ -52,6 +61,12 @@ export default function Setup() {
   // Filter the trigger grid to the current scene's candidate list — keeps
   // implausible combos (helicopter at a cafe) out of the picker entirely.
   const visibleSounds = getScene(scene).triggerCandidates.map(getSound);
+
+  // Cap selectable sounds at the number of triggers that will fire in the
+  // session (1 per minute of trigger zone). Prevents picking more sounds
+  // than will ever play.
+  const maxSounds = maxSoundsForDuration(durationMinutes);
+  const atSoundCap = sounds.length >= maxSounds;
 
   const handleReady = () => {
     if (sounds.length === 0) return;
@@ -139,10 +154,26 @@ export default function Setup() {
             fontFamily: fonts.body,
             ...typeScale.body,
             paddingHorizontal: 32,
-            marginBottom: 16,
+            marginBottom: 4,
           }}
         >
           {t("setup.soundsHint")}
+        </Text>
+
+        {/* Sound cap indicator — shows how many slots are filled out of the
+            max allowed for the chosen session length. Turns accent when full
+            so the user knows they've reached the limit. */}
+        <Text
+          style={{
+            color: atSoundCap ? tokens.accent : tokens.textMute,
+            fontFamily: fonts.body,
+            fontSize: 13,
+            paddingHorizontal: 32,
+            marginBottom: 16,
+            opacity: 0.8,
+          }}
+        >
+          {sounds.length}/{maxSounds}
         </Text>
 
         {/* v1.1.x — Trigger picker as a single-column row list. Each row shows
@@ -153,12 +184,15 @@ export default function Setup() {
         <View style={{ paddingHorizontal: 24, gap: 10 }}>
           {visibleSounds.map((s) => {
             const selected = sounds.includes(s.key);
+            // Unselected sounds are disabled once the cap is reached — tapping
+            // them would add a sound that never plays in the session.
+            const disabled = atSoundCap && !selected;
             return (
               <Pressable
                 key={s.key}
-                onPress={() => toggleSound(s.key)}
+                onPress={() => !disabled && toggleSound(s.key)}
                 accessibilityRole="button"
-                accessibilityState={{ selected }}
+                accessibilityState={{ selected, disabled }}
                 accessibilityLabel={localize(s.label, i18n.language)}
                 style={{
                   flexDirection: "row",
@@ -170,6 +204,7 @@ export default function Setup() {
                   borderColor: selected ? tokens.accent : tokens.textMute + "33",
                   borderRadius: 14,
                   backgroundColor: tokens.bgElev,
+                  opacity: disabled ? 0.38 : 1,
                 }}
               >
                 {/* v1.1.10: JSX order [check, text, image]. In LTR that

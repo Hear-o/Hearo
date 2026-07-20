@@ -36,7 +36,7 @@ const CFG = {
 const ctx = () => audioApi.__lastContext();
 
 /** Mount the hook and load every buffer, awaiting the audio-session gate
- *  the same way the DISCLAIMER/ADAPTIVE_LOOP effects in session.tsx do. */
+ *  the same way the DISCLAIMER/TRIGGER_ZONE effects in session.tsx do. */
 async function mountLoaded() {
   const view = renderHook(() => useAudioEngine());
   await act(async () => {

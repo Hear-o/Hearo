@@ -4,7 +4,10 @@ import { render, screen, fireEvent } from "@testing-library/react-native";
 // mock needs to forward props as a plain View for RNTL queries to work.
 jest.mock("../../../../test/assetMock.js", () => {
   const { View } = require("react-native");
-  return (props: object) => <View testID="icon-svg" {...props} />;
+  function MockIcon(props: object) {
+    return <View testID="icon-svg" {...props} />;
+  }
+  return MockIcon;
 });
 
 import { ForwardCta } from "../ForwardCta";

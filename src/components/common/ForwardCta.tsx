@@ -26,6 +26,11 @@ export function ForwardCta({ label, onPress, disabled, accessibilityHint, testID
       style={{
         opacity: disabled ? 0.4 : 1,
         alignSelf: "flex-end",
+        borderWidth: 1,
+        borderColor: disabled ? tokens.accentSoft : tokens.accent,
+        borderRadius: 999,
+        paddingVertical: 14,
+        paddingHorizontal: 24,
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>

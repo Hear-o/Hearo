@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { ForwardCta } from "@/components/common/ForwardCta";
+import { ForwardCtaFooter } from "@/components/common/ForwardCtaFooter";
 import { Icon } from "@/components/common/Icon";
 import { SceneCarousel } from "@/components/features/setup/SceneCarousel";
 import { getScene, getSound, localize } from "@/lib/content/content";
@@ -71,6 +72,7 @@ export default function Setup() {
           swipe-forward GestureDetector here would collide with the
           carousel's pan recognizer — see #58 review. Users tap "Ready"
           (or swipe forward from /home once they reach it) instead. */}
+      <View className="flex-1">
       <ScrollView
         contentContainerStyle={{ paddingBottom: 24 }}
         showsVerticalScrollIndicator={true}
@@ -285,16 +287,10 @@ export default function Setup() {
         </View>
 
         <View className="px-8 pt-12 pb-6">
-          <ForwardCta
-            label={t("setup.ready")}
-            onPress={handleReady}
-            disabled={sounds.length === 0}
-          />
-
           <Pressable
             onPress={() => router.push("/psychoed")}
             hitSlop={8}
-            style={{ paddingTop: 24, paddingBottom: 4 }}
+            style={{ paddingBottom: 4 }}
           >
             <Text
               style={{
@@ -309,6 +305,15 @@ export default function Setup() {
           </Pressable>
         </View>
       </ScrollView>
+
+      <ForwardCtaFooter>
+        <ForwardCta
+          label={t("setup.ready")}
+          onPress={handleReady}
+          disabled={sounds.length === 0}
+        />
+      </ForwardCtaFooter>
+      </View>
     </SafeAreaView>
   );
 }

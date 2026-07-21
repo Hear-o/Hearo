@@ -93,6 +93,9 @@ export function SettingsSheet() {
     }
   }
 
+  const textAlign = I18nManager.isRTL ? "right" : "left";
+  const rowDirection = I18nManager.isRTL ? "row-reverse" : "row";
+
   const translateY = useSharedValue(SHEET_HEIGHT);
   const backdropOpacity = useSharedValue(0);
 
@@ -289,7 +292,7 @@ export function SettingsSheet() {
               fontSize: 26,
               lineHeight: 34,
               marginBottom: 24,
-              textAlign: "left",
+              textAlign,
             }}
           >
             {t("settings.title")}
@@ -304,7 +307,7 @@ export function SettingsSheet() {
               letterSpacing: 1.4,
               textTransform: "uppercase",
               marginBottom: 10,
-              textAlign: "left",
+              textAlign,
             }}
           >
             {t("settings.nameLabel")}
@@ -321,7 +324,7 @@ export function SettingsSheet() {
               fontSize: 13,
               lineHeight: 18,
               marginTop: 6,
-              textAlign: "left",
+              textAlign,
             }}
           >
             {t("setup.nameHint")}
@@ -346,12 +349,12 @@ export function SettingsSheet() {
               letterSpacing: 1.4,
               textTransform: "uppercase",
               marginBottom: 12,
-              textAlign: "left",
+              textAlign,
             }}
           >
             {t("settings.languageLabel")}
           </Text>
-          <View style={{ flexDirection: "row", gap: 10 }}>
+          <View style={{ flexDirection: rowDirection, gap: 10 }}>
             {(["he", "en"] as const).map((lng) => {
               const selected = i18n.language === lng;
               const label =
@@ -397,6 +400,7 @@ export function SettingsSheet() {
               fontSize: 13,
               lineHeight: 18,
               marginTop: 8,
+              textAlign,
             }}
           >
             {t("settings.languageRestartNote")}
@@ -422,7 +426,7 @@ export function SettingsSheet() {
               letterSpacing: 1.4,
               textTransform: "uppercase",
               marginBottom: 10,
-              textAlign: "left",
+              textAlign,
             }}
           >
             {t("permissions.pulseTitle")}
@@ -434,7 +438,7 @@ export function SettingsSheet() {
               fontSize: 15,
               lineHeight: 22,
               marginBottom: 14,
-              textAlign: "left",
+              textAlign,
             }}
           >
             {t("permissions.pulseWhy")}
@@ -479,7 +483,7 @@ export function SettingsSheet() {
                   fontFamily: fonts.body,
                   fontSize: 13,
                   textDecorationLine: "underline",
-                  textAlign: "left",
+                  textAlign,
                 }}
               >
                 {t("permissions.pulseDeniedHint")}
@@ -506,7 +510,7 @@ export function SettingsSheet() {
               letterSpacing: 1.4,
               textTransform: "uppercase",
               marginBottom: 10,
-              textAlign: "left",
+              textAlign,
             }}
           >
             {t("reminders.sectionLabel")}
@@ -516,13 +520,13 @@ export function SettingsSheet() {
               below when the switch is on. */}
           <View
             style={{
-              flexDirection: "row",
+              flexDirection: rowDirection,
               alignItems: "center",
               justifyContent: "space-between",
               marginBottom: 4,
             }}
           >
-            <Text style={{ color: tokens.text, fontFamily: fonts.body, fontSize: 17 }}>
+            <Text style={{ color: tokens.text, fontFamily: fonts.body, fontSize: 17, textAlign }}>
               {reminder
                 ? t("reminders.currentlySet", { time: formatTime(reminder) })
                 : t("reminders.notSet")}

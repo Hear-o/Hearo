@@ -50,7 +50,7 @@ function PermissionRow({
         style={{
           color: tokens.text,
           fontFamily: fonts.display,
-          fontSize: 22,
+          fontSize: 28,
           marginBottom: 8,
           textAlign: "left",
         }}
@@ -270,7 +270,7 @@ export default function Permissions() {
             style={{
               color: tokens.text,
               fontFamily: fonts.display,
-              fontSize: 22,
+              fontSize: 28,
               marginBottom: 8,
               textAlign: "left",
             }}
@@ -287,7 +287,7 @@ export default function Permissions() {
             style={{
               color: tokens.textMute,
               fontFamily: fonts.body,
-              fontSize: 13,
+              fontSize: 15,
               lineHeight: 18,
               textAlign: "left",
             }}
@@ -319,7 +319,7 @@ export default function Permissions() {
               style={{
                 color: tokens.text,
                 fontFamily: fonts.display,
-                fontSize: 22,
+                fontSize: 28,
                 textAlign: "left",
                 flexShrink: 1,
               }}
@@ -381,7 +381,7 @@ export default function Permissions() {
                 style={{
                   color: tokens.accentSoft,
                   fontFamily: fonts.body,
-                  fontSize: 13,
+                  fontSize: 15,
                   textDecorationLine: "underline",
                 }}
               >
@@ -391,19 +391,6 @@ export default function Permissions() {
           ) : null}
         </View>
 
-        <View className="flex-1" />
-
-        <Text
-          style={{
-            color: tokens.textMute,
-            fontFamily: fonts.body,
-            fontSize: 13,
-            marginBottom: 24,
-            textAlign: "left",
-          }}
-        >
-          {t("permissions.privacy")}
-        </Text>
       </ScrollView>
 
       {/* B-01: clinical screening gate. First-launch users (no stored
@@ -414,8 +401,25 @@ export default function Permissions() {
           block. See openspec/changes/add-clinical-screening/. Fixed footer
           (outside the ScrollView) so Continue sits at the same screen
           position as Welcome's Begin regardless of how much permission-row
-          content is above it. */}
+          content is above it. The privacy note lives here too, not in the
+          ScrollView — that content already overflows the viewport on most
+          devices, so a trailing margin there has no slack to move into and
+          silently does nothing (see the marginBottom-doesn't-move-it bug this
+          fixed). Anchoring it to this fixed, non-flex footer instead gives it
+          a real, deterministic gap above Continue, regardless of scroll
+          state, without affecting Continue's own position. */}
       <ForwardCtaFooter>
+        <Text
+          style={{
+            color: tokens.textMute,
+            fontFamily: fonts.body,
+            fontSize: 13,
+            marginBottom: 16,
+            textAlign: "left",
+          }}
+        >
+          {t("permissions.privacy")}
+        </Text>
         <ForwardCta label={t("permissions.continue")} onPress={handleContinue} />
       </ForwardCtaFooter>
 

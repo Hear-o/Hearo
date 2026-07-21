@@ -155,6 +155,25 @@ describe("useDisplayName", () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.name).toBe("Set");
   });
+
+  it("reflects a save from an unrelated hook instance live, with no focus event", async () => {
+    // Reproduces the reported bug: Settings is an always-mounted overlay,
+    // not a routed screen, so closing it never fires a focus event on
+    // Home's own useDisplayName instance. Two independent renderHook
+    // instances stand in for "Home" and "Settings" here — saving through
+    // one must update the other purely via the shared store, without
+    // either instance's own focus effect firing.
+    mockGet.mockResolvedValue(null);
+    const home = renderHook(() => useDisplayName());
+    await waitFor(() => expect(home.result.current.loading).toBe(false));
+    expect(home.result.current.name).toBeNull();
+
+    await act(async () => {
+      await persistDisplayName("Dana");
+    });
+
+    expect(home.result.current.name).toBe("Dana");
+  });
 });
 
 describe("useNameDraft", () => {

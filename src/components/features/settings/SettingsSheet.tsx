@@ -94,9 +94,6 @@ export function SettingsSheet() {
     }
   }
 
-  const textAlign = I18nManager.isRTL ? "right" : "left";
-  const rowDirection = I18nManager.isRTL ? "row-reverse" : "row";
-
   const translateY = useSharedValue(SHEET_HEIGHT);
   const backdropOpacity = useSharedValue(0);
 
@@ -304,7 +301,7 @@ export function SettingsSheet() {
               fontSize: 26,
               lineHeight: 34,
               marginBottom: 24,
-              textAlign,
+              textAlign: "left",
             }}
           >
             {t("settings.title")}
@@ -319,7 +316,7 @@ export function SettingsSheet() {
               letterSpacing: 1.4,
               textTransform: "uppercase",
               marginBottom: 10,
-              textAlign,
+              textAlign: "left",
             }}
           >
             {t("settings.nameLabel")}
@@ -336,7 +333,7 @@ export function SettingsSheet() {
               fontSize: 13,
               lineHeight: 18,
               marginTop: 6,
-              textAlign,
+              textAlign: "left",
             }}
           >
             {t("setup.nameHint")}
@@ -361,12 +358,16 @@ export function SettingsSheet() {
               letterSpacing: 1.4,
               textTransform: "uppercase",
               marginBottom: 12,
-              textAlign,
+              textAlign: "left",
             }}
           >
             {t("settings.languageLabel")}
           </Text>
-          <View style={{ flexDirection: rowDirection, gap: 10 }}>
+          {/* Pinned, not RTL-mirrored: עברית stays on the right and English
+              on the left in both language modes. Yoga already RTL-flips
+              "row" when I18nManager.isRTL is true (see plugins/withRtl.js),
+              so this counter-flips per direction to hold the pin. */}
+          <View style={{ flexDirection: I18nManager.isRTL ? "row" : "row-reverse", gap: 10 }}>
             {(["he", "en"] as const).map((lng) => {
               const selected = i18n.language === lng;
               const label =
@@ -412,7 +413,7 @@ export function SettingsSheet() {
               fontSize: 13,
               lineHeight: 18,
               marginTop: 8,
-              textAlign,
+              textAlign: "left",
             }}
           >
             {t("settings.languageRestartNote")}
@@ -438,7 +439,7 @@ export function SettingsSheet() {
               letterSpacing: 1.4,
               textTransform: "uppercase",
               marginBottom: 10,
-              textAlign,
+              textAlign: "left",
             }}
           >
             {t("permissions.pulseTitle")}
@@ -450,7 +451,7 @@ export function SettingsSheet() {
               fontSize: 15,
               lineHeight: 22,
               marginBottom: 14,
-              textAlign,
+              textAlign: "left",
             }}
           >
             {t("permissions.pulseWhy")}
@@ -495,7 +496,7 @@ export function SettingsSheet() {
                   fontFamily: fonts.body,
                   fontSize: 13,
                   textDecorationLine: "underline",
-                  textAlign,
+                  textAlign: "left",
                 }}
               >
                 {t("permissions.pulseDeniedHint")}
@@ -522,7 +523,7 @@ export function SettingsSheet() {
               letterSpacing: 1.4,
               textTransform: "uppercase",
               marginBottom: 10,
-              textAlign,
+              textAlign: "left",
             }}
           >
             {t("reminders.sectionLabel")}
@@ -532,13 +533,15 @@ export function SettingsSheet() {
               below when the switch is on. */}
           <View
             style={{
-              flexDirection: rowDirection,
+              flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
               marginBottom: 4,
             }}
           >
-            <Text style={{ color: tokens.text, fontFamily: fonts.body, fontSize: 17, textAlign }}>
+            <Text
+              style={{ color: tokens.text, fontFamily: fonts.body, fontSize: 17, textAlign: "left" }}
+            >
               {reminder
                 ? t("reminders.currentlySet", { time: formatTime(reminder) })
                 : t("reminders.notSet")}

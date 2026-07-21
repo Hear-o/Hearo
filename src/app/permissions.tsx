@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import { FadeScreen } from "@/components/common/FadeScreen";
+import { OnboardingBreadcrumb } from "@/components/common/OnboardingBreadcrumb";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { ForwardCta } from "@/components/common/ForwardCta";
 import { ForwardCtaFooter } from "@/components/common/ForwardCtaFooter";
@@ -239,6 +240,7 @@ export default function Permissions() {
             <Icon name="arrow-left" size={22} color={tokens.accent} />
           </Pressable>
         }
+        bottom={<OnboardingBreadcrumb step="permissions" />}
       />
       <ScrollView
         className="flex-1"

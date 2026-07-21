@@ -4,6 +4,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import { FadeScreen } from "@/components/common/FadeScreen";
+import { OnboardingBreadcrumb } from "@/components/common/OnboardingBreadcrumb";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { getPsychoEducation, localize, SceneKey } from "@/lib/content/content";
 import { setPsychoEducationSeen } from "@/lib/storage/storage";
@@ -41,7 +42,10 @@ export default function PsychoEducation() {
     <FadeScreen>
     <SafeAreaView className="flex-1 bg-bg">
       <View className="flex-1 px-8">
-        <ScreenHeader paddingX={0} />
+        <ScreenHeader
+          paddingX={0}
+          bottom={fromOnboarding ? <OnboardingBreadcrumb step="psychoed" /> : undefined}
+        />
 
         <ScrollView
           contentContainerStyle={{ paddingTop: 24, paddingBottom: 8 }}

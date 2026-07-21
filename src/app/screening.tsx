@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import { FadeScreen } from "@/components/common/FadeScreen";
+import { OnboardingBreadcrumb } from "@/components/common/OnboardingBreadcrumb";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
 import { Pcl4Form } from "@/components/features/screening/Pcl4Form";
@@ -28,6 +29,13 @@ type ScreenStep =
   | { kind: "intro" }
   | { kind: "items" }
   | { kind: "outcome"; outcome: ClinicalScreeningOutcome };
+
+/** Maps the internal step machine to the breadcrumb's 0-2 sub-step index. */
+function subStepIndexFor(step: ScreenStep): 0 | 1 | 2 {
+  if (step.kind === "intro") return 0;
+  if (step.kind === "items") return 1;
+  return 2; // "outcome"
+}
 
 export default function Screening() {
   const router = useRouter();
@@ -159,6 +167,9 @@ export default function Screening() {
               <Icon name="arrow-left" size={22} color={tokens.accent} />
             </Pressable>
           ) : undefined
+        }
+        bottom={
+          <OnboardingBreadcrumb step="screening" screeningSubStep={subStepIndexFor(step)} />
         }
       />
 

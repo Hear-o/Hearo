@@ -11,9 +11,9 @@ import { FADE_DURATION_MS } from "@/lib/ui/fadeTransition";
 import { OnboardingMacroStep, SCREENING_SUB_STEP_COUNT } from "@/lib/ui/onboardingSteps";
 import { tokens } from "@/lib/ui/tokens";
 
-type DotState = "active" | "completed" | "upcoming";
+export type DotState = "active" | "completed" | "upcoming";
 
-type Props = {
+export type OnboardingBreadcrumbProps = {
   step: OnboardingMacroStep;
   /** Only meaningful when step === "screening": which of the 3 internal
    *  sub-steps (intro/items/outcome) is current. */
@@ -34,7 +34,7 @@ type Props = {
  *  so progress runs right→left in Hebrew and left→right in English for free,
  *  entirely from Yoga's own mirroring. Dot *state* below is computed purely
  *  from step order and never branches on RTL. */
-export function OnboardingBreadcrumb({ step, screeningSubStep }: Props) {
+export function OnboardingBreadcrumb({ step, screeningSubStep }: OnboardingBreadcrumbProps) {
   const states = resolveStates(step, screeningSubStep);
   return (
     <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -49,7 +49,11 @@ export function OnboardingBreadcrumb({ step, screeningSubStep }: Props) {
   );
 }
 
-function resolveStates(
+/** Pure step→dot-state mapping, exported so its logic can be tested directly
+ *  without going through reanimated's rendering/animation layer (whose Jest
+ *  mock can't reflect a mount-effect's mutation back into rendered style —
+ *  see OnboardingBreadcrumb.test.tsx for why). */
+export function resolveStates(
   step: OnboardingMacroStep,
   screeningSubStep: 0 | 1 | 2 | undefined,
 ): DotState[] {
@@ -82,8 +86,15 @@ function Dot({
   sub?: boolean;
   testID?: string;
 }) {
-  const progress = useSharedValue(state === "active" ? 1 : 0);
-  const filled = useSharedValue(state === "upcoming" ? 0 : 1);
+  // Always start from the neutral/upcoming baseline, never from `state`'s
+  // own target — a fresh mount (e.g. Permissions → Screening, a route
+  // change) would otherwise have the effect below animate "from" a value
+  // that's already at the target, so nothing visibly moves. That's exactly
+  // what made dots pop in instantly instead of animating on route changes
+  // (invisible on same-route step transitions, where the Dot persists and
+  // genuinely carries over its previous value).
+  const progress = useSharedValue(0);
+  const filled = useSharedValue(0);
 
   useEffect(() => {
     progress.value = withTiming(state === "active" ? 1 : 0, { duration: FADE_DURATION_MS });

@@ -29,7 +29,9 @@ export function ScreenHeader({ left, tone = "on-bg", paddingX = 32, bottom }: Pr
         <View>{left}</View>
         <CrisisAffordance tone={tone} />
       </View>
-      {bottom ? <View style={{ marginTop: 10 }}>{bottom}</View> : null}
+      {bottom ? (
+        <View style={{ marginTop: 10, alignItems: "center" }}>{bottom}</View>
+      ) : null}
     </View>
   );
 }

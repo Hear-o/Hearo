@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-
 
 import { SettingsSheet } from "../SettingsSheet";
 import { useSettingsSheetStore } from "@/lib/storage/settings-sheet-store";
+import { setDisplayName } from "@/lib/storage/storage";
 import {
   clearSchedule,
   getSchedule,
@@ -48,6 +49,35 @@ describe("SettingsSheet", () => {
     expect(screen.getByText("Settings")).toBeTruthy();
     expect(screen.getByText("Your name")).toBeTruthy();
     expect(screen.getByText("Daily reminder")).toBeTruthy();
+  });
+
+  it("re-syncs the name field from storage each time the sheet re-opens", async () => {
+    // The sheet is an always-mounted overlay, not a routed screen, so
+    // useNameDraft's own focus-based refresh never fires just from opening
+    // it — this covers the explicit re-fetch-on-open added for that gap.
+    await act(async () => {
+      await setDisplayName("Dana");
+    });
+    useSettingsSheetStore.setState({ isOpen: true });
+    render(<SettingsSheet />);
+
+    await waitFor(() =>
+      expect(screen.getByDisplayValue("Dana")).toBeTruthy(),
+    );
+
+    act(() => {
+      useSettingsSheetStore.setState({ isOpen: false });
+    });
+    await act(async () => {
+      await setDisplayName("Omer");
+    });
+    act(() => {
+      useSettingsSheetStore.setState({ isOpen: true });
+    });
+
+    await waitFor(() =>
+      expect(screen.getByDisplayValue("Omer")).toBeTruthy(),
+    );
   });
 
   it("renders (closed) without crashing when isOpen is false", () => {

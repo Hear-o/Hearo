@@ -29,6 +29,7 @@ import {
 } from "@/lib/integrations/reminders";
 import { useSettingsSheetStore } from "@/lib/storage/settings-sheet-store";
 import {
+  getDisplayName,
   getReminderTime,
   LanguagePreference,
   ReminderSchedule,
@@ -129,9 +130,20 @@ export function SettingsSheet() {
       void healthKit.getAuthorizationStatus().then((status) => {
         if (status === "granted" || status === "requested") setPulseStatus("granted");
       });
+      // The sheet is an always-mounted overlay, not a routed screen, so
+      // useNameDraft's own useFocusEffect (route-focus-based) never fires
+      // just from opening it — re-sync from storage directly on open,
+      // same reasoning as the reminder/pulse re-fetches above.
+      void getDisplayName().then((stored) => {
+        if (stored !== undefined) nameDraft.onChangeText(stored ?? "");
+      });
     } else {
       setIosPickerOpen(false);
     }
+    // nameDraft is a fresh object every render (its onChangeText is the
+    // stable setState it wraps) — adding it here would refire this effect
+    // on every render instead of just on isOpen changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   async function onConnectWatch() {

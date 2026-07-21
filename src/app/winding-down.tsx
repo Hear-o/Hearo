@@ -82,7 +82,7 @@ export default function WindingDown() {
   // After the ambient fade completes, swap the scene view for the feedback form.
   if (voiceDone) {
     return (
-      <FadeScreen>
+      <FadeScreen key="feedback">
         <PostSessionFeedback
           onSubmit={handleFeedbackSubmit}
           onSkip={handleFeedbackSkip}
@@ -92,7 +92,7 @@ export default function WindingDown() {
   }
 
   return (
-    <FadeScreen>
+    <FadeScreen key="session">
     <View className="flex-1 bg-bg">
       {/* No back-swipe out of the wind-down — this is the closing moment of
           the session; the user moves forward to feedback, not backward to

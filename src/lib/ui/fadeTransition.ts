@@ -33,6 +33,9 @@ export function useFadeIn() {
     useCallback(() => {
       opacity.value = 0;
       opacity.value = withTiming(1, { duration: FADE_DURATION_MS });
+      // opacity is a Reanimated shared value (stable identity) — adding it
+      // here trips react-hooks/immutability instead (mutating a value
+      // listed as a dependency), which is worse than this warning.
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []),
   );
@@ -49,18 +52,21 @@ export function useCrossfade() {
 
   const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
-  function transition(update: () => void) {
-    opacity.value = withTiming(
-      0,
-      { duration: FADE_DURATION_MS / 2 },
-      (finished) => {
-        if (finished) {
-          runOnJS(update)();
-          opacity.value = withTiming(1, { duration: FADE_DURATION_MS / 2 });
-        }
-      },
-    );
-  }
+  const transition = useCallback(
+    (update: () => void) => {
+      opacity.value = withTiming(
+        0,
+        { duration: FADE_DURATION_MS / 2 },
+        (finished) => {
+          if (finished) {
+            runOnJS(update)();
+            opacity.value = withTiming(1, { duration: FADE_DURATION_MS / 2 });
+          }
+        },
+      );
+    },
+    [opacity],
+  );
 
   return { animatedStyle, transition };
 }

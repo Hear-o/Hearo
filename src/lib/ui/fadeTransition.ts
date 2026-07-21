@@ -70,3 +70,31 @@ export function useCrossfade() {
 
   return { animatedStyle, transition };
 }
+
+/** Page-level version of useCrossfade: fades this screen out before running
+ *  `transition`'s update (e.g. router.push), and fades in on mount/focus like
+ *  useFadeIn. Use for screens whose forward-nav should feel like screening's
+ *  step transitions instead of FadeScreen's fade-in-only. */
+export function usePageFade() {
+  const opacity = useSharedValue(0);
+  const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+  useFocusEffect(
+    useCallback(() => {
+      opacity.value = 0;
+      opacity.value = withTiming(1, { duration: FADE_DURATION_MS / 2 });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  );
+
+  const transition = useCallback(
+    (update: () => void) => {
+      opacity.value = withTiming(0, { duration: FADE_DURATION_MS / 2 }, (finished) => {
+        if (finished) runOnJS(update)();
+      });
+    },
+    [opacity],
+  );
+
+  return { animatedStyle, transition };
+}

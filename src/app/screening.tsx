@@ -5,12 +5,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { FadeScreen } from "@/components/common/FadeScreen";
 import { OnboardingBreadcrumb } from "@/components/common/OnboardingBreadcrumb";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
 import { Pcl4Form } from "@/components/features/screening/Pcl4Form";
-import { useCrossfade } from "@/lib/ui/fadeTransition";
+import { useCrossfade, usePageFade } from "@/lib/ui/fadeTransition";
 import {
   computeClinicalScreeningOutcome,
   getClinicalScreening,
@@ -58,6 +57,7 @@ export default function Screening() {
   // the page-level FadeScreen wrapper's timing (fadeTransition.ts) so this
   // feels like the same speed as navigating between screens.
   const { animatedStyle, transition } = useCrossfade();
+  const { animatedStyle: pageStyle, transition: pageTransition } = usePageFade();
 
   /** Advance to the next step, remembering the current one so `goBack` can
    *  return to it instead of just exiting the questionnaire. The state
@@ -77,7 +77,7 @@ export default function Screening() {
    *  first step (empty history). */
   function goBack() {
     if (history.length === 0) {
-      router.back();
+      pageTransition(() => router.back());
       return;
     }
     transition(() => {
@@ -141,7 +141,9 @@ export default function Screening() {
    *  (psychoeducation), which then lands on /home so the user chooses Practice
    *  vs Companion — rather than being dropped straight into Practice setup. */
   function handleContinue() {
-    router.replace({ pathname: "/psychoed", params: { from: "onboarding" } });
+    pageTransition(() =>
+      router.replace({ pathname: "/psychoed", params: { from: "onboarding" } }),
+    );
   }
 
   // Long, scrollable steps get the back arrow in the header (opposite the
@@ -153,7 +155,7 @@ export default function Screening() {
     (step.kind === "outcome" && step.outcome === "above-threshold");
 
   return (
-    <FadeScreen>
+    <Animated.View style={[{ flex: 1 }, pageStyle]}>
     <SafeAreaView className="flex-1 bg-bg">
       <ScreenHeader
         left={
@@ -201,7 +203,7 @@ export default function Screening() {
         )}
       </Animated.View>
     </SafeAreaView>
-    </FadeScreen>
+    </Animated.View>
   );
 }
 

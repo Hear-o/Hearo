@@ -11,7 +11,7 @@ jest.mock("expo-router", () => ({
 import { act, renderHook } from "@testing-library/react-native";
 import * as Reanimated from "react-native-reanimated";
 
-import { FADE_DURATION_MS, useCrossfade, useFadeIn } from "@/lib/ui/fadeTransition";
+import { FADE_DURATION_MS, useCrossfade, useFadeIn, usePageFade } from "@/lib/ui/fadeTransition";
 
 describe("useFadeIn", () => {
   it("fades in to opacity 1 over FADE_DURATION_MS on focus", () => {
@@ -58,6 +58,51 @@ describe("useCrossfade", () => {
       }) as typeof Reanimated.withTiming);
 
     const { result } = renderHook(() => useCrossfade());
+    const update = jest.fn();
+
+    act(() => {
+      result.current.transition(update);
+    });
+
+    expect(update).not.toHaveBeenCalled();
+  });
+});
+
+describe("usePageFade", () => {
+  it("fades in on focus over half FADE_DURATION_MS", () => {
+    const spy = jest.spyOn(Reanimated, "withTiming");
+    renderHook(() => usePageFade());
+    expect(spy).toHaveBeenCalledWith(1, { duration: FADE_DURATION_MS / 2 });
+  });
+
+  it("calls the transition's update once fade-out completes", () => {
+    const { result } = renderHook(() => usePageFade());
+    const update = jest.fn();
+
+    act(() => {
+      result.current.transition(update);
+    });
+
+    expect(update).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not call update if the fade-out is interrupted", () => {
+    // Render first so the mount fade-in's own withTiming call (mocked
+    // finished:true by default) doesn't consume the mockImplementationOnce
+    // meant for the fade-out below.
+    const { result } = renderHook(() => usePageFade());
+
+    jest
+      .spyOn(Reanimated, "withTiming")
+      .mockImplementationOnce(((
+        toValue: unknown,
+        _config?: unknown,
+        callback?: (finished: boolean) => void,
+      ) => {
+        callback?.(false);
+        return toValue;
+      }) as typeof Reanimated.withTiming);
+
     const update = jest.fn();
 
     act(() => {

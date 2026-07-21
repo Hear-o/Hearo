@@ -1,22 +1,25 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 
-import { FadeScreen } from "@/components/common/FadeScreen";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { ForwardCta } from "@/components/common/ForwardCta";
 import { ForwardCtaFooter } from "@/components/common/ForwardCtaFooter";
+import { usePageFade } from "@/lib/ui/fadeTransition";
 import {
   getClinicalScreeningResult,
   getOnboardedAt,
 } from "@/lib/storage/storage";
+import { fonts, tokens } from "@/lib/ui/tokens";
 
 export default function Welcome() {
   const router = useRouter();
   const { t } = useTranslation();
-  const handleBegin = () => router.push("/permissions");
+  const { animatedStyle, transition } = usePageFade();
+  const handleBegin = () => transition(() => router.push("/permissions"));
 
   // v1.1.0: if onboarding is already complete, skip straight to /home on
   // launch. Two signals count as "onboarded":
@@ -52,7 +55,7 @@ export default function Welcome() {
   }
 
   return (
-    <FadeScreen>
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
       <SafeAreaView className="flex-1 bg-bg">
         <View className="flex-1 px-8 justify-between">
           <ScreenHeader paddingX={0} />
@@ -62,8 +65,13 @@ export default function Welcome() {
 
           <View className="flex-1 justify-center">
             <Text
-              className="text-text font-display text-4xl leading-[44px]"
-              style={{ fontFamily: "FrankRuhlLibre_400Regular", textAlign: "left" }}
+              style={{
+                color: tokens.text,
+                fontFamily: fonts.display,
+                fontSize: 44,
+                lineHeight: 44,
+                textAlign: "left",
+              }}
             >
               {t("welcome.line")}
             </Text>
@@ -74,6 +82,6 @@ export default function Welcome() {
           </ForwardCtaFooter>
         </View>
       </SafeAreaView>
-    </FadeScreen>
+    </Animated.View>
   );
 }

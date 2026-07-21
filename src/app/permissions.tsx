@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { Linking, Platform, Pressable, ScrollView, Switch, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { FadeScreen } from "@/components/common/FadeScreen";
 import { OnboardingBreadcrumb } from "@/components/common/OnboardingBreadcrumb";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { ForwardCta } from "@/components/common/ForwardCta";
@@ -14,6 +14,7 @@ import { Icon } from "@/components/common/Icon";
 import { NameTextInput } from "@/components/common/NameTextInput";
 import * as healthKit from "@/lib/integrations/healthKit";
 import * as reminders from "@/lib/integrations/reminders";
+import { usePageFade } from "@/lib/ui/fadeTransition";
 import {
   getClinicalScreeningResult,
   getReminderTime,
@@ -113,6 +114,7 @@ function PermissionRow({
 export default function Permissions() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { animatedStyle, transition } = usePageFade();
   const [pulseStatus, setPulseStatus] = useState<Status>("idle");
   const [notifsStatus, setNotifsStatus] = useState<Status>("idle");
 
@@ -156,12 +158,8 @@ export default function Permissions() {
 
   const handleContinue = useCallback(async () => {
     const prior = await getClinicalScreeningResult();
-    if (prior === undefined) {
-      router.push("/screening");
-    } else {
-      router.push("/setup");
-    }
-  }, [router]);
+    transition(() => router.push(prior === undefined ? "/screening" : "/setup"));
+  }, [router, transition]);
 
   const onPulsePress = async () => {
     const status = await healthKit.requestAuthorization();
@@ -229,14 +227,14 @@ export default function Permissions() {
   }
 
   return (
-    <FadeScreen>
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
     <SafeAreaView className="flex-1 bg-bg">
       <View className="flex-1">
       {/* Fixed above the ScrollView so the crisis affordance stays reachable
           while scrolling instead of scrolling out of view. */}
       <ScreenHeader
         left={
-          <Pressable onPress={() => router.back()} hitSlop={12}>
+          <Pressable onPress={() => transition(() => router.back())} hitSlop={12}>
             <Icon name="arrow-left" size={22} color={tokens.accent} />
           </Pressable>
         }
@@ -478,6 +476,6 @@ export default function Permissions() {
       ) : null}
       </View>
     </SafeAreaView>
-    </FadeScreen>
+    </Animated.View>
   );
 }

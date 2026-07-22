@@ -54,7 +54,7 @@ export default function Screening() {
 
   // True crossfade (fade out → swap step → fade in) instead of a plain
   // fade-in, so step transitions don't read as an instant cut. Shared with
-  // the page-level FadeScreen wrapper's timing (fadeTransition.ts) so this
+  // the page-level usePageFade timing (fadeTransition.ts) so this
   // feels like the same speed as navigating between screens.
   const { animatedStyle, transition } = useCrossfade();
   const { animatedStyle: pageStyle, transition: pageTransition } = usePageFade();

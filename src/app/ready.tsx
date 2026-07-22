@@ -1,9 +1,9 @@
 import { Image, Pressable, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { FadeScreen } from "@/components/common/FadeScreen";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
 import { getScene, getSound, localize } from "@/lib/content/content";
@@ -11,6 +11,7 @@ import { useDisplayName } from "@/lib/ui/displayName";
 import { useSessionStore } from "@/lib/storage/session-store";
 import { getPsychoEducationSeen } from "@/lib/storage/storage";
 import { useSettingsSheetStore } from "@/lib/storage/settings-sheet-store";
+import { usePageFade } from "@/lib/ui/fadeTransition";
 import { getTimeOfDay } from "@/lib/ui/timeOfDay";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
@@ -28,6 +29,7 @@ export default function Ready() {
   const { t, i18n } = useTranslation();
   const { scene, sounds, durationMinutes } = useSessionStore();
   const { name } = useDisplayName();
+  const { animatedStyle, transition } = usePageFade();
   const band = getTimeOfDay();
 
   const sceneRecord = getScene(scene);
@@ -48,15 +50,17 @@ export default function Ready() {
 
   async function handleBegin() {
     const seen = await getPsychoEducationSeen();
-    if (seen) {
-      router.push({ pathname: "/preparing", params: { scene } });
-    } else {
-      router.push({ pathname: "/psychoed", params: { scene } });
-    }
+    transition(() => {
+      if (seen) {
+        router.push({ pathname: "/preparing", params: { scene } });
+      } else {
+        router.push({ pathname: "/psychoed", params: { scene } });
+      }
+    });
   }
 
   return (
-    <FadeScreen>
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
     <SafeAreaView className="flex-1 bg-bg">
         <View className="flex-1 px-8">
           <ScreenHeader
@@ -190,7 +194,7 @@ export default function Ready() {
           </View>
 
           <Pressable
-            onPress={() => router.push("/setup")}
+            onPress={() => transition(() => router.push("/setup"))}
             hitSlop={8}
             style={{ alignSelf: "center", paddingVertical: 14 }}
           >
@@ -206,6 +210,6 @@ export default function Ready() {
           </Pressable>
         </View>
     </SafeAreaView>
-    </FadeScreen>
+    </Animated.View>
   );
 }

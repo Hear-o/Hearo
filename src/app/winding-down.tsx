@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { Text, View } from "react-native";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import Animated from "react-native-reanimated";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { FadeScreen } from "@/components/common/FadeScreen";
 import { PostSessionFeedback, FeedbackAnswers } from "@/components/features/post-session";
 import { SceneBackground } from "@/components/features/session/SceneBackground";
 import { VoiceLine } from "@/components/features/session/VoiceLine";
@@ -14,6 +14,7 @@ import {
   SceneKey,
   SCENE_ORDER,
 } from "@/lib/content/content";
+import { useCrossfade, usePageFade } from "@/lib/ui/fadeTransition";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 // All Practice scenes are valid — derive from SCENE_ORDER so v1.2.0 scenes
@@ -43,6 +44,11 @@ export default function WindingDown() {
     : "park";
 
   const engine = useAudioEngine();
+  const { animatedStyle, transition } = usePageFade();
+  // The scene → feedback swap is an in-place content change, not a route
+  // change, so it gets the crossfade (fade out, swap, fade in) rather than
+  // the page fade. Nested inside the page fade below.
+  const { animatedStyle: swapStyle, transition: swapTransition } = useCrossfade();
   const [voiceDone, setVoiceDone] = useState(false);
 
   // Closing voice script for the visible caption while the audio plays.
@@ -58,46 +64,45 @@ export default function WindingDown() {
     engine.fadeOutAll(3);
 
     timer = setTimeout(() => {
-      if (!cancelled) setVoiceDone(true);
+      if (!cancelled) swapTransition(() => setVoiceDone(true));
     }, VOICE_DELAY_MS);
 
     return () => {
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
-  }, [engine]);
+  }, [engine, swapTransition]);
 
   const handleFeedbackSubmit = useCallback(
     (_answers: FeedbackAnswers) => {
       // TODO(supabase): persist answers to sessions feedback table.
-      router.replace("/after");
+      transition(() => router.replace("/after"));
     },
-    [router],
+    [router, transition],
   );
 
   const handleFeedbackSkip = useCallback(() => {
-    router.replace("/after");
-  }, [router]);
+    transition(() => router.replace("/after"));
+  }, [router, transition]);
 
   // After the ambient fade completes, swap the scene view for the feedback form.
   if (voiceDone) {
     return (
-      <FadeScreen key="feedback">
-        <PostSessionFeedback
-          onSubmit={handleFeedbackSubmit}
-          onSkip={handleFeedbackSkip}
-        />
-      </FadeScreen>
+      <Animated.View style={[{ flex: 1 }, animatedStyle]}>
+        <Animated.View style={[{ flex: 1 }, swapStyle]}>
+          <PostSessionFeedback
+            onSubmit={handleFeedbackSubmit}
+            onSkip={handleFeedbackSkip}
+          />
+        </Animated.View>
+      </Animated.View>
     );
   }
 
   return (
-    <FadeScreen key="session">
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
+    <Animated.View style={[{ flex: 1 }, swapStyle]}>
     <View className="flex-1 bg-bg">
-      {/* No back-swipe out of the wind-down — this is the closing moment of
-          the session; the user moves forward to feedback, not backward to
-          a halfway-ended session. */}
-      <Stack.Screen options={{ gestureEnabled: false }} />
       <SceneBackground scene={scene} intensity={0.86} />
       <View
         style={{
@@ -125,6 +130,7 @@ export default function WindingDown() {
         {closingText ? <VoiceLine text={closingText} /> : null}
       </View>
     </View>
-    </FadeScreen>
+    </Animated.View>
+    </Animated.View>
   );
 }

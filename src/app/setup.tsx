@@ -1,9 +1,9 @@
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { FadeScreen } from "@/components/common/FadeScreen";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { ForwardCta } from "@/components/common/ForwardCta";
 import { ForwardCtaFooter } from "@/components/common/ForwardCtaFooter";
@@ -11,6 +11,7 @@ import { Icon } from "@/components/common/Icon";
 import { SceneCarousel } from "@/components/features/setup/SceneCarousel";
 import { getScene, getSound, localize } from "@/lib/content/content";
 import { useSessionStore, SessionDurationMinutes } from "@/lib/storage/session-store";
+import { usePageFade } from "@/lib/ui/fadeTransition";
 import { fonts, tokens, type as typeScale } from "@/lib/ui/tokens";
 
 // Maximum selectable sounds = one per minute of trigger zone.
@@ -58,6 +59,7 @@ function Check({ selected }: { selected: boolean }) {
 export default function Setup() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
+  const { animatedStyle, transition } = usePageFade();
   const { scene, sounds, durationMinutes, setScene, toggleSound, setDurationMinutes } =
     useSessionStore();
 
@@ -78,11 +80,11 @@ export default function Setup() {
     // not back to /home. The user can still revisit /setup later via the
     // "Change what's planned" link on /home or /ready.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    router.push("/ready" as any);
+    transition(() => router.push("/ready" as any));
   };
 
   return (
-    <FadeScreen>
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
     <SafeAreaView className="flex-1 bg-bg">
       {/* Setup is a form with a horizontal scene carousel, scrollable
           checkboxes, a text input, and a time picker. A screen-level
@@ -96,7 +98,7 @@ export default function Setup() {
           while scrolling instead of scrolling out of view. */}
       <ScreenHeader
         left={
-          <Pressable onPress={() => router.back()} hitSlop={12}>
+          <Pressable onPress={() => transition(() => router.back())} hitSlop={12}>
             <Icon name="arrow-left" size={22} color={tokens.accent} />
           </Pressable>
         }
@@ -326,7 +328,7 @@ export default function Setup() {
 
         <View className="px-8 pt-12 pb-6">
           <Pressable
-            onPress={() => router.push("/psychoed")}
+            onPress={() => transition(() => router.push("/psychoed"))}
             hitSlop={8}
             style={{ paddingBottom: 4 }}
           >
@@ -353,6 +355,6 @@ export default function Setup() {
       </ForwardCtaFooter>
       </View>
     </SafeAreaView>
-    </FadeScreen>
+    </Animated.View>
   );
 }

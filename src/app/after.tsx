@@ -1,13 +1,14 @@
 import { useEffect } from "react";
 import { Pressable, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { FadeScreen } from "@/components/common/FadeScreen";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { releaseAudioEngine } from "@/lib/audio/audio-engine-host";
 import { incrementSessionsCompleted } from "@/lib/storage/storage";
+import { usePageFade } from "@/lib/ui/fadeTransition";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 /** Post-session affirmation screen. Per the UI QA pass, the previous
@@ -24,11 +25,12 @@ import { fonts, tokens } from "@/lib/ui/tokens";
 export default function After() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { animatedStyle, transition } = usePageFade();
   // dismissTo (not replace) so Home becomes a real floor: this is the finish
   // line of a user's first-ever onboarding session, and replace alone would
   // leave the whole onboarding stack sitting beneath Home, reachable by
   // navigating back indefinitely (B-07).
-  const handleDone = () => router.dismissTo("/home");
+  const handleDone = () => transition(() => router.dismissTo("/home"));
 
   // Session over → tear down the singleton audio engine so the next session
   // gets a fresh AudioContext + decoded buffers (v1.0.9), and increment the
@@ -39,7 +41,7 @@ export default function After() {
   }, []);
 
   return (
-    <FadeScreen>
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
     <SafeAreaView className="flex-1 bg-bg">
       <View className="flex-1 px-8">
         <ScreenHeader paddingX={0} />
@@ -100,6 +102,6 @@ export default function After() {
         </Pressable>
       </View>
     </SafeAreaView>
-    </FadeScreen>
+    </Animated.View>
   );
 }

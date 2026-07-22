@@ -1,17 +1,18 @@
 import { useCallback, useState } from "react";
 import { I18nManager, Pressable, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import Svg, { Path } from "react-native-svg";
 
-import { FadeScreen } from "@/components/common/FadeScreen";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
 import { getDailyAffirmation } from "@/lib/content/content";
 import { useDisplayName } from "@/lib/ui/displayName";
 import { useSettingsSheetStore } from "@/lib/storage/settings-sheet-store";
 import { getSessionsCompleted, setOnboardedAt } from "@/lib/storage/storage";
+import { usePageFade } from "@/lib/ui/fadeTransition";
 import { getTimeOfDay } from "@/lib/ui/timeOfDay";
 import { fonts, tokens, type as typeScale } from "@/lib/ui/tokens";
 
@@ -28,6 +29,7 @@ export default function Home() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { name } = useDisplayName();
+  const { animatedStyle, transition } = usePageFade();
   const band = getTimeOfDay();
 
   const [sessionsCount, setSessionsCount] = useState(0);
@@ -57,7 +59,7 @@ export default function Home() {
   // the user explicitly chooses what they're practicing on this run. Setup's
   // "Ready" pushes /ready (the preview with scene image), which then goes to
   // /preparing → /session.
-  const handleBegin = () => router.push("/setup");
+  const handleBegin = () => transition(() => router.push("/setup"));
 
   // Pluralization is i18next's job; we still need a small helper for the
   // "0 sessions" / "1 session" / "N sessions" English forms. i18next handles
@@ -68,7 +70,7 @@ export default function Home() {
   });
 
   return (
-    <FadeScreen>
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
     <SafeAreaView className="flex-1 bg-bg">
         <View className="flex-1 px-8">
           <ScreenHeader
@@ -221,7 +223,7 @@ export default function Home() {
 
             <Pressable
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              onPress={() => router.push("/companion" as any)}
+              onPress={() => transition(() => router.push("/companion" as any))}
               accessibilityRole="button"
               accessibilityLabel={t("companion.companionCta")}
               hitSlop={8}
@@ -291,7 +293,7 @@ export default function Home() {
           </View>
         </View>
     </SafeAreaView>
-    </FadeScreen>
+    </Animated.View>
   );
 }
 

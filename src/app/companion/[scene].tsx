@@ -1,11 +1,11 @@
 import { useCallback, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { FadeScreen } from "@/components/common/FadeScreen";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
 import {
@@ -21,6 +21,7 @@ import {
 } from "@/lib/storage/storage";
 import { deleteCompanionMedia, pickCompanionMedia } from "@/lib/companion/media";
 import { companionDoneCount, computeStepStates } from "@/lib/companion/steps";
+import { usePageFade } from "@/lib/ui/fadeTransition";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 const VALID_SCENES: SceneKey[] = [
@@ -48,6 +49,7 @@ const VALID_SCENES: SceneKey[] = [
 export default function CompanionRoadmap() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
+  const { animatedStyle, transition } = usePageFade();
   const { scene: sceneParam } = useLocalSearchParams<{ scene?: string }>();
   const scene: SceneKey = VALID_SCENES.includes(sceneParam as SceneKey)
     ? (sceneParam as SceneKey)
@@ -106,14 +108,16 @@ export default function CompanionRoadmap() {
   };
 
   const viewMedia = (task: CompanionTask) => {
-    router.push({
-      pathname: "/companion/media" as any,
-      params: { task: task.key },
-    });
+    transition(() =>
+      router.push({
+        pathname: "/companion/media" as any,
+        params: { task: task.key },
+      }),
+    );
   };
 
   return (
-    <FadeScreen>
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
     <SafeAreaView className="flex-1 bg-bg">
       <View className="flex-1">
       {/* Fixed above the ScrollView so the crisis affordance stays reachable
@@ -121,7 +125,7 @@ export default function CompanionRoadmap() {
       <ScreenHeader
         left={
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => transition(() => router.back())}
             hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel={t("setup.back")}
@@ -184,7 +188,7 @@ export default function CompanionRoadmap() {
       </ScrollView>
       </View>
     </SafeAreaView>
-    </FadeScreen>
+    </Animated.View>
   );
 }
 

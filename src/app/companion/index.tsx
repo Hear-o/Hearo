@@ -1,10 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { FadeScreen } from "@/components/common/FadeScreen";
 import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
 import {
@@ -18,6 +18,7 @@ import {
   SceneKey,
 } from "@/lib/content/content";
 import { getCompanionTaskMedia } from "@/lib/storage/storage";
+import { usePageFade } from "@/lib/ui/fadeTransition";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 /** Companion — v1 behavioral roadmap entry point.
@@ -31,6 +32,7 @@ import { fonts, tokens } from "@/lib/ui/tokens";
 export default function CompanionIndex() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
+  const { animatedStyle, transition } = usePageFade();
   const scenes = useMemo(() => getCompanionScenes(), []);
   const [progress, setProgress] = useState<Record<string, SceneProgress>>({});
 
@@ -55,18 +57,20 @@ export default function CompanionIndex() {
   );
 
   const openScene = (scene: SceneKey) => {
-    router.push({
-      pathname: "/companion/[scene]" as any,
-      params: { scene },
-    });
+    transition(() =>
+      router.push({
+        pathname: "/companion/[scene]" as any,
+        params: { scene },
+      }),
+    );
   };
 
   return (
-    <FadeScreen>
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
     <SafeAreaView className="flex-1 bg-bg">
       <ScreenHeader
         left={
-          <Pressable onPress={() => router.back()} hitSlop={12}>
+          <Pressable onPress={() => transition(() => router.back())} hitSlop={12}>
             <Icon name="arrow-left" size={22} color={tokens.accent} />
           </Pressable>
         }
@@ -99,6 +103,6 @@ export default function CompanionIndex() {
         />
       </View>
     </SafeAreaView>
-    </FadeScreen>
+    </Animated.View>
   );
 }

@@ -13,8 +13,8 @@ import {
 // baked into internal animation-resource files with no public override), so
 // every screen-to-screen transition and in-screen step transition instead
 // goes through this shared Reanimated-driven fade for identical timing on
-// both platforms. See FadeScreen.tsx (page-level) and screening.tsx's
-// useCrossfade() usage (in-screen step swaps).
+// both platforms. See usePageFade() below (page-level, used by every route)
+// and screening.tsx's useCrossfade() usage (in-screen step swaps).
 export const FADE_DURATION_MS = 1000;
 
 /** Fade-in, 0→1 over FADE_DURATION_MS, replayed on every focus — not just
@@ -74,7 +74,8 @@ export function useCrossfade() {
 /** Page-level version of useCrossfade: fades this screen out before running
  *  `transition`'s update (e.g. router.push), and fades in on mount/focus like
  *  useFadeIn. Use for screens whose forward-nav should feel like screening's
- *  step transitions instead of FadeScreen's fade-in-only. */
+ *  step transitions instead of a fade-in-only. This is the page-level default
+ *  for every route in the app. */
 export function usePageFade() {
   const opacity = useSharedValue(0);
   const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));

@@ -1,0 +1,14 @@
+# The Vercel "hearo" project builds only the web/ marketing site
+# (Root Directory = web). Keep the mobile app + heavy dirs out of the CLI upload.
+/ios
+/android
+/assets
+/src
+/dist
+/coverage
+/docs
+/meetings
+/openspec
+/plugins
+/scripts
+/test

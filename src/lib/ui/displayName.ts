@@ -84,11 +84,19 @@ export function useDisplayName(): { name: string | null; loading: boolean } {
   // Initial load on mount.
   useEffect(() => {
     let active = true;
-    resolveDisplayName().then((resolved) => {
-      if (!active) return;
-      useDisplayNameStore.getState().setName(resolved);
-      useDisplayNameStore.getState().setLoading(false);
-    });
+    resolveDisplayName()
+      .then((resolved) => {
+        if (!active) return;
+        useDisplayNameStore.getState().setName(resolved);
+      })
+      .catch(() => {
+        // Storage/device read failed — fall back to the no-name greeting
+        // rather than leaving `loading` stuck true forever.
+        if (active) useDisplayNameStore.getState().setName(null);
+      })
+      .finally(() => {
+        if (active) useDisplayNameStore.getState().setLoading(false);
+      });
     return () => {
       active = false;
     };
@@ -101,10 +109,14 @@ export function useDisplayName(): { name: string | null; loading: boolean } {
       let active = true;
       // Bypass the device-name parse on refresh — only the stored value can
       // have changed between renders (the OS device name doesn't mutate).
-      getDisplayName().then((stored) => {
-        if (!active) return;
-        if (stored !== undefined) useDisplayNameStore.getState().setName(stored);
-      });
+      getDisplayName()
+        .then((stored) => {
+          if (!active) return;
+          if (stored !== undefined) useDisplayNameStore.getState().setName(stored);
+        })
+        .catch(() => {
+          // Refresh-on-focus best effort — keep whatever the store already has.
+        });
       return () => {
         active = false;
       };
@@ -145,6 +157,9 @@ export function useNameDraft(): {
   return {
     value,
     onChangeText: setValue,
-    onBlur: () => void persistDisplayName(value),
+    // Best-effort save — the typed value already lives in local `value` state
+    // regardless of whether the AsyncStorage write lands, so a failure here
+    // only risks not surviving an app restart, not losing what's on screen.
+    onBlur: () => void persistDisplayName(value).catch(() => {}),
   };
 }

@@ -19,7 +19,7 @@ import {
   VOICED_SCENES,
   SOUND_ORDER,
 } from "@/lib/content/content";
-import type { Phase } from "@/lib/content/content";
+import type { Phase, SceneKey } from "@/lib/content/content";
 
 describe("content / localize", () => {
   const text = { en: "Hello", he: "שלום" };
@@ -124,10 +124,12 @@ describe("content / session audio sources", () => {
     }
   });
 
-  it("returns bundled clips for every voiced scene + language in disclaimer/mid/wind-down order", () => {
-    // Both langs across every voiced scene must resolve to a real bundled mp3.
-    // The order matches AudioEngine's playVoiceClip(index) contract.
-    for (const scene of VOICED_SCENES) {
+  it("returns bundled clips for every Practice scene + language in disclaimer/mid/wind-down order", () => {
+    // v1.3.0: every scene now has recorded audio (the 5 newer scenes fall back
+    // to the Hebrew male narrator for `en` until English is recorded). Both
+    // langs across every scene must resolve to a real bundled mp3. The order
+    // matches AudioEngine's playVoiceClip(index) contract.
+    for (const scene of SCENE_ORDER) {
       for (const lang of ["en", "he"] as const) {
         const clips = getVoiceClips(scene, lang);
         expect(clips.map((clip) => clip.key)).toEqual([
@@ -145,21 +147,18 @@ describe("content / session audio sources", () => {
     }
   });
 
-  it("returns skippable placeholder clips for not-yet-voiced Practice scenes", () => {
-    // Voice-less scenes still yield three clips (same disclaimer/mid/wind-down
-    // shape) but with placeholder sources the session flow skips, so playback
-    // never crashes on a scene without recordings.
-    const voiceless = SCENE_ORDER.filter((s) => !VOICED_SCENES.includes(s));
-    for (const scene of voiceless) {
-      const clips = getVoiceClips(scene, "en");
-      expect(clips.map((clip) => clip.key)).toEqual([
-        "disclaimer",
-        "mid-session",
-        "wind-down",
-      ]);
-      for (const clip of clips) {
-        expect(isPlaceholderSource(clip.source)).toBe(true);
-      }
+  it("falls back to skippable placeholder clips for a scene with no recorded tracks", () => {
+    // Safety net: a scene not present in VOICE_TRACKS yields three placeholder
+    // clips the session flow skips, so playback never crashes. All shipping
+    // scenes now have audio, so this exercises the defensive branch directly.
+    const clips = getVoiceClips("__unrecorded__" as SceneKey, "en");
+    expect(clips.map((clip) => clip.key)).toEqual([
+      "disclaimer",
+      "mid-session",
+      "wind-down",
+    ]);
+    for (const clip of clips) {
+      expect(isPlaceholderSource(clip.source)).toBe(true);
     }
   });
 

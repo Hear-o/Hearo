@@ -51,3 +51,6 @@ example
 
 .claude-flow/
 .mcp.json
+meetings/
+.vercel
+.env*

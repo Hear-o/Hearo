@@ -28,7 +28,7 @@ function tree(json: ReactTestRendererJSON | ReactTestRendererJSON[] | null) {
 }
 
 describe("Icon", () => {
-  const names: IconName[] = ["close", "menu", "info", "arrow-right", "arrow-left"];
+  const names: IconName[] = ["close", "menu", "lifebuoy", "arrow-right", "arrow-left"];
 
   it.each(names)("renders %s without throwing", (name) => {
     expect(() => render(<Icon name={name} />)).not.toThrow();

@@ -26,7 +26,7 @@ export function CrisisAffordance({ tone = "on-bg" }: Props) {
       accessibilityRole="button"
     >
       <View style={{ opacity }}>
-        <Icon name="info" size={28} color={color} />
+        <Icon name="lifebuoy" size={28} color={color} />
       </View>
     </Pressable>
   );

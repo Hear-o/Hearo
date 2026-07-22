@@ -1,10 +1,11 @@
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
 import {
   CompanionCarousel,
@@ -17,6 +18,7 @@ import {
   SceneKey,
 } from "@/lib/content/content";
 import { getCompanionTaskMedia } from "@/lib/storage/storage";
+import { usePageFade } from "@/lib/ui/fadeTransition";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 /** Companion — v1 behavioral roadmap entry point.
@@ -30,6 +32,7 @@ import { fonts, tokens } from "@/lib/ui/tokens";
 export default function CompanionIndex() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
+  const { animatedStyle, transition } = usePageFade();
   const scenes = useMemo(() => getCompanionScenes(), []);
   const [progress, setProgress] = useState<Record<string, SceneProgress>>({});
 
@@ -54,20 +57,24 @@ export default function CompanionIndex() {
   );
 
   const openScene = (scene: SceneKey) => {
-    router.push({
-      pathname: "/companion/[scene]" as any,
-      params: { scene },
-    });
+    transition(() =>
+      router.push({
+        pathname: "/companion/[scene]" as any,
+        params: { scene },
+      }),
+    );
   };
 
   return (
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
     <SafeAreaView className="flex-1 bg-bg">
-      <View className="px-8 pt-4 flex-row justify-between items-center">
-        <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Icon name="arrow-left" size={22} color={tokens.text} />
-        </Pressable>
-        <CrisisAffordance />
-      </View>
+      <ScreenHeader
+        left={
+          <Pressable onPress={() => transition(() => router.back())} hitSlop={12}>
+            <Icon name="arrow-left" size={22} color={tokens.accent} />
+          </Pressable>
+        }
+      />
 
       <View className="px-8 pt-6">
         <View style={{ width: 28, height: 1, backgroundColor: tokens.sage }} />
@@ -96,5 +103,6 @@ export default function CompanionIndex() {
         />
       </View>
     </SafeAreaView>
+    </Animated.View>
   );
 }

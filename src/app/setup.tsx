@@ -1,13 +1,17 @@
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
+import { ForwardCta } from "@/components/common/ForwardCta";
+import { ForwardCtaFooter } from "@/components/common/ForwardCtaFooter";
 import { Icon } from "@/components/common/Icon";
 import { SceneCarousel } from "@/components/features/setup/SceneCarousel";
 import { getScene, getSound, localize } from "@/lib/content/content";
 import { useSessionStore, SessionDurationMinutes } from "@/lib/storage/session-store";
+import { usePageFade } from "@/lib/ui/fadeTransition";
 import { fonts, tokens, type as typeScale } from "@/lib/ui/tokens";
 
 // Maximum selectable sounds = one per minute of trigger zone.
@@ -55,6 +59,7 @@ function Check({ selected }: { selected: boolean }) {
 export default function Setup() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
+  const { animatedStyle, transition } = usePageFade();
   const { scene, sounds, durationMinutes, setScene, toggleSound, setDurationMinutes } =
     useSessionStore();
 
@@ -75,29 +80,33 @@ export default function Setup() {
     // not back to /home. The user can still revisit /setup later via the
     // "Change what's planned" link on /home or /ready.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    router.push("/ready" as any);
+    transition(() => router.push("/ready" as any));
   };
 
   return (
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
     <SafeAreaView className="flex-1 bg-bg">
       {/* Setup is a form with a horizontal scene carousel, scrollable
           checkboxes, a text input, and a time picker. A screen-level
           swipe-forward GestureDetector here would collide with the
           carousel's pan recognizer — see #58 review. Users tap "Ready"
           (or swipe forward from /home once they reach it) instead. */}
+      <View className="flex-1">
+      {/* Nav element on the leading edge — LEFT in LTR, RIGHT in RTL.
+          Crisis on the trailing edge. flex-row auto-flips via I18nManager.
+          Fixed above the ScrollView so the crisis affordance stays reachable
+          while scrolling instead of scrolling out of view. */}
+      <ScreenHeader
+        left={
+          <Pressable onPress={() => transition(() => router.back())} hitSlop={12}>
+            <Icon name="arrow-left" size={22} color={tokens.accent} />
+          </Pressable>
+        }
+      />
       <ScrollView
         contentContainerStyle={{ paddingBottom: 24 }}
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={true}
       >
-        {/* Nav element on the leading edge — LEFT in LTR, RIGHT in RTL.
-            Crisis on the trailing edge. flex-row auto-flips via I18nManager. */}
-        <View className="px-8 pt-4 flex-row justify-between items-center">
-          <Pressable onPress={() => router.back()} hitSlop={12}>
-            <Icon name="arrow-left" size={22} color={tokens.text} />
-          </Pressable>
-          <CrisisAffordance />
-        </View>
-
         <View className="px-8 pt-6">
           <View style={{ width: 28, height: 1, backgroundColor: tokens.accent }} />
         </View>
@@ -319,28 +328,9 @@ export default function Setup() {
 
         <View className="px-8 pt-12 pb-6">
           <Pressable
-            onPress={handleReady}
+            onPress={() => transition(() => router.push("/psychoed"))}
             hitSlop={8}
-            style={{ opacity: sounds.length === 0 ? 0.4 : 1 }}
-          >
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-              <Text
-                style={{
-                  color: tokens.accent,
-                  fontFamily: fonts.body,
-                  fontSize: 22,
-                }}
-              >
-                {t("setup.ready")}
-              </Text>
-              <Icon name="arrow-right" size={20} color={tokens.accent} />
-            </View>
-          </Pressable>
-
-          <Pressable
-            onPress={() => router.push("/psychoed")}
-            hitSlop={8}
-            style={{ paddingTop: 24, paddingBottom: 4 }}
+            style={{ paddingBottom: 4 }}
           >
             <Text
               style={{
@@ -355,6 +345,16 @@ export default function Setup() {
           </Pressable>
         </View>
       </ScrollView>
+
+      <ForwardCtaFooter>
+        <ForwardCta
+          label={t("setup.ready")}
+          onPress={handleReady}
+          disabled={sounds.length === 0}
+        />
+      </ForwardCtaFooter>
+      </View>
     </SafeAreaView>
+    </Animated.View>
   );
 }

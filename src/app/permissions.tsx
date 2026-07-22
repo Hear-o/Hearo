@@ -1,17 +1,27 @@
 import { useCallback, useEffect, useState } from "react";
-import { Linking, Platform, Pressable, Text, View } from "react-native";
+import { Linking, Platform, Pressable, ScrollView, Switch, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { GestureDetector } from "react-native-gesture-handler";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
+import { OnboardingBreadcrumb } from "@/components/common/OnboardingBreadcrumb";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
+import { ForwardCta } from "@/components/common/ForwardCta";
+import { ForwardCtaFooter } from "@/components/common/ForwardCtaFooter";
 import { Icon } from "@/components/common/Icon";
-import { useSwipeForward } from "@/hooks/useSwipeForward";
+import { NameTextInput } from "@/components/common/NameTextInput";
 import * as healthKit from "@/lib/integrations/healthKit";
 import * as reminders from "@/lib/integrations/reminders";
-import { getClinicalScreeningResult } from "@/lib/storage/storage";
+import { usePageFade } from "@/lib/ui/fadeTransition";
+import {
+  getClinicalScreeningResult,
+  getReminderTime,
+  ReminderSchedule,
+  setReminderTime,
+} from "@/lib/storage/storage";
+import { useNameDraft } from "@/lib/ui/displayName";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 type Status = "idle" | "granted" | "denied";
@@ -41,7 +51,7 @@ function PermissionRow({
         style={{
           color: tokens.text,
           fontFamily: fonts.display,
-          fontSize: 22,
+          fontSize: 28,
           marginBottom: 8,
           textAlign: "left",
         }}
@@ -104,27 +114,33 @@ function PermissionRow({
 export default function Permissions() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { animatedStyle, transition } = usePageFade();
   const [pulseStatus, setPulseStatus] = useState<Status>("idle");
   const [notifsStatus, setNotifsStatus] = useState<Status>("idle");
-  const [showPicker, setShowPicker] = useState(false);
+
+  // Reminder toggle state — same shape as SettingsSheet's Switch + popover.
+  const [reminder, setReminder] = useState<ReminderSchedule | null>(null);
+  const [lastTime, setLastTime] = useState<ReminderSchedule | null>(null);
+  const [androidPickerOpen, setAndroidPickerOpen] = useState(false);
+  const [iosPickerOpen, setIosPickerOpen] = useState(false);
+
+  const nameDraft = useNameDraft();
 
   // On mount, read real notification permission so the row reflects actual
   // state, not just session-local UI state. Permission is what unlocks
-  // Continue; the schedule is a separate (optional) follow-up the picker
+  // Continue; the schedule is a separate (optional) follow-up the toggle
   // collects below — granted-without-schedule still counts as granted so a
   // user who allowed in Settings (or in a prior session) isn't stranded.
-  // Auto-prompt the picker when there's no schedule yet, so we still nudge
-  // them to set a time.
   useEffect(() => {
     void (async () => {
       const status = await reminders.getPermissionStatus();
       if (status === "granted") {
         setNotifsStatus("granted");
-        const schedule = await reminders.getSchedule();
-        if (!schedule) setShowPicker(true);
       } else if (status === "denied") {
         setNotifsStatus("denied");
       }
+      void reminders.getSchedule().then(setReminder);
+      void getReminderTime().then(setLastTime);
       const hkStatus = await healthKit.getAuthorizationStatus();
       if (hkStatus === "granted" || hkStatus === "requested") setPulseStatus("granted");
     })();
@@ -142,14 +158,8 @@ export default function Permissions() {
 
   const handleContinue = useCallback(async () => {
     const prior = await getClinicalScreeningResult();
-    if (prior === undefined) {
-      router.push("/screening");
-    } else {
-      router.push("/setup");
-    }
-  }, [router]);
-
-  const swipeGesture = useSwipeForward(handleContinue);
+    transition(() => router.push(prior === undefined ? "/screening" : "/setup"));
+  }, [router, transition]);
 
   const onPulsePress = async () => {
     const status = await healthKit.requestAuthorization();
@@ -158,44 +168,83 @@ export default function Permissions() {
     setPulseStatus(status === "granted" || status === "requested" ? "granted" : "denied");
   };
 
-  const onNotifsPress = async () => {
-    const status = await reminders.requestPermission();
-    if (status === "granted") {
-      // Mark granted immediately. Picking a time is a separate question —
-      // if the user dismisses the picker on Android (returns date=undefined),
-      // we must NOT leave them blocked from Continue.
-      setNotifsStatus("granted");
-      setShowPicker(true);
-    } else {
-      setNotifsStatus("denied");
-    }
-  };
-
-  const onTimePicked = async (_event: DateTimePickerEvent, date?: Date) => {
-    // On Android the picker is a modal that closes itself; on iOS it's inline.
-    if (Platform.OS === "android") setShowPicker(false);
-    if (!date) return;
-    await reminders.setSchedule({ hour: date.getHours(), minute: date.getMinutes() });
-    if (Platform.OS === "ios") setShowPicker(false);
-  };
-
   const openSettings = () => {
     Linking.openSettings().catch(() => {});
   };
 
-  const defaultPickerValue = (() => {
+  function defaultReminderTime(): ReminderSchedule {
+    return { hour: 9, minute: 0 };
+  }
+
+  async function commitTime(date: Date) {
+    const next: ReminderSchedule = { hour: date.getHours(), minute: date.getMinutes() };
+    await reminders.setSchedule(next);
+    await setReminderTime(next);
+    setReminder(next);
+    setLastTime(next);
+  }
+
+  async function handleReminderToggle(next: boolean) {
+    if (next) {
+      const status = await reminders.requestPermission();
+      if (status !== "granted") {
+        setNotifsStatus("denied");
+        return;
+      }
+      setNotifsStatus("granted");
+      const initial = reminder ?? lastTime ?? defaultReminderTime();
+      await reminders.setSchedule(initial);
+      await setReminderTime(initial);
+      setReminder(initial);
+      setLastTime(initial);
+      if (Platform.OS === "ios") setIosPickerOpen(true);
+    } else {
+      await reminders.clearSchedule();
+      setReminder(null);
+      setIosPickerOpen(false);
+    }
+  }
+
+  async function handleInlinePickerChange(_event: DateTimePickerEvent, date?: Date) {
+    if (!date) return;
+    await commitTime(date);
+  }
+
+  async function handleAndroidPickerChange(event: DateTimePickerEvent, date?: Date) {
+    setAndroidPickerOpen(false);
+    if (event.type === "dismissed" || !date) return;
+    await commitTime(date);
+  }
+
+  function pickerValue(): Date {
     const d = new Date();
-    d.setHours(18, 0, 0, 0);
+    if (reminder) {
+      d.setHours(reminder.hour, reminder.minute, 0, 0);
+    } else {
+      d.setHours(9, 0, 0, 0);
+    }
     return d;
-  })();
+  }
 
   return (
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
     <SafeAreaView className="flex-1 bg-bg">
-      <GestureDetector gesture={swipeGesture}>
-      <View className="flex-1 px-8">
-        <View className="pt-2 flex-row">
-          <CrisisAffordance />
-        </View>
+      <View className="flex-1">
+      {/* Fixed above the ScrollView so the crisis affordance stays reachable
+          while scrolling instead of scrolling out of view. */}
+      <ScreenHeader
+        left={
+          <Pressable onPress={() => transition(() => router.back())} hitSlop={12}>
+            <Icon name="arrow-left" size={22} color={tokens.accent} />
+          </Pressable>
+        }
+        bottom={<OnboardingBreadcrumb step="permissions" />}
+      />
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 32 }}
+        showsVerticalScrollIndicator={true}
+      >
         <View className="pt-4">
           <View style={{ width: 28, height: 1, backgroundColor: tokens.accent }} />
         </View>
@@ -214,6 +263,37 @@ export default function Permissions() {
           {t("permissions.title")}
         </Text>
 
+        <View className="mb-12">
+          <Text
+            style={{
+              color: tokens.text,
+              fontFamily: fonts.display,
+              fontSize: 28,
+              marginBottom: 8,
+              textAlign: "left",
+            }}
+          >
+            {t("setup.nameQuestion")}
+          </Text>
+          <NameTextInput
+            value={nameDraft.value}
+            onChangeText={nameDraft.onChangeText}
+            onBlur={nameDraft.onBlur}
+            style={{ marginBottom: 6 }}
+          />
+          <Text
+            style={{
+              color: tokens.textMute,
+              fontFamily: fonts.body,
+              fontSize: 15,
+              lineHeight: 18,
+              textAlign: "left",
+            }}
+          >
+            {t("setup.nameHint")}
+          </Text>
+        </View>
+
         <PermissionRow
           title={t("permissions.pulseTitle")}
           why={t("permissions.pulseWhy")}
@@ -224,78 +304,178 @@ export default function Permissions() {
           onDeniedPress={openSettings}
         />
 
-        <PermissionRow
-          title={t("permissions.notifsTitle")}
-          why={t("permissions.notifsWhy")}
-          cta={t("permissions.notifsAllow")}
-          status={notifsStatus}
-          onPress={onNotifsPress}
-          deniedHint={t("reminders.enableInSettings") + " →"}
-          onDeniedPress={openSettings}
-        />
-
-        {showPicker ? (
-          <View style={{ marginTop: -16, marginBottom: 12 }}>
+        <View className="mb-12">
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 8,
+            }}
+          >
             <Text
               style={{
-                color: tokens.textMute,
-                fontFamily: fonts.body,
-                fontSize: 13,
-                marginBottom: 8,
+                color: tokens.text,
+                fontFamily: fonts.display,
+                fontSize: 28,
                 textAlign: "left",
+                flexShrink: 1,
               }}
             >
-              {t("reminders.pickTime")}
+              {t("permissions.notifsTitle")}
             </Text>
-            <DateTimePicker
-              mode="time"
-              value={defaultPickerValue}
-              onChange={onTimePicked}
-              display={Platform.OS === "ios" ? "spinner" : "default"}
+            <Switch
+              value={reminder !== null}
+              onValueChange={(v) => void handleReminderToggle(v)}
+              trackColor={{ false: tokens.textMute + "55", true: tokens.accent }}
+              accessibilityLabel={t("reminders.toggleLabel")}
             />
           </View>
-        ) : null}
+          <Text
+            style={{
+              color: tokens.textMute,
+              fontFamily: fonts.body,
+              fontSize: 15,
+              lineHeight: 22,
+              textAlign: "left",
+            }}
+          >
+            {t("permissions.notifsWhy")}
+          </Text>
 
-        <View className="flex-1" />
+          {reminder ? (
+            Platform.OS === "ios" ? (
+              <Pressable
+                onPress={() => setIosPickerOpen(true)}
+                hitSlop={8}
+                style={{ marginTop: 12 }}
+              >
+                <Text style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 15 }}>
+                  {t("reminders.change")}
+                </Text>
+              </Pressable>
+            ) : (
+              <View style={{ marginTop: 12 }}>
+                <Pressable onPress={() => setAndroidPickerOpen(true)} hitSlop={8}>
+                  <Text style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 15 }}>
+                    {t("reminders.change")}
+                  </Text>
+                </Pressable>
+                {androidPickerOpen ? (
+                  <DateTimePicker
+                    value={pickerValue()}
+                    mode="time"
+                    display="default"
+                    onChange={handleAndroidPickerChange}
+                  />
+                ) : null}
+              </View>
+            )
+          ) : null}
 
+          {notifsStatus === "denied" ? (
+            <Pressable onPress={openSettings} hitSlop={6} style={{ marginTop: 10 }}>
+              <Text
+                style={{
+                  color: tokens.accentSoft,
+                  fontFamily: fonts.body,
+                  fontSize: 15,
+                  textDecorationLine: "underline",
+                }}
+              >
+                {t("reminders.enableInSettings") + " →"}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
+
+      </ScrollView>
+
+      {/* B-01: clinical screening gate. First-launch users (no stored
+          screening result) go through PC-PTSD-5 before Setup; returning
+          users skip the questionnaire. The screening route itself routes
+          back to /setup (any outcome) — Above-threshold users see a
+          clinician-recommendation card first, but it's advisory, not a
+          block. See openspec/changes/add-clinical-screening/. Fixed footer
+          (outside the ScrollView) so Continue sits at the same screen
+          position as Welcome's Begin regardless of how much permission-row
+          content is above it. The privacy note lives here too, not in the
+          ScrollView — that content already overflows the viewport on most
+          devices, so a trailing margin there has no slack to move into and
+          silently does nothing (see the marginBottom-doesn't-move-it bug this
+          fixed). Anchoring it to this fixed, non-flex footer instead gives it
+          a real, deterministic gap above Continue, regardless of scroll
+          state, without affecting Continue's own position. */}
+      <ForwardCtaFooter>
         <Text
           style={{
             color: tokens.textMute,
             fontFamily: fonts.body,
             fontSize: 13,
-            marginBottom: 24,
+            marginBottom: 16,
             textAlign: "left",
           }}
         >
           {t("permissions.privacy")}
         </Text>
+        <ForwardCta label={t("permissions.continue")} onPress={handleContinue} />
+      </ForwardCtaFooter>
 
-        {/* B-01: clinical screening gate. First-launch users (no stored
-            screening result) go through PC-PTSD-5 before Setup; returning
-            users skip the questionnaire. The screening route itself routes
-            back to /setup (any outcome) — Above-threshold users see a
-            clinician-recommendation card first, but it's advisory, not a
-            block. See openspec/changes/add-clinical-screening/. */}
-        <Pressable
-          onPress={handleContinue}
-          hitSlop={8}
-          style={{ paddingBottom: 16 }}
+      {/* iOS time-picker popover, same pattern as SettingsSheet: the spinner
+          commits live on every scroll tick, so Done and the backdrop tap only
+          need to dismiss. */}
+      {Platform.OS === "ios" && iosPickerOpen && reminder ? (
+        <View
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: 0,
+            zIndex: 2000,
+            elevation: 2000,
+            justifyContent: "flex-end",
+          }}
         >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-            <Text
-              style={{
-                color: tokens.accent,
-                fontFamily: fonts.body,
-                fontSize: 22,
-              }}
+          <Pressable
+            style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
+            onPress={() => setIosPickerOpen(false)}
+            accessibilityLabel={t("reminders.done")}
+          />
+          <View
+            style={{
+              backgroundColor: tokens.bgElev,
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              paddingHorizontal: 24,
+              paddingTop: 8,
+              paddingBottom: 28,
+            }}
+          >
+            <Pressable
+              onPress={() => setIosPickerOpen(false)}
+              hitSlop={8}
+              accessibilityRole="button"
+              style={{ alignSelf: "flex-end", paddingVertical: 8, paddingHorizontal: 4 }}
             >
-              {t("permissions.continue")}
-            </Text>
-            <Icon name="arrow-right" size={20} color={tokens.accent} />
+              <Text style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 17 }}>
+                {t("reminders.done")}
+              </Text>
+            </Pressable>
+            <View style={{ alignItems: "center" }}>
+              <DateTimePicker
+                value={pickerValue()}
+                mode="time"
+                display="spinner"
+                onChange={handleInlinePickerChange}
+                themeVariant="light"
+              />
+            </View>
           </View>
-        </Pressable>
+        </View>
+      ) : null}
       </View>
-      </GestureDetector>
     </SafeAreaView>
+    </Animated.View>
   );
 }

@@ -1,7 +1,19 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { Pressable, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import {
+  useFocusEffect,
+  useLocalSearchParams,
+  useRouter,
+} from "expo-router";
 import { useTranslation } from "react-i18next";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 
@@ -12,10 +24,21 @@ import { Icon } from "@/components/common/Icon";
 import { SceneBackground } from "@/components/features/session/SceneBackground";
 import { VoiceLine } from "@/components/features/session/VoiceLine";
 import { useSessionStore } from "@/lib/storage/session-store";
-import { getScene, getVoiceScript, localize, SceneKey, SCENE_ORDER, isPlaceholderSource, getAmbientTrack, getVoiceClips, getSound } from "@/lib/content/content";
+import {
+  getScene,
+  getVoiceScript,
+  localize,
+  SceneKey,
+  SCENE_ORDER,
+  isPlaceholderSource,
+  getAmbientTrack,
+  getVoiceClips,
+  getSound,
+} from "@/lib/content/content";
 import { dBToGain } from "@/lib/audio/audio-engine";
 import { audioTrace, audioWarn } from "@/lib/audio/audio-log";
 import { useCrisisStore } from "@/lib/storage/crisis-store";
+import { usePageFade } from "@/lib/ui/fadeTransition";
 import { fonts, tokens } from "@/lib/ui/tokens";
 import { useAudioEngine } from "@/hooks/useAudioEngine";
 import { usePulseMonitor, SessionState } from "@/hooks/usePulseMonitor";
@@ -33,8 +56,8 @@ const VALID_SCENES: readonly SceneKey[] = SCENE_ORDER;
 //   TRIGGER_ZONE — everything in between, triggers fire here
 //   OUTRO       — last 30 s, no triggers, outro narration plays
 // TODO(supabase): session_programs table — per-scene timing config.
-const INTRO_DURATION_MS  = 30_000;
-const OUTRO_DURATION_MS  = 30_000;
+const INTRO_DURATION_MS = 30_000;
+const OUTRO_DURATION_MS = 30_000;
 
 // One trigger per minute of trigger zone (2 / 4 / 6 for 3 / 5 / 7-min sessions).
 const TRIGGERS_PER_MINUTE = 1;
@@ -48,9 +71,19 @@ function deriveSessionTiming(durationMinutes: number) {
   const introMs = INTRO_DURATION_MS;
   const outroMs = OUTRO_DURATION_MS;
   const triggerZoneMs = totalMs - introMs - outroMs;
-  const triggerCount = Math.max(1, Math.floor((triggerZoneMs / 60_000) * TRIGGERS_PER_MINUTE));
+  const triggerCount = Math.max(
+    1,
+    Math.floor((triggerZoneMs / 60_000) * TRIGGERS_PER_MINUTE),
+  );
   const triggerIntervalMs = triggerZoneMs / triggerCount;
-  return { totalMs, introMs, triggerZoneMs, outroMs, triggerCount, triggerIntervalMs };
+  return {
+    totalMs,
+    introMs,
+    triggerZoneMs,
+    outroMs,
+    triggerCount,
+    triggerIntervalMs,
+  };
 }
 
 function formatElapsed(ms: number) {
@@ -63,8 +96,8 @@ function formatElapsed(ms: number) {
 // Burst shape constants.
 // TODO(supabase): session_programs table — per-scene/per-sound timing config.
 const TRIGGER_BURST_DURATION_MS = 8_000; // time at peak gain per burst
-const TRIGGER_FADE_IN_MS = 1_500;        // onset ramp
-const TRIGGER_FADE_OUT_MS = 1_500;       // offset ramp
+const TRIGGER_FADE_IN_MS = 1_500; // onset ramp
+const TRIGGER_FADE_OUT_MS = 1_500; // offset ramp
 // How far before each burst the lead-in heads-up caption should appear.
 // v1.1.3: gives the brain a beat to anticipate the practice-moment instead
 // of being startled by it cold.
@@ -126,7 +159,6 @@ function sessionReducer(state: MachineState, action: Action): MachineState {
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
-
 // ── Component ─────────────────────────────────────────────────────────────
 
 export default function Session() {
@@ -142,22 +174,25 @@ export default function Session() {
   const isCrisisOpen = useCrisisStore((s) => s.isOpen);
 
   // Lock the duration once at mount — a Setup change mid-session must not
-  // retroactively shorten/lengthen the timers. useRef captures the live store
-  // value at mount and never re-reads.
-  const sessionTimingRef = useRef(
+  // retroactively shorten/lengthen the timers. Lazy useState initializer
+  // captures the live store value at mount and never re-reads, without the
+  // render-phase ref access a useRef here would require.
+  const [sessionTiming] = useState(() =>
     deriveSessionTiming(useSessionStore.getState().durationMinutes),
   );
-  const INTRO_MS         = sessionTimingRef.current.introMs;
-  const TRIGGER_ZONE_MS  = sessionTimingRef.current.triggerZoneMs;
-  const OUTRO_MS         = sessionTimingRef.current.outroMs;
-  const TRIGGER_COUNT    = sessionTimingRef.current.triggerCount;
-  const TRIGGER_INTERVAL_MS = sessionTimingRef.current.triggerIntervalMs;
-  const TOTAL_SESSION_MS = sessionTimingRef.current.totalMs;
+  const INTRO_MS = sessionTiming.introMs;
+  const TRIGGER_ZONE_MS = sessionTiming.triggerZoneMs;
+  const OUTRO_MS = sessionTiming.outroMs;
+  const TRIGGER_COUNT = sessionTiming.triggerCount;
+  const TRIGGER_INTERVAL_MS = sessionTiming.triggerIntervalMs;
+  const TOTAL_SESSION_MS = sessionTiming.totalMs;
 
   // Keep the screen on for the duration of the session.
   useEffect(() => {
     void activateKeepAwakeAsync();
-    return () => { deactivateKeepAwake(); };
+    return () => {
+      deactivateKeepAwake();
+    };
   }, []);
 
   // ── Machine state ──────────────────────────────────────────────────────
@@ -168,14 +203,18 @@ export default function Session() {
   // where /session is reached without going through /preparing.)
   const [machineState, dispatch] = useReducer(sessionReducer, "DISCLAIMER");
   const machineStateRef = useRef<MachineState>("DISCLAIMER");
-  useEffect(() => { machineStateRef.current = machineState; }, [machineState]);
+  useEffect(() => {
+    machineStateRef.current = machineState;
+  }, [machineState]);
 
   // ── UI state ───────────────────────────────────────────────────────────
 
   const [elapsed, setElapsed] = useState(0);
   const [loadProgress, setLoadProgress] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [watchBanner, setWatchBanner] = useState<"no-watch" | "disconnected" | null>(null);
+  const [watchBanner, setWatchBanner] = useState<
+    "no-watch" | "disconnected" | null
+  >(null);
   // Timestamp of the most recent burst's fade-out completion. Used to show
   // the "back to the moment" caption for POST_TRIGGER_CAPTION_MS afterwards.
   // Set from the engine's onBurstEnd callback in the TRIGGER_ZONE effect.
@@ -184,7 +223,9 @@ export default function Session() {
   // caption: from this moment until the burst actually starts (~TRIGGER_LEAD_IN_MS
   // later) the screen shows the calming/heads-up text instead of the "during" line.
   // Cleared on burst end so subsequent bursts get a fresh window.
-  const [lastBurstApproachingAt, setLastBurstApproachingAt] = useState<number | null>(null);
+  const [lastBurstApproachingAt, setLastBurstApproachingAt] = useState<
+    number | null
+  >(null);
   // v1.1.5: true while a Roy-recorded voice clip is audibly playing. We hide
   // the on-screen caption during voice playback because Roy's recordings are
   // not verbatim reads of the scripts in content.ts (natural phrasing
@@ -197,14 +238,21 @@ export default function Session() {
   const startedAt = useRef(Date.now());
   const pausedSince = useRef<number | null>(null);
   const manualReturnTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const postTriggerDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const manualCountdownInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const postTriggerDelayRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const manualCountdownInterval = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
   // Picked once at mount so LOADING (manifest) and DISCLAIMER (buffer load) use the same variation.
   const selectedAmbientTrack = useRef(getAmbientTrack(scene));
 
   // ── Audio engine ───────────────────────────────────────────────────────
 
   const engine = useAudioEngine();
+  // One page fade for the whole screen — both the LOADING branch and the
+  // main session branch below render through this same shared value.
+  const { animatedStyle, transition } = usePageFade();
 
   // ── Pulse monitor ──────────────────────────────────────────────────────
 
@@ -238,21 +286,27 @@ export default function Session() {
     setWatchBanner(null);
     // Clear manual countdown when watch reconnects.
     if (manualReturnTimer.current) clearTimeout(manualReturnTimer.current);
-    if (manualCountdownInterval.current) clearInterval(manualCountdownInterval.current);
+    if (manualCountdownInterval.current)
+      clearInterval(manualCountdownInterval.current);
     setManualCountdown(null);
     // Resume trigger ramp — engine was stuck in spiked state from the manual distress press.
     engine.onNormalized();
   }, [engine]);
 
-  const { pulseBpm, sessionBaseline, isSpiked, watchConnected, reportManualDistress } =
-    usePulseMonitor({
-      sessionState: machineState,
-      isSessionActive: !isCrisisOpen,
-      onSpike,
-      onNormalized,
-      onWatchDisconnected,
-      onWatchReconnected,
-    });
+  const {
+    pulseBpm,
+    sessionBaseline,
+    isSpiked,
+    watchConnected,
+    reportManualDistress,
+  } = usePulseMonitor({
+    sessionState: machineState,
+    isSessionActive: !isCrisisOpen,
+    onSpike,
+    onNormalized,
+    onWatchDisconnected,
+    onWatchReconnected,
+  });
 
   // Show no-watch banner on first render if no watch connected.
   useEffect(() => {
@@ -290,12 +344,25 @@ export default function Session() {
 
     // Only include CDN assets (skip placeholders — no network call possible).
     const manifest: AssetManifest = [
-      ...(!isPlaceholderSource(ambientTrack.source) && typeof ambientTrack.source === "string"
-        ? [{ key: ambientTrack.key, url: ambientTrack.source, sha256: ambientTrack.sha256 ?? "" }]
+      ...(!isPlaceholderSource(ambientTrack.source) &&
+      typeof ambientTrack.source === "string"
+        ? [
+            {
+              key: ambientTrack.key,
+              url: ambientTrack.source,
+              sha256: ambientTrack.sha256 ?? "",
+            },
+          ]
         : []),
       ...voiceClips
-        .filter((c) => !isPlaceholderSource(c.source) && typeof c.source === "string")
-        .map((c) => ({ key: c.key, url: c.source as string, sha256: c.sha256 ?? "" })),
+        .filter(
+          (c) => !isPlaceholderSource(c.source) && typeof c.source === "string",
+        )
+        .map((c) => ({
+          key: c.key,
+          url: c.source as string,
+          sha256: c.sha256 ?? "",
+        })),
     ];
 
     (async () => {
@@ -307,7 +374,7 @@ export default function Session() {
         }
         dispatch({ type: "ASSETS_READY" });
       } catch (e) {
-        setLoadError("Failed to download audio files. Check your connection and try again.");
+        setLoadError(t("session.loadError"));
       }
     })();
   }, [machineState]);
@@ -321,7 +388,10 @@ export default function Session() {
     const voiceClips = getVoiceClips(scene, i18n.language);
     const disclaimerClip = voiceClips[0];
 
-    if (isPlaceholderSource(ambientTrack.source) && isPlaceholderSource(disclaimerClip.source)) {
+    if (
+      isPlaceholderSource(ambientTrack.source) &&
+      isPlaceholderSource(disclaimerClip.source)
+    ) {
       // No real assets yet — skip loading, advance immediately.
       dispatch({ type: "DISCLAIMER_DONE" });
       return;
@@ -334,8 +404,10 @@ export default function Session() {
     audioTrace("session DISCLAIMER: kicking off loadAmbientAndVoice");
     engine
       .loadAmbientAndVoice(
-        isPlaceholderSource(ambientTrack.source) ? 0 : (ambientTrack.source as number | string),
-        voiceSources
+        isPlaceholderSource(ambientTrack.source)
+          ? 0
+          : (ambientTrack.source as number | string),
+        voiceSources,
       )
       .then(async () => {
         // startAmbient only after buffer is loaded. Await it — it's now
@@ -374,7 +446,9 @@ export default function Session() {
 
     // Start voice narration and trigger loading concurrently — they don't
     // interfere with each other. The scheduler waits for both.
-    const voicePromise: Promise<void> = isPlaceholderSource(voiceClips[1].source)
+    const voicePromise: Promise<void> = isPlaceholderSource(
+      voiceClips[1].source,
+    )
       ? Promise.resolve()
       : playVoice(1).catch((e) => {
           audioWarn("session TRIGGER_ZONE: playVoice(1) REJECTED", e);
@@ -429,12 +503,13 @@ export default function Session() {
           peakGain: dBToGain(TRIGGER_PEAK_DB),
           leadInMs: TRIGGER_LEAD_IN_MS,
           onBurstApproaching: () => {
-            setLastBurstApproachingAt(Date.now());
+            setLastBurstApproachingAt(Date.now() - startedAt.current);
           },
           onBurstEnd: () => {
-            if (postTriggerDelayRef.current) clearTimeout(postTriggerDelayRef.current);
+            if (postTriggerDelayRef.current)
+              clearTimeout(postTriggerDelayRef.current);
             postTriggerDelayRef.current = setTimeout(() => {
-              setLastBurstEndedAt(Date.now());
+              setLastBurstEndedAt(Date.now() - startedAt.current);
             }, 3000);
             setLastBurstApproachingAt(null);
           },
@@ -447,21 +522,28 @@ export default function Session() {
         }, remainingZoneMs);
       })
       .catch((e) => {
-        audioWarn("session TRIGGER_ZONE: loadTriggers FAILED, falling back to rehearsal", e);
+        audioWarn(
+          "session TRIGGER_ZONE: loadTriggers FAILED, falling back to rehearsal",
+          e,
+        );
         if (!cancelled) {
           const elapsed = Date.now() - zoneStartedAt;
-          timerId = setTimeout(() => {
-            if (machineStateRef.current === "TRIGGER_ZONE") {
-              dispatch({ type: "TRIGGER_ZONE_DONE" });
-            }
-          }, Math.max(0, TRIGGER_ZONE_MS - elapsed));
+          timerId = setTimeout(
+            () => {
+              if (machineStateRef.current === "TRIGGER_ZONE") {
+                dispatch({ type: "TRIGGER_ZONE_DONE" });
+              }
+            },
+            Math.max(0, TRIGGER_ZONE_MS - elapsed),
+          );
         }
       });
 
     return () => {
       cancelled = true;
       clearTimeout(timerId);
-      if (postTriggerDelayRef.current) clearTimeout(postTriggerDelayRef.current);
+      if (postTriggerDelayRef.current)
+        clearTimeout(postTriggerDelayRef.current);
     };
   }, [machineState, consentedSounds, engine]);
 
@@ -510,8 +592,10 @@ export default function Session() {
     engine.stopVoice();
     engine.stopTriggerScheduler();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    router.replace({ pathname: "/winding-down" as any, params: { scene } });
-  }, [machineState, router, scene, engine]);
+    transition(() =>
+      router.replace({ pathname: "/winding-down" as any, params: { scene } }),
+    );
+  }, [machineState, router, scene, engine, transition]);
 
   // ── Suspend session audio when it isn't the active foreground ──────────
   //
@@ -569,6 +653,16 @@ export default function Session() {
 
   // ── Manual distress (no watch / watch disconnected) ───────────────────
 
+  // Exiting mid-countdown (e.g. the "End Session" pill) would otherwise leave
+  // this interval/timeout running against an unmounted screen.
+  useEffect(() => {
+    return () => {
+      if (manualReturnTimer.current) clearTimeout(manualReturnTimer.current);
+      if (manualCountdownInterval.current)
+        clearInterval(manualCountdownInterval.current);
+    };
+  }, []);
+
   const handleManualDistress = useCallback(() => {
     // For chronic high-baseline users, also notify the pulse monitor.
     reportManualDistress();
@@ -577,7 +671,8 @@ export default function Session() {
     engine.onSpike();
 
     if (manualReturnTimer.current) clearTimeout(manualReturnTimer.current);
-    if (manualCountdownInterval.current) clearInterval(manualCountdownInterval.current);
+    if (manualCountdownInterval.current)
+      clearInterval(manualCountdownInterval.current);
 
     let remaining = MANUAL_RETURN_MS / 1000;
     setManualCountdown(remaining);
@@ -586,7 +681,8 @@ export default function Session() {
       remaining -= 1;
       setManualCountdown(remaining);
       if (remaining <= 0) {
-        if (manualCountdownInterval.current) clearInterval(manualCountdownInterval.current);
+        if (manualCountdownInterval.current)
+          clearInterval(manualCountdownInterval.current);
         manualCountdownInterval.current = null;
       }
     }, 1000);
@@ -619,8 +715,8 @@ export default function Session() {
     setExitConfirmOpen(false);
     engine.fadeOutAll(0.3);
     setLastEndedBy("manual-exit");
-    router.replace("/after");
-  }, [engine, router, setLastEndedBy]);
+    transition(() => router.replace("/after"));
+  }, [engine, router, setLastEndedBy, transition]);
 
   // ── Derived display ───────────────────────────────────────────────────
 
@@ -628,9 +724,12 @@ export default function Session() {
   // caption swap. Recomputed against `elapsed` so the 250ms timer that
   // already runs for the progress bar also drives this flip (no extra
   // setInterval needed).
+  // Compared against `elapsed` (session-relative, frozen while paused) rather
+  // than a fresh Date.now() read — otherwise time spent paused (e.g. crisis
+  // sheet open) would silently eat into this window and the caption could
+  // expire before the session actually resumed.
   const isPostTrigger =
-    lastBurstEndedAt !== null &&
-    Date.now() - lastBurstEndedAt < POST_TRIGGER_CAPTION_MS;
+    lastBurstEndedAt !== null && elapsed - lastBurstEndedAt < POST_TRIGGER_CAPTION_MS;
   // v1.1.3 → v1.1.5: the lead-in window auto-expires after the maximum time
   // a burst's lifecycle could take — leadIn + burst + fade-out. Earlier we
   // relied on onBurstEnd to clear the flag, but when a mid-session voice clip
@@ -639,13 +738,21 @@ export default function Session() {
   // overlapped with the mid-session voice audio. Time-based expiry is the
   // simpler invariant: the window can't outlive the audio it's framing.
   const LEAD_IN_WINDOW_MS =
-    TRIGGER_LEAD_IN_MS + TRIGGER_FADE_IN_MS + TRIGGER_BURST_DURATION_MS + TRIGGER_FADE_OUT_MS;
+    TRIGGER_LEAD_IN_MS +
+    TRIGGER_FADE_IN_MS +
+    TRIGGER_BURST_DURATION_MS +
+    TRIGGER_FADE_OUT_MS;
+  // Same pause-safety reasoning as isPostTrigger above.
   const isApproachingTrigger =
     lastBurstApproachingAt !== null &&
-    Date.now() - lastBurstApproachingAt < LEAD_IN_WINDOW_MS;
+    elapsed - lastBurstApproachingAt < LEAD_IN_WINDOW_MS;
 
   const voiceText = useMemo(() => {
-    if (machineState === "INTRO" || machineState === "LOADING" || machineState === "DISCLAIMER") {
+    if (
+      machineState === "INTRO" ||
+      machineState === "LOADING" ||
+      machineState === "DISCLAIMER"
+    ) {
       return getVoiceScript(scene, "opening", i18n.language);
     }
     if (machineState === "TRIGGER_ZONE") {
@@ -661,9 +768,18 @@ export default function Session() {
     // elapsed is intentionally in the dep list — it's the heartbeat that
     // re-evaluates `isPostTrigger` each tick.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [machineState, scene, i18n.language, isSpiked, isApproachingTrigger, isPostTrigger, elapsed]);
+  }, [
+    machineState,
+    scene,
+    i18n.language,
+    isSpiked,
+    isApproachingTrigger,
+    isPostTrigger,
+    elapsed,
+  ]);
 
-  const slow = machineState === "WIND_DOWN" || machineState === "OUTRO" || isSpiked;
+  const slow =
+    machineState === "WIND_DOWN" || machineState === "OUTRO" || isSpiked;
   const sceneLabel = localize(getScene(scene).label, i18n.language);
 
   // ── Pulse mock phase (drives mock generator arc) ──────────────────────
@@ -673,42 +789,57 @@ export default function Session() {
 
   if (machineState === "LOADING") {
     return (
+      <Animated.View style={[{ flex: 1 }, animatedStyle]}>
       <View className="flex-1 bg-bg items-center justify-center">
         {loadError ? (
           <>
-            <Text style={{ color: tokens.text, fontFamily: fonts.body, fontSize: 16 }}>
+            <Text
+              style={{
+                color: tokens.text,
+                fontFamily: fonts.body,
+                fontSize: 16,
+              }}
+            >
               {loadError}
             </Text>
-            <Pressable onPress={() => router.back()} style={{ marginTop: 24 }}>
-              <Text style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 16 }}>
+            <Pressable onPress={() => transition(() => router.back())} style={{ marginTop: 24 }}>
+              <Text
+                style={{
+                  color: tokens.accent,
+                  fontFamily: fonts.body,
+                  fontSize: 16,
+                }}
+              >
                 {t("session.goBack")}
               </Text>
             </Pressable>
           </>
         ) : (
-          <Text style={{ color: tokens.text, fontFamily: fonts.body, fontSize: 14, opacity: 0.6 }}>
+          <Text
+            style={{
+              color: tokens.text,
+              fontFamily: fonts.body,
+              fontSize: 14,
+              opacity: 0.6,
+            }}
+          >
             {t("session.preparing")}
             {loadProgress > 0 ? ` ${Math.round(loadProgress * 100)}%` : ""}
           </Text>
         )}
       </View>
+      </Animated.View>
     );
   }
 
   // ── Main session screen ───────────────────────────────────────────────
 
   return (
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
     <View className="flex-1 bg-bg">
-      {/* Lock the iOS back-swipe + Android back-gesture while mid-session.
-          The only ways out are the close X, the End-session pill, or the
-          natural session-end timer. Prevents an accidental swipe-back from
-          dumping the user into /preparing mid-flow. */}
-      <Stack.Screen options={{ gestureEnabled: false }} />
-
       <SceneBackground scene={scene} intensity={slow ? 0.86 : 0.78} />
       <SafeAreaView className="flex-1">
         <View className="flex-1 px-7">
-
           {/* Header — nav element (close) on the leading edge so it reads
               correctly across both reading directions: LEFT in LTR English,
               RIGHT in RTL Hebrew (auto-flipped via I18nManager). */}
@@ -721,8 +852,21 @@ export default function Session() {
 
           {/* Watch status banner */}
           {watchBanner !== null && (
-            <View style={{ marginTop: 8, padding: 8, backgroundColor: "rgba(0,0,0,0.4)", borderRadius: 8 }}>
-              <Text style={{ color: tokens.sceneText, fontFamily: fonts.body, fontSize: 12 }}>
+            <View
+              style={{
+                marginTop: 8,
+                padding: 8,
+                backgroundColor: "rgba(0,0,0,0.4)",
+                borderRadius: 8,
+              }}
+            >
+              <Text
+                style={{
+                  color: tokens.sceneText,
+                  fontFamily: fonts.body,
+                  fontSize: 12,
+                }}
+              >
                 {watchBanner === "no-watch"
                   ? t("session.noWatch")
                   : t("session.watchDisconnected")}
@@ -754,7 +898,9 @@ export default function Session() {
             {/* voiceText is "" for scenes without recorded narration (v1.2.0
                 newer scenes) — hide the caption entirely rather than render a
                 blank line so those sessions read as intentionally quiet. */}
-            {!isVoicePlaying && voiceText ? <VoiceLine text={voiceText} /> : null}
+            {!isVoicePlaying && voiceText ? (
+              <VoiceLine text={voiceText} />
+            ) : null}
           </View>
 
           {/* Breathing circle */}
@@ -767,24 +913,45 @@ export default function Session() {
           </View>
 
           {/* Manual distress / countdown (visible when no HR source) */}
-          {(watchBanner !== null || !watchConnected) && machineState === "TRIGGER_ZONE" && (
-            <View style={{ alignItems: "center", marginBottom: 8 }}>
-              {manualCountdown !== null && (
-                <Text style={{ color: tokens.sceneText, fontFamily: fonts.body, fontSize: 12, opacity: 0.7, marginBottom: 4 }}>
-                  {t("session.triggerReturnsIn", { seconds: manualCountdown })}
-                </Text>
-              )}
-              <Pressable
-                hitSlop={12}
-                onPress={handleDistressPress}
-                style={{ padding: 8, borderRadius: 8, backgroundColor: "rgba(0,0,0,0.35)" }}
-              >
-                <Text style={{ color: tokens.sceneText, fontFamily: fonts.body, fontSize: 14 }}>
-                  {t("session.lowerSound")}
-                </Text>
-              </Pressable>
-            </View>
-          )}
+          {(watchBanner !== null || !watchConnected) &&
+            machineState === "TRIGGER_ZONE" && (
+              <View style={{ alignItems: "center", marginBottom: 8 }}>
+                {manualCountdown !== null && (
+                  <Text
+                    style={{
+                      color: tokens.sceneText,
+                      fontFamily: fonts.body,
+                      fontSize: 12,
+                      opacity: 0.7,
+                      marginBottom: 4,
+                    }}
+                  >
+                    {t("session.triggerReturnsIn", {
+                      seconds: manualCountdown,
+                    })}
+                  </Text>
+                )}
+                <Pressable
+                  hitSlop={12}
+                  onPress={handleDistressPress}
+                  style={{
+                    padding: 8,
+                    borderRadius: 8,
+                    backgroundColor: "rgba(0,0,0,0.35)",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: tokens.sceneText,
+                      fontFamily: fonts.body,
+                      fontSize: 14,
+                    }}
+                  >
+                    {t("session.lowerSound")}
+                  </Text>
+                </Pressable>
+              </View>
+            )}
 
           {/* Session progress — horizontal bar across the bottom, fills
               left-to-right as session elapses. Track and fill are SIBLINGS
@@ -829,16 +996,18 @@ export default function Session() {
             {formatElapsed(elapsed)}
           </Text>
 
-          {/* "I need a moment" — calming-protocol entry, always visible
-              during a session. Per UI QA pass 2: shown throughout, not
-              just after the trigger has played. The original gating was
-              based on an exposure-first clinical claim; the product
-              direction now prioritizes user control + visible escape
-              hatch from the start. LOADING/DISCLAIMER already return
-              their own screens earlier so we don't render here in those. */}
-          <View style={{ alignItems: "center", paddingBottom: 4 }}>
+          {/* Bottom actions — the break button (calming-protocol entry) is
+              the prominent primary: warm sceneAccent fill so it clearly reads
+              as the "I need to pause" affordance, above a quieter, faded
+              End-session pill. Both full-width and stacked.
+
+              Per UI QA pass 2 the break entry is shown throughout the
+              session, not just after the trigger has played: the product
+              direction prioritizes user control + a visible escape hatch
+              from the start. LOADING/DISCLAIMER already return their own
+              screens earlier so we don't render here in those. */}
+          <View style={{ paddingTop: 4, paddingBottom: 24, gap: 12 }}>
             <Pressable
-              hitSlop={12}
               onPress={() => {
                 // v1.1.0: pause-and-return instead of teardown-and-route.
                 // Cut any in-flight voice clip immediately (otherwise the
@@ -847,45 +1016,43 @@ export default function Session() {
                 // underneath. The blur effect below suspends the audio
                 // graph; on return, focus resumes it at the same point.
                 engine.stopVoice();
-                router.push("/calming");
+                transition(() => router.push("/calming"));
+              }}
+              accessibilityRole="button"
+              style={{
+                backgroundColor: tokens.sceneAccent,
+                borderRadius: 999,
+                paddingVertical: 15,
+                alignItems: "center",
+                shadowColor: tokens.sceneAccent,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.35,
+                shadowRadius: 12,
+                elevation: 6,
               }}
             >
-              <Text style={{ color: tokens.sceneText, fontFamily: fonts.body, fontSize: 14, opacity: 0.75 }}>
-                {t("home.needAMoment")}
+              <Text style={{ color: tokens.text, fontFamily: fonts.bodyMedium, fontSize: 17 }}>
+                {t("session.needABreak")}
               </Text>
             </Pressable>
-          </View>
 
-          {/* Bottom row — pulse metric removed per UI QA. Pulse is still
-              read internally to drive auto-attenuate behavior, but no
-              longer displayed to the user. */}
-          {/* End session — was a barely-visible bracketed text. Now a
-              bordered pill on sceneText color so it reads cleanly on
-              both light and dark scene overlays. */}
-          <View className="flex-row justify-end items-center pt-4 pb-6">
+            {/* End session — enlarged, faded light pill (sceneText @ 70%) so
+                it reads as a real button but stays secondary to the break CTA. */}
             <Pressable
-              hitSlop={12}
               onPress={handleEndSessionPress}
+              accessibilityRole="button"
               style={{
-                borderWidth: 1,
-                borderColor: tokens.sceneText,
+                backgroundColor: "rgba(244,238,227,0.70)",
                 borderRadius: 999,
-                paddingHorizontal: 18,
-                paddingVertical: 8,
+                paddingVertical: 14,
+                alignItems: "center",
               }}
             >
-              <Text
-                style={{
-                  color: tokens.sceneText,
-                  fontFamily: fonts.body,
-                  fontSize: 15,
-                }}
-              >
+              <Text style={{ color: tokens.text, fontFamily: fonts.bodyMedium, fontSize: 16 }}>
                 {t("session.end")}
               </Text>
             </Pressable>
           </View>
-
         </View>
       </SafeAreaView>
 
@@ -895,5 +1062,6 @@ export default function Session() {
         onConfirm={handleExitConfirm}
       />
     </View>
+    </Animated.View>
   );
 }

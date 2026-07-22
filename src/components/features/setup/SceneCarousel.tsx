@@ -125,6 +125,9 @@ function Dots({ count, currentKey }: { count: number; currentKey: SceneKey }) {
   return (
     <View
       style={{
+        // LTR keeps dot order matching the RTL-agnostic carousel's index order,
+        // so the active dot tracks the swipe instead of moving opposite it.
+        direction: "ltr",
         flexDirection: "row",
         justifyContent: "center",
         marginTop: 14,

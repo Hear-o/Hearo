@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -8,6 +9,7 @@ import { useTranslation } from "react-i18next";
 
 import { Icon } from "@/components/common/Icon";
 import { CompanionTaskMedia, getCompanionTaskMedia } from "@/lib/storage/storage";
+import { usePageFade } from "@/lib/ui/fadeTransition";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 /** Full-screen viewer for a Companion step's attached photo or video. Reached
@@ -16,6 +18,7 @@ import { fonts, tokens } from "@/lib/ui/tokens";
 export default function CompanionMediaViewer() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { animatedStyle, transition } = usePageFade();
   const { task } = useLocalSearchParams<{ task?: string }>();
   // undefined = still loading; null = no media for this key (e.g. removed).
   const [media, setMedia] = useState<CompanionTaskMedia | null | undefined>(undefined);
@@ -31,6 +34,7 @@ export default function CompanionMediaViewer() {
   }, [task]);
 
   return (
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
     <SafeAreaView style={{ flex: 1, backgroundColor: tokens.sceneOverlayBottom }}>
       <View
         style={{
@@ -40,7 +44,7 @@ export default function CompanionMediaViewer() {
           alignItems: "center",
         }}
       >
-        <Pressable onPress={() => router.back()} hitSlop={12}>
+        <Pressable onPress={() => transition(() => router.back())} hitSlop={12}>
           <Icon name="arrow-left" size={22} color={tokens.sceneText} />
         </Pressable>
       </View>
@@ -70,6 +74,7 @@ export default function CompanionMediaViewer() {
         )}
       </View>
     </SafeAreaView>
+    </Animated.View>
   );
 }
 

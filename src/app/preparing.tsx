@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Text, View } from "react-native";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import Animated from "react-native-reanimated";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import { BreathingCircle } from "@/components/features/session/BreathingCircle";
@@ -14,6 +15,7 @@ import {
   SceneKey,
   SCENE_ORDER,
 } from "@/lib/content/content";
+import { usePageFade } from "@/lib/ui/fadeTransition";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 // All Practice scenes are valid — derive from SCENE_ORDER so v1.2.0 scenes
@@ -46,6 +48,7 @@ export default function Preparing() {
     : "park";
 
   const engine = useAudioEngine();
+  const { animatedStyle, transition } = usePageFade();
   const [error, setError] = useState<string | null>(null);
   const startedAt = useRef(Date.now());
 
@@ -89,7 +92,7 @@ export default function Preparing() {
         }
 
         if (!cancelled) {
-          router.replace({ pathname: "/session", params: { scene } });
+          transition(() => router.replace({ pathname: "/session", params: { scene } }));
         }
       } catch {
         if (!cancelled) {
@@ -101,14 +104,11 @@ export default function Preparing() {
     return () => {
       cancelled = true;
     };
-  }, [engine, scene, i18n.language, router, t]);
+  }, [engine, scene, i18n.language, router, t, transition]);
 
   return (
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
     <View className="flex-1 bg-bg">
-      {/* No back-swipe while we're decoding buffers + activating the audio
-          session. Interrupting prep mid-flow puts the engine in a weird
-          partial state; the user proceeds forward or hits the OS home button. */}
-      <Stack.Screen options={{ gestureEnabled: false }} />
       <SceneBackground scene={scene} intensity={0.78} />
       <View
         style={{
@@ -151,5 +151,6 @@ export default function Preparing() {
         </Text>
       </View>
     </View>
+    </Animated.View>
   );
 }

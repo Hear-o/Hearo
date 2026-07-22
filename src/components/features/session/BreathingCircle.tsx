@@ -144,7 +144,7 @@ export function BreathingCircle({ flash = 0, slow = false, paused = false }: Pro
           style={{
             color: tokens.sceneText,
             fontFamily: fonts.display,
-            fontSize: 18,
+            fontSize: 20,
             opacity: 0.85,
           }}
         >

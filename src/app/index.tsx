@@ -1,24 +1,25 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { GestureDetector } from "react-native-gesture-handler";
 import { useTranslation } from "react-i18next";
 
-import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
-import { Icon } from "@/components/common/Icon";
-import { useSwipeForward } from "@/hooks/useSwipeForward";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
+import { ForwardCta } from "@/components/common/ForwardCta";
+import { ForwardCtaFooter } from "@/components/common/ForwardCtaFooter";
+import { usePageFade } from "@/lib/ui/fadeTransition";
 import {
   getClinicalScreeningResult,
   getOnboardedAt,
 } from "@/lib/storage/storage";
-import { tokens } from "@/lib/ui/tokens";
+import { fonts, tokens } from "@/lib/ui/tokens";
 
 export default function Welcome() {
   const router = useRouter();
   const { t } = useTranslation();
-  const handleBegin = () => router.push("/permissions");
-  const swipe = useSwipeForward(handleBegin);
+  const { animatedStyle, transition } = usePageFade();
+  const handleBegin = () => transition(() => router.push("/permissions"));
 
   // v1.1.0: if onboarding is already complete, skip straight to /home on
   // launch. Two signals count as "onboarded":
@@ -54,40 +55,33 @@ export default function Welcome() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-bg">
-      <GestureDetector gesture={swipe}>
-      <View className="flex-1 px-8 justify-between">
-        <View className="pt-6 flex-row">
-          <CrisisAffordance />
-        </View>
-        <View className="absolute left-8 top-24">
-          <View className="w-8 h-px bg-accent" />
-        </View>
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
+      <SafeAreaView className="flex-1 bg-bg">
+        <View className="flex-1 px-8 justify-between">
+          <ScreenHeader paddingX={0} />
+          <View className="absolute left-8 top-24">
+            <View className="w-8 h-px bg-accent" />
+          </View>
 
-        <View className="flex-1 justify-center">
-          <Text
-            className="text-text font-display text-4xl leading-[44px]"
-            style={{ fontFamily: "FrankRuhlLibre_400Regular", textAlign: "left" }}
-          >
-            {t("welcome.line")}
-          </Text>
-        </View>
+          <View className="flex-1 justify-center">
+            <Text
+              style={{
+                color: tokens.text,
+                fontFamily: fonts.display,
+                fontSize: 44,
+                lineHeight: 44,
+                textAlign: "left",
+              }}
+            >
+              {t("welcome.line")}
+            </Text>
+          </View>
 
-        <View className="pb-12">
-          <Pressable onPress={handleBegin}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-              <Text
-                className="text-accent text-2xl"
-                style={{ fontFamily: "Heebo_400Regular" }}
-              >
-                {t("welcome.begin")}
-              </Text>
-              <Icon name="arrow-right" size={20} color={tokens.accent} />
-            </View>
-          </Pressable>
+          <ForwardCtaFooter paddingX={0}>
+            <ForwardCta label={t("welcome.begin")} onPress={handleBegin} />
+          </ForwardCtaFooter>
         </View>
-      </View>
-      </GestureDetector>
-    </SafeAreaView>
+      </SafeAreaView>
+    </Animated.View>
   );
 }

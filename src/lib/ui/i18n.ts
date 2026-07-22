@@ -11,12 +11,12 @@ const resources = {
         begin: "Begin",
       },
       permissions: {
-        title: "Two things\nthis app will need.",
+        title: "Three things\nthis app will need.",
         pulseTitle: "Your pulse",
         pulseWhy: "So it knows when to slow down for you.",
         pulseAllow: "Connect heart rate",
         pulseDeniedHint: "Without this, the soundscape won't follow your body.",
-        notifsTitle: "Reminders",
+        notifsTitle: "Enable reminders",
         notifsWhy: "To be here when you said you would.",
         notifsAllow: "Allow",
         privacy: "Nothing leaves your phone unless you ask.",
@@ -42,7 +42,8 @@ const resources = {
         namePlaceholder: "Your name",
         nameHint: "Used in the greeting on the home screen. Optional.",
         sceneQuestion: "Where would you\nlike to be?",
-        soundsIntro: "Our world is noisy, with many sounds occurring simultaneously. It is possible that certain sounds are difficult for you to hear, causing you distress, or you might avoid them entirely and take steps not to hear them. Here, we can try to explore together the sounds that are hard for you to hear, and see if you can strengthen your sense of control and capability.",
+        soundsIntro:
+          "Our world is noisy, with many sounds occurring simultaneously. It is possible that certain sounds are difficult for you to hear, causing you distress, or you might avoid them entirely and take steps not to hear them. Here, we can try to explore together the sounds that are hard for you to hear, and see if you can strengthen your sense of control and capability.",
         soundsQuestion: "Choose a trigger sound\nto practice with.",
         soundsHint: "Pick what feels true. You can change this anytime.",
         durationQuestion: "How long\nshould we practice?",
@@ -82,6 +83,7 @@ const resources = {
       companion: {
         practiceCta: "Practice",
         practiceHint: "Sound-exposure session",
+        practiceCtaHint: "Begin a practice session",
         companionCta: "Companion",
         companionHint: "Small steps into your day",
         beta: "BETA",
@@ -110,10 +112,14 @@ const resources = {
         libraryPermissionDenied:
           "Hearo needs photo access to choose a photo or video. You can turn it on in Settings.",
         removeMediaTitle: "Remove this photo or video?",
-        removeMediaMessage: "The steps after it will lock again until you add media.",
+        removeMediaMessage:
+          "The steps after it will lock again until you add media.",
         mediaMissing: "This photo or video is no longer available.",
       },
       calming: {
+        exit: "Exit calming",
+        previousStep: "Previous step",
+        nextStep: "Next step",
         breatheIn: "Breathe in",
         breatheOut: "Breathe out",
         hold: "Hold",
@@ -124,7 +130,8 @@ const resources = {
       preparing: {
         eyebrow: "Preparing",
         body: "A quiet moment\nto settle in.",
-        error: "Couldn't load the soundscape. Check your connection and try again.",
+        error:
+          "Couldn't load the soundscape. Check your connection and try again.",
       },
       windingDown: {
         eyebrow: "Winding down",
@@ -146,13 +153,17 @@ const resources = {
         breatheOut: "Breathe out",
         preparing: "Preparing session…",
         goBack: "Go back",
-        noWatch: "No watch detected. Use the button on screen to lower trigger volume when needed.",
-        watchDisconnected: "Watch disconnected. Use the button to control trigger volume manually.",
+        noWatch:
+          "No watch detected. Use the button on screen to lower trigger volume when needed.",
+        watchDisconnected:
+          "Watch disconnected. Use the button to control trigger volume manually.",
         triggerReturnsIn: "Sound returns in {{seconds}}s",
         lowerSound: "Lower sound",
+        needABreak: "Need a break?",
         exitConfirmTitle: "Are you sure you want to leave early?",
         exitConfirmYes: "Yes, end now",
         exitConfirmCancel: "Keep going",
+        loadError: "Failed to download audio files. Check your connection and try again.",
       },
       postSession: {
         difficultyQuestion: "How difficult was this session?",
@@ -184,7 +195,8 @@ const resources = {
           addSomeone: "Add someone",
           pickHeading: "Pick someone you trust",
           listFull: "The list is full. Remove someone first to add another.",
-          denyExplanation: "ERAN's trained for this. They answer day and night.",
+          denyExplanation:
+            "ERAN's trained for this. They answer day and night.",
         },
         close: "Close",
       },
@@ -197,12 +209,12 @@ const resources = {
         begin: "להתחיל",
       },
       permissions: {
-        title: "שני דברים\nשהאפליקציה תזדקק להם.",
+        title: "שלושה דברים\nשהאפליקציה תזדקק להם",
         pulseTitle: "הדופק שלך",
         pulseWhy: "כדי לדעת מתי להאט בשבילך.",
-        pulseAllow: "חיבור מקור דופק",
+        pulseAllow: "חיבור מקור למדידת דופק",
         pulseDeniedHint: "בלי זה, הצליל לא יעקוב אחרי הגוף שלך.",
-        notifsTitle: "תזכורות",
+        notifsTitle: "לאפשר תזכורות",
         notifsWhy: "כדי להיות כאן, כפי שביקשת.",
         notifsAllow: "אפשר",
         privacy: "שום דבר לא עוזב את הטלפון שלך אלא אם ביקשת.",
@@ -224,14 +236,15 @@ const resources = {
         toggleLabel: "הפעלת תזכורת יומית",
       },
       setup: {
-        nameQuestion: "איך\nלקרוא לך?",
+        nameQuestion: "איך לקרוא לך?",
         namePlaceholder: "השם שלך",
         nameHint: "מופיע בברכה במסך הבית. אופציונלי.",
-        sceneQuestion: "איפה תרצה\nלהיות?",
-        soundsIntro: "העולם שלנו רועש, המון צלילים פועלים בו במקביל. יתכן וצלילים מסוימים קשים עבורך לשמיעה ואתה סובל שאתה שומע אותם או נמנע מהם ועושה דברים כדי לא לשמוע אותם. כאן נוכל לנסות להכיר יחד את הצלילים שקשה לך לשמוע, ולנסות יחד לראות אם אתה יכול לחזק את תחושת השליטה והמסוגלות שלך.",
-        soundsQuestion: "בחר צליל טריגר\nלאימון.",
-        soundsHint: "בחר את מה שמרגיש נכון. תוכל לשנות זאת בכל עת.",
-        durationQuestion: "מה יהיה אורך\nהתרגול?",
+        sceneQuestion: "איפה נרצה להיות?",
+        soundsIntro:
+          "העולם שלנו מלא בצלילים, ורבים מהם מלווים אותנו לאורך היום. לפעמים יש צלילים שקשה יותר לשמוע. הם יכולים לעורר אי נוחות, להציף, או לגרום לרצון להימנע מהם.\nכאן נוכל להכיר יחד את הצלילים שקשים לך, ובקצב שלך לתרגל מפגש איתם. המטרה היא לעזור לך לחזק בהדרגה את תחושת השליטה והמסוגלות שלך, כדי שהצלילים האלה ישפיעו פחות על חיי היום-יום.",
+        soundsQuestion: "בחירת צליל טריגר לאימון:",
+        soundsHint: "בחר/י את מה שמרגיש נכון.\nניתן לשנות זאת בכל עת.",
+        durationQuestion: "מה יהיה אורך התרגול?",
         durationHint: "אפשר לשנות בפעם הבאה.",
         durationMinutes_one: "דקה {{count}}",
         durationMinutes_two: "{{count}} דקות",
@@ -239,14 +252,14 @@ const resources = {
         durationMinutes_other: "{{count}} דקות",
         ready: "להתחיל",
         back: "חזרה",
-        rereadIntro: "לקרוא שוב את הפתיח",
+        rereadIntro: "לקריאה חוזרת של הפתיח",
       },
       home: {
         greeting: {
-          morning: "בוקר טוב,\n{{name}}.",
-          afternoon: "צהריים טובים,\n{{name}}.",
-          evening: "ערב טוב,\n{{name}}.",
-          night: "לילה טוב,\n{{name}}.",
+          morning: "בוקר טוב,\n{{name}}",
+          afternoon: "צהריים טובים,\n{{name}}",
+          evening: "ערב טוב,\n{{name}}",
+          night: "לילה טוב,\n{{name}}",
         },
         greetingNoName: {
           morning: "בוקר טוב.",
@@ -273,6 +286,7 @@ const resources = {
       companion: {
         practiceCta: "תרגול",
         practiceHint: "סשן חשיפה לצלילים",
+        practiceCtaHint: "התחלת סשן תרגול",
         companionCta: "ליווי",
         companionHint: "צעדים קטנים אל תוך היום",
         beta: "בטא",
@@ -310,6 +324,9 @@ const resources = {
       },
 
       calming: {
+        exit: "יציאה מהרגעה",
+        previousStep: "הצעד הקודם",
+        nextStep: "הצעד הבא",
         breatheIn: "שאיפה",
         breatheOut: "נשיפה",
         hold: "החזקה",
@@ -343,12 +360,15 @@ const resources = {
         preparing: "מכינים סשן…",
         goBack: "חזרה",
         noWatch: "לא זוהה שעון. אפשר להשתמש בכפתור שעל המסך להנמכת הצליל.",
-        watchDisconnected: "השעון התנתק. אפשר להשתמש בכפתור לשליטה ידנית בעוצמה.",
+        watchDisconnected:
+          "השעון התנתק. אפשר להשתמש בכפתור לשליטה ידנית בעוצמה.",
         triggerReturnsIn: "הצליל חוזר בעוד {{seconds}} שניות",
         lowerSound: "הנמכת צליל",
+        needABreak: "זקוק/ה להפסקה?",
         exitConfirmTitle: "בטוחים שרוצים\nלעזוב מוקדם?",
         exitConfirmYes: "כן, לסיים עכשיו",
         exitConfirmCancel: "להמשיך",
+        loadError: "הורדת קובצי השמע נכשלה. יש לבדוק את החיבור ולנסות שוב.",
       },
       postSession: {
         difficultyQuestion: "עד כמה הסשן הזה היה קשה עבורך?",
@@ -371,7 +391,7 @@ const resources = {
         done: "סיום",
       },
       crisis: {
-        title: "צריך מישהו\nלדבר איתו\nעכשיו?",
+        title: "צריך מישהו לדבר איתו עכשיו?",
         call: 'להתקשר לער"ן',
         number: "1201",
         free: "חינם, 24/7,\nאנונימי.",
@@ -380,7 +400,7 @@ const resources = {
           addSomeone: "להוסיף מישהו",
           pickHeading: "בחירת אדם שאפשר לסמוך עליו",
           listFull: "הרשימה מלאה. אפשר להסיר מישהו כדי להוסיף עוד.",
-          denyExplanation: "ער\"ן מאומנים לזה. הם עונים יום ולילה.",
+          denyExplanation: 'ער"ן מאומנים לזה. הם עונים יום ולילה.',
         },
         close: "סגירה",
       },

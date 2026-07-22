@@ -87,7 +87,16 @@ export default function RootLayout() {
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: "#F2EBDD" },
-          animation: "fade",
+          // Native-stack's own fade can't be tuned consistently cross-platform
+          // (animationDuration is iOS-only; Android has no public override) —
+          // disable it entirely and let each screen's usePageFade() drive an
+          // identical Reanimated fade on both platforms instead.
+          animation: "none",
+          // Every screen has its own explicit back/close control, so the
+          // iOS edge-swipe / Android back-gesture is redundant — and on the
+          // session flow specifically it was letting an accidental swipe
+          // dump the user out mid-session. Disabled everywhere for consistency.
+          gestureEnabled: false,
         }}
       />
       <CrisisSheet />

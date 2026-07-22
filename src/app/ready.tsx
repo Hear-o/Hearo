@@ -1,17 +1,17 @@
 import { Image, Pressable, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { GestureDetector } from "react-native-gesture-handler";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
-import { useSwipeForward } from "@/hooks/useSwipeForward";
 import { getScene, getSound, localize } from "@/lib/content/content";
 import { useDisplayName } from "@/lib/ui/displayName";
 import { useSessionStore } from "@/lib/storage/session-store";
 import { getPsychoEducationSeen } from "@/lib/storage/storage";
 import { useSettingsSheetStore } from "@/lib/storage/settings-sheet-store";
+import { usePageFade } from "@/lib/ui/fadeTransition";
 import { getTimeOfDay } from "@/lib/ui/timeOfDay";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
@@ -29,6 +29,7 @@ export default function Ready() {
   const { t, i18n } = useTranslation();
   const { scene, sounds, durationMinutes } = useSessionStore();
   const { name } = useDisplayName();
+  const { animatedStyle, transition } = usePageFade();
   const band = getTimeOfDay();
 
   const sceneRecord = getScene(scene);
@@ -49,29 +50,31 @@ export default function Ready() {
 
   async function handleBegin() {
     const seen = await getPsychoEducationSeen();
-    if (seen) {
-      router.push({ pathname: "/preparing", params: { scene } });
-    } else {
-      router.push({ pathname: "/psychoed", params: { scene } });
-    }
+    transition(() => {
+      if (seen) {
+        router.push({ pathname: "/preparing", params: { scene } });
+      } else {
+        router.push({ pathname: "/psychoed", params: { scene } });
+      }
+    });
   }
 
-  const swipeGesture = useSwipeForward(handleBegin);
-
   return (
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
     <SafeAreaView className="flex-1 bg-bg">
-      <GestureDetector gesture={swipeGesture}>
         <View className="flex-1 px-8">
-          <View className="flex-row justify-between items-center pt-2">
-            <Pressable
-              hitSlop={16}
-              onPress={() => useSettingsSheetStore.getState().open()}
-              accessibilityLabel={t("settings.open")}
-            >
-              <Icon name="settings" size={28} color={tokens.text} />
-            </Pressable>
-            <CrisisAffordance />
-          </View>
+          <ScreenHeader
+            paddingX={0}
+            left={
+              <Pressable
+                hitSlop={16}
+                onPress={() => useSettingsSheetStore.getState().open()}
+                accessibilityLabel={t("settings.open")}
+              >
+                <Icon name="settings" size={28} color={tokens.text} />
+              </Pressable>
+            }
+          />
 
           <View className="pt-10">
             <View style={{ width: 28, height: 1, backgroundColor: tokens.accent }} />
@@ -168,7 +171,7 @@ export default function Ready() {
             <Pressable
               onPress={handleBegin}
               accessibilityRole="button"
-              accessibilityHint="Tap or swipe to begin today's session"
+              accessibilityHint="Begin today's session"
               hitSlop={8}
               style={{
                 borderWidth: 1,
@@ -191,7 +194,7 @@ export default function Ready() {
           </View>
 
           <Pressable
-            onPress={() => router.push("/setup")}
+            onPress={() => transition(() => router.push("/setup"))}
             hitSlop={8}
             style={{ alignSelf: "center", paddingVertical: 14 }}
           >
@@ -206,7 +209,7 @@ export default function Ready() {
             </Text>
           </Pressable>
         </View>
-      </GestureDetector>
     </SafeAreaView>
+    </Animated.View>
   );
 }

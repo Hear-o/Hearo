@@ -1,11 +1,15 @@
 import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
+import { OnboardingBreadcrumb } from "@/components/common/OnboardingBreadcrumb";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
+import { Icon } from "@/components/common/Icon";
 import { Pcl4Form } from "@/components/features/screening/Pcl4Form";
+import { useCrossfade, usePageFade } from "@/lib/ui/fadeTransition";
 import {
   computeClinicalScreeningOutcome,
   getClinicalScreening,
@@ -25,19 +29,80 @@ type ScreenStep =
   | { kind: "items" }
   | { kind: "outcome"; outcome: ClinicalScreeningOutcome };
 
+/** Maps the internal step machine to the breadcrumb's 0-2 sub-step index. */
+function subStepIndexFor(step: ScreenStep): 0 | 1 | 2 {
+  if (step.kind === "intro") return 0;
+  if (step.kind === "items") return 1;
+  return 2; // "outcome"
+}
+
 export default function Screening() {
   const router = useRouter();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const lang = i18n.language;
   const content = getClinicalScreening();
-  const [step, setStep] = useState<ScreenStep>({ kind: "intro" });
 
-  /** Step 1 → trauma-exposure answered. Persist immediately for "no" path
-   *  (items not administered); transition to items for "yes". */
-  async function handleTraumaExposureAnswer(traumaExposure: boolean) {
+  // step and history are combined into one state object updated by a single
+  // setter. Nesting setHistory inside setStep's updater (or vice versa)
+  // violates React's purity rule for updaters — React can invoke an updater
+  // more than once (notably in Strict Mode), so a side-effecting nested
+  // setState there can produce duplicate history entries.
+  const [{ step, history }, setScreenState] = useState<{
+    step: ScreenStep;
+    history: ScreenStep[];
+  }>({ step: { kind: "intro" }, history: [] });
+
+  // True crossfade (fade out → swap step → fade in) instead of a plain
+  // fade-in, so step transitions don't read as an instant cut. Shared with
+  // the page-level usePageFade timing (fadeTransition.ts) so this
+  // feels like the same speed as navigating between screens.
+  const { animatedStyle, transition } = useCrossfade();
+  const { animatedStyle: pageStyle, transition: pageTransition } = usePageFade();
+
+  /** Advance to the next step, remembering the current one so `goBack` can
+   *  return to it instead of just exiting the questionnaire. The state
+   *  update is atomic so a rapid double-tap can't push duplicate history
+   *  entries from a stale closure. The actual state change runs inside
+   *  transition() once the fade-out completes. */
+  function goTo(next: ScreenStep) {
+    transition(() => {
+      setScreenState((prev) => {
+        if (prev.step.kind === next.kind) return prev;
+        return { step: next, history: [...prev.history, prev.step] };
+      });
+    });
+  }
+
+  /** Step back within the questionnaire; exits to Permissions only from the
+   *  first step (empty history). */
+  function goBack() {
+    if (history.length === 0) {
+      pageTransition(() => router.back());
+      return;
+    }
+    transition(() => {
+      setScreenState((prev) => {
+        if (prev.history.length === 0) return prev;
+        return {
+          step: prev.history[prev.history.length - 1],
+          history: prev.history.slice(0, -1),
+        };
+      });
+    });
+  }
+
+  /** Step 1 → trauma-exposure answered. Transition immediately for both
+   *  answers so "no" doesn't stall on the "yes" path; the "no" path's result
+   *  (items not administered) persists in the background after navigating. */
+  function handleTraumaExposureAnswer(traumaExposure: boolean) {
     if (!traumaExposure) {
-      const { score, outcome } = computeClinicalScreeningOutcome(false, [], content.cutoff);
-      await setClinicalScreeningResult({
+      const { score, outcome } = computeClinicalScreeningOutcome(
+        false,
+        [],
+        content.cutoff,
+      );
+      goTo({ kind: "outcome", outcome });
+      void setClinicalScreeningResult({
         instrument: "pc-ptsd-5",
         version: content.version,
         traumaExposure: false,
@@ -47,15 +112,18 @@ export default function Screening() {
         outcome,
         takenAt: Date.now(),
       });
-      setStep({ kind: "outcome", outcome });
       return;
     }
-    setStep({ kind: "items" });
+    goTo({ kind: "items" });
   }
 
   /** Step 2 → 4 Likert items answered. Score, persist, transition to outcome. */
   async function handleItemsSubmit(answers: number[]) {
-    const { score, outcome } = computeClinicalScreeningOutcome(true, answers, content.cutoff);
+    const { score, outcome } = computeClinicalScreeningOutcome(
+      true,
+      answers,
+      content.cutoff,
+    );
     await setClinicalScreeningResult({
       instrument: "pc-ptsd-5",
       version: content.version,
@@ -66,40 +134,76 @@ export default function Screening() {
       outcome,
       takenAt: Date.now(),
     });
-    setStep({ kind: "outcome", outcome });
+    goTo({ kind: "outcome", outcome });
   }
 
   /** Step 3 → user dismisses the outcome card. Onboarding ends on the intro
    *  (psychoeducation), which then lands on /home so the user chooses Practice
    *  vs Companion — rather than being dropped straight into Practice setup. */
   function handleContinue() {
-    router.replace({ pathname: "/psychoed", params: { from: "onboarding" } });
+    pageTransition(() =>
+      router.replace({ pathname: "/psychoed", params: { from: "onboarding" } }),
+    );
   }
 
+  // Long, scrollable steps get the back arrow in the header (opposite the
+  // "i" icon, which stays put); short prose-outcome cards get it inline at
+  // continue-button height instead.
+  const isLongStep =
+    step.kind === "intro" ||
+    step.kind === "items" ||
+    (step.kind === "outcome" && step.outcome === "above-threshold");
+
   return (
+    <Animated.View style={[{ flex: 1 }, pageStyle]}>
     <SafeAreaView className="flex-1 bg-bg">
-      <View className="flex-row justify-between items-center pt-2 px-8">
-        <CrisisAffordance />
-      </View>
+      <ScreenHeader
+        left={
+          isLongStep ? (
+            <Pressable
+              onPress={goBack}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel={t("setup.back")}
+            >
+              <Icon name="arrow-left" size={22} color={tokens.accent} />
+            </Pressable>
+          ) : undefined
+        }
+        bottom={
+          <OnboardingBreadcrumb step="screening" screeningSubStep={subStepIndexFor(step)} />
+        }
+      />
 
-      {step.kind === "intro" && (
-        <IntroStep lang={lang} onAnswer={handleTraumaExposureAnswer} />
-      )}
+      <Animated.View style={[{ flex: 1 }, animatedStyle]}>
+        {step.kind === "intro" && (
+          <IntroStep lang={lang} onAnswer={handleTraumaExposureAnswer} />
+        )}
 
-      {step.kind === "items" && <Pcl4Form onSubmit={handleItemsSubmit} />}
+        {step.kind === "items" && <Pcl4Form onSubmit={handleItemsSubmit} />}
 
-      {step.kind === "outcome" && step.outcome === "no-trauma" && (
-        <NoTraumaOutcome lang={lang} onContinue={handleContinue} />
-      )}
+        {step.kind === "outcome" && step.outcome === "no-trauma" && (
+          <NoTraumaOutcome
+            lang={lang}
+            onContinue={handleContinue}
+            onBack={goBack}
+          />
+        )}
 
-      {step.kind === "outcome" && step.outcome === "below-threshold" && (
-        <BelowThresholdOutcome lang={lang} onContinue={handleContinue} />
-      )}
+        {step.kind === "outcome" && step.outcome === "below-threshold" && (
+          <BelowThresholdOutcome
+            lang={lang}
+            onContinue={handleContinue}
+            onBack={goBack}
+          />
+        )}
 
-      {step.kind === "outcome" && step.outcome === "above-threshold" && (
-        <AboveThresholdOutcome lang={lang} onContinue={handleContinue} />
-      )}
+        {step.kind === "outcome" && step.outcome === "above-threshold" && (
+          <AboveThresholdOutcome lang={lang} onContinue={handleContinue} />
+        )}
+      </Animated.View>
     </SafeAreaView>
+    </Animated.View>
   );
 }
 
@@ -115,8 +219,12 @@ function IntroStep({
   const content = getClinicalScreening();
   return (
     <ScrollView
-      contentContainerStyle={{ paddingHorizontal: 32, paddingTop: 24, paddingBottom: 24 }}
-      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{
+        paddingHorizontal: 32,
+        paddingTop: 24,
+        paddingBottom: 24,
+      }}
+      showsVerticalScrollIndicator={true}
     >
       <Text
         style={{
@@ -183,7 +291,13 @@ function IntroStep({
             alignItems: "center",
           }}
         >
-          <Text style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 18 }}>
+          <Text
+            style={{
+              color: tokens.accent,
+              fontFamily: fonts.body,
+              fontSize: 18,
+            }}
+          >
             {localize(content.traumaExposure.yes, lang)}
           </Text>
         </Pressable>
@@ -200,7 +314,9 @@ function IntroStep({
             alignItems: "center",
           }}
         >
-          <Text style={{ color: tokens.text, fontFamily: fonts.body, fontSize: 18 }}>
+          <Text
+            style={{ color: tokens.text, fontFamily: fonts.body, fontSize: 18 }}
+          >
             {localize(content.traumaExposure.no, lang)}
           </Text>
         </Pressable>
@@ -211,14 +327,48 @@ function IntroStep({
 
 // ── Step 3: outcome screens ───────────────────────────────────────────────────
 
-function NoTraumaOutcome({ lang, onContinue }: { lang: string; onContinue: () => void }) {
+function NoTraumaOutcome({
+  lang,
+  onContinue,
+  onBack,
+}: {
+  lang: string;
+  onContinue: () => void;
+  onBack: () => void;
+}) {
   const c = getClinicalScreening().outcomes.noTrauma;
-  return <ProseOutcome lang={lang} heading={c.heading} body={c.body} continueLabel={c.continueLabel} onContinue={onContinue} />;
+  return (
+    <ProseOutcome
+      lang={lang}
+      heading={c.heading}
+      body={c.body}
+      continueLabel={c.continueLabel}
+      onContinue={onContinue}
+      onBack={onBack}
+    />
+  );
 }
 
-function BelowThresholdOutcome({ lang, onContinue }: { lang: string; onContinue: () => void }) {
+function BelowThresholdOutcome({
+  lang,
+  onContinue,
+  onBack,
+}: {
+  lang: string;
+  onContinue: () => void;
+  onBack: () => void;
+}) {
   const c = getClinicalScreening().outcomes.belowThreshold;
-  return <ProseOutcome lang={lang} heading={c.heading} body={c.body} continueLabel={c.continueLabel} onContinue={onContinue} />;
+  return (
+    <ProseOutcome
+      lang={lang}
+      heading={c.heading}
+      body={c.body}
+      continueLabel={c.continueLabel}
+      onContinue={onContinue}
+      onBack={onBack}
+    />
+  );
 }
 
 function ProseOutcome({
@@ -227,13 +377,16 @@ function ProseOutcome({
   body,
   continueLabel,
   onContinue,
+  onBack,
 }: {
   lang: string;
   heading: { en: string; he: string };
   body: { en: string; he: string };
   continueLabel: { en: string; he: string };
   onContinue: () => void;
+  onBack: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <View className="flex-1 px-8 pt-6 pb-6">
       <View className="flex-1 justify-center">
@@ -244,6 +397,7 @@ function ProseOutcome({
             fontSize: 28,
             lineHeight: 38,
             marginBottom: 16,
+            textAlign: "left",
           }}
         >
           {localize(heading, lang)}
@@ -254,37 +408,67 @@ function ProseOutcome({
             fontFamily: fonts.body,
             fontSize: 16,
             lineHeight: 26,
+            textAlign: "left",
           }}
         >
           {localize(body, lang)}
         </Text>
       </View>
-      <Pressable
-        onPress={onContinue}
-        hitSlop={8}
-        accessibilityRole="button"
-        style={{
-          borderWidth: 1,
-          borderColor: tokens.accent,
-          borderRadius: 999,
-          paddingVertical: 16,
-          alignItems: "center",
-        }}
-      >
-        <Text style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 18 }}>
-          {localize(continueLabel, lang)}
-        </Text>
-      </Pressable>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+        <Pressable
+          onPress={onBack}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel={t("setup.back")}
+        >
+          <Icon name="arrow-left" size={22} color={tokens.accent} />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Pressable
+            onPress={onContinue}
+            hitSlop={8}
+            accessibilityRole="button"
+            style={{
+              borderWidth: 1,
+              borderColor: tokens.accent,
+              borderRadius: 999,
+              paddingVertical: 16,
+              alignItems: "center",
+            }}
+          >
+            <Text
+              style={{
+                color: tokens.accent,
+                fontFamily: fonts.body,
+                fontSize: 18,
+              }}
+            >
+              {localize(continueLabel, lang)}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
     </View>
   );
 }
 
-function AboveThresholdOutcome({ lang, onContinue }: { lang: string; onContinue: () => void }) {
+function AboveThresholdOutcome({
+  lang,
+  onContinue,
+}: {
+  lang: string;
+  onContinue: () => void;
+}) {
   const c = getClinicalScreening().outcomes.aboveThreshold;
   return (
     <ScrollView
-      contentContainerStyle={{ paddingHorizontal: 32, paddingTop: 24, paddingBottom: 24, flexGrow: 1 }}
-      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{
+        paddingHorizontal: 32,
+        paddingTop: 24,
+        paddingBottom: 24,
+        flexGrow: 1,
+      }}
+      showsVerticalScrollIndicator={true}
     >
       <View className="flex-1 justify-center">
         <Text
@@ -329,7 +513,9 @@ function AboveThresholdOutcome({ lang, onContinue }: { lang: string; onContinue:
           alignItems: "center",
         }}
       >
-        <Text style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 18 }}>
+        <Text
+          style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 18 }}
+        >
           {localize(c.continueLabel, lang)}
         </Text>
       </Pressable>

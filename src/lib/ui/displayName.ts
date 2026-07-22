@@ -13,6 +13,7 @@ import { useCallback, useEffect, useState } from "react";
 import * as Device from "expo-device";
 import { useFocusEffect } from "expo-router";
 
+import { useDisplayNameStore } from "../storage/display-name-store";
 import { getDisplayName, setDisplayName } from "../storage/storage";
 
 const GENERIC_PATTERNS: RegExp[] = [
@@ -69,20 +70,33 @@ export async function resolveDisplayName(): Promise<string | null> {
 }
 
 /** React hook. Returns null while loading; then string-or-null once resolved.
- *  Re-reads on screen focus so a name typed in Setup shows up immediately
- *  on Home when the user navigates back. */
+ *  Backed by a shared store (not local component state) so a name saved
+ *  from any screen — Permissions, Settings — is reflected on every other
+ *  mounted consumer (notably Home's greeting) instantly, with no route
+ *  focus event or app restart required: Settings is an always-mounted
+ *  overlay, not a routed screen, so a focus-only refresh never fires just
+ *  from closing it. Still re-reads on screen focus too, so a name typed in
+ *  Setup shows up immediately on Home when the user navigates back. */
 export function useDisplayName(): { name: string | null; loading: boolean } {
-  const [name, setName] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const name = useDisplayNameStore((s) => s.name);
+  const loading = useDisplayNameStore((s) => s.loading);
 
   // Initial load on mount.
   useEffect(() => {
     let active = true;
-    resolveDisplayName().then((resolved) => {
-      if (!active) return;
-      setName(resolved);
-      setLoading(false);
-    });
+    resolveDisplayName()
+      .then((resolved) => {
+        if (!active) return;
+        useDisplayNameStore.getState().setName(resolved);
+      })
+      .catch(() => {
+        // Storage/device read failed — fall back to the no-name greeting
+        // rather than leaving `loading` stuck true forever.
+        if (active) useDisplayNameStore.getState().setName(null);
+      })
+      .finally(() => {
+        if (active) useDisplayNameStore.getState().setLoading(false);
+      });
     return () => {
       active = false;
     };
@@ -95,10 +109,14 @@ export function useDisplayName(): { name: string | null; loading: boolean } {
       let active = true;
       // Bypass the device-name parse on refresh — only the stored value can
       // have changed between renders (the OS device name doesn't mutate).
-      getDisplayName().then((stored) => {
-        if (!active) return;
-        if (stored !== undefined) setName(stored);
-      });
+      getDisplayName()
+        .then((stored) => {
+          if (!active) return;
+          if (stored !== undefined) useDisplayNameStore.getState().setName(stored);
+        })
+        .catch(() => {
+          // Refresh-on-focus best effort — keep whatever the store already has.
+        });
       return () => {
         active = false;
       };
@@ -110,8 +128,38 @@ export function useDisplayName(): { name: string | null; loading: boolean } {
 
 /** Async setter exposed for Setup's name input. Persists the typed value
  *  and overrides any device-name parse result. Pass an empty string or
- *  null to clear the stored name (greeting falls back to the no-name form). */
+ *  null to clear the stored name (greeting falls back to the no-name form).
+ *  Updates the shared store immediately so every mounted consumer reflects
+ *  the change live, without waiting on a focus event or restart. */
 export async function persistDisplayName(name: string | null): Promise<void> {
   const trimmed = name?.trim() ?? null;
-  await setDisplayName(trimmed && trimmed.length > 0 ? trimmed : null);
+  const finalValue = trimmed && trimmed.length > 0 ? trimmed : null;
+  await setDisplayName(finalValue);
+  useDisplayNameStore.getState().setName(finalValue);
+}
+
+/** Editable draft backed by the stored display name — pre-fills once resolved,
+ *  persists on blur. Shared by every screen with a name field (Permissions,
+ *  Settings) so they can't drift out of sync. */
+export function useNameDraft(): {
+  value: string;
+  onChangeText: (value: string) => void;
+  onBlur: () => void;
+} {
+  const { name: storedName } = useDisplayName();
+  const [value, setValue] = useState<string>(storedName ?? "");
+  useEffect(() => {
+    if (storedName !== null && storedName !== undefined) {
+      setValue((prev) => (prev === "" ? storedName : prev));
+    }
+  }, [storedName]);
+
+  return {
+    value,
+    onChangeText: setValue,
+    // Best-effort save — the typed value already lives in local `value` state
+    // regardless of whether the AsyncStorage write lands, so a failure here
+    // only risks not surviving an app restart, not losing what's on screen.
+    onBlur: () => void persistDisplayName(value).catch(() => {}),
+  };
 }

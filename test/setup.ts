@@ -52,6 +52,7 @@ jest.mock("expo-router", () => {
 // device locale starts in English; keep it pinned there for copy assertions.
 import i18n from "@/lib/ui/i18n";
 import { useCrisisStore } from "@/lib/storage/crisis-store";
+import { useDisplayNameStore } from "@/lib/storage/display-name-store";
 
 beforeAll(async () => {
   await i18n.changeLanguage("en");
@@ -63,4 +64,5 @@ beforeAll(async () => {
 // previous test's tree, avoiding an act() warning from re-rendering a live tree.
 beforeEach(() => {
   useCrisisStore.setState({ isOpen: false });
+  useDisplayNameStore.setState({ name: null, loading: true });
 });

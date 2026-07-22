@@ -1,11 +1,12 @@
 import { useCallback, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
 import {
   CompanionTask,
@@ -20,6 +21,7 @@ import {
 } from "@/lib/storage/storage";
 import { deleteCompanionMedia, pickCompanionMedia } from "@/lib/companion/media";
 import { companionDoneCount, computeStepStates } from "@/lib/companion/steps";
+import { usePageFade } from "@/lib/ui/fadeTransition";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 const VALID_SCENES: SceneKey[] = [
@@ -47,6 +49,7 @@ const VALID_SCENES: SceneKey[] = [
 export default function CompanionRoadmap() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
+  const { animatedStyle, transition } = usePageFade();
   const { scene: sceneParam } = useLocalSearchParams<{ scene?: string }>();
   const scene: SceneKey = VALID_SCENES.includes(sceneParam as SceneKey)
     ? (sceneParam as SceneKey)
@@ -105,25 +108,36 @@ export default function CompanionRoadmap() {
   };
 
   const viewMedia = (task: CompanionTask) => {
-    router.push({
-      pathname: "/companion/media" as any,
-      params: { task: task.key },
-    });
+    transition(() =>
+      router.push({
+        pathname: "/companion/media" as any,
+        params: { task: task.key },
+      }),
+    );
   };
 
   return (
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
     <SafeAreaView className="flex-1 bg-bg">
+      <View className="flex-1">
+      {/* Fixed above the ScrollView so the crisis affordance stays reachable
+          while scrolling instead of scrolling out of view. */}
+      <ScreenHeader
+        left={
+          <Pressable
+            onPress={() => transition(() => router.back())}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel={t("setup.back")}
+          >
+            <Icon name="arrow-left" size={22} color={tokens.accent} />
+          </Pressable>
+        }
+      />
       <ScrollView
         contentContainerStyle={{ paddingBottom: 40 }}
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={true}
       >
-        <View className="px-8 pt-4 flex-row justify-between items-center">
-          <Pressable onPress={() => router.back()} hitSlop={12}>
-            <Icon name="arrow-left" size={22} color={tokens.text} />
-          </Pressable>
-          <CrisisAffordance />
-        </View>
-
         <View className="px-8 pt-6">
           <View style={{ width: 28, height: 1, backgroundColor: tokens.sage }} />
         </View>
@@ -172,7 +186,9 @@ export default function CompanionRoadmap() {
           ))}
         </View>
       </ScrollView>
+      </View>
     </SafeAreaView>
+    </Animated.View>
   );
 }
 

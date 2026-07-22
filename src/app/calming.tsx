@@ -1,12 +1,15 @@
 import { Pressable, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 
 import { CalmingProtocol } from "@/components/features/calming/CalmingProtocol";
-import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
 import { useCalmingOverlay } from "@/hooks/useCalmingOverlay";
 import { useSessionStore } from "@/lib/storage/session-store";
+import { usePageFade } from "@/lib/ui/fadeTransition";
 import { tokens } from "@/lib/ui/tokens";
 
 /** Self-tap calming protocol (B-03 v1, updated v1.1.0). Reached from:
@@ -21,6 +24,8 @@ import { tokens } from "@/lib/ui/tokens";
  *  is now strictly a pause-and-return overlay. */
 export default function Calming() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const { animatedStyle, transition } = usePageFade();
   const setLastEndedBy = useSessionStore((s) => s.setLastEndedBy);
 
   // v1.1.x — soothing soundtrack under the protocol (Roy's neo-classical
@@ -31,24 +36,27 @@ export default function Calming() {
 
   function handleProtocolEnd() {
     setLastEndedBy("calming-protocol");
-    router.back();
+    transition(() => router.back());
   }
 
   function handleExit() {
-    router.back();
+    transition(() => router.back());
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-bg">
-      {/* Header — nav element (close) on the leading edge, crisis on the
-          trailing edge. Same LTR/RTL convention as Setup/Home/Session. */}
-      <View className="flex-row justify-between items-center pt-2 px-8">
-        <Pressable hitSlop={16} onPress={handleExit} accessibilityLabel="exit calming">
-          <Icon name="close" size={20} color={tokens.text} />
-        </Pressable>
-        <CrisisAffordance />
-      </View>
-      <CalmingProtocol onProtocolEnd={handleProtocolEnd} />
-    </SafeAreaView>
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
+      <SafeAreaView className="flex-1 bg-bg">
+        {/* Header — nav element (close) on the leading edge, crisis on the
+            trailing edge. Same LTR/RTL convention as Setup/Home/Session. */}
+        <ScreenHeader
+          left={
+            <Pressable hitSlop={16} onPress={handleExit} accessibilityLabel={t("calming.exit")}>
+              <Icon name="close" size={22} color={tokens.text} />
+            </Pressable>
+          }
+        />
+        <CalmingProtocol onProtocolEnd={handleProtocolEnd} />
+      </SafeAreaView>
+    </Animated.View>
   );
 }

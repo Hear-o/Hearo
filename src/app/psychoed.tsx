@@ -1,18 +1,20 @@
 import { Pressable, ScrollView, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { GestureDetector } from "react-native-gesture-handler";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
-import { useSwipeForward } from "@/hooks/useSwipeForward";
+import { OnboardingBreadcrumb } from "@/components/common/OnboardingBreadcrumb";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { getPsychoEducation, localize, SceneKey } from "@/lib/content/content";
+import { usePageFade } from "@/lib/ui/fadeTransition";
 import { setPsychoEducationSeen } from "@/lib/storage/storage";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 export default function PsychoEducation() {
   const router = useRouter();
   const { i18n } = useTranslation();
+  const { animatedStyle, transition } = usePageFade();
   const params = useLocalSearchParams<{ scene?: string; from?: string }>();
 
   const content = getPsychoEducation();
@@ -28,29 +30,29 @@ export default function PsychoEducation() {
 
   async function handleContinue() {
     await setPsychoEducationSeen(true);
-    if (sceneParam) {
-      // /preparing now pre-loads the audio engine; /session lands ready.
-      router.replace({ pathname: "/preparing", params: { scene: sceneParam } });
-    } else if (fromOnboarding) {
-      router.replace("/home");
-    } else {
-      router.back();
-    }
+    transition(() => {
+      if (sceneParam) {
+        router.replace({ pathname: "/preparing", params: { scene: sceneParam } });
+      } else if (fromOnboarding) {
+        router.replace("/home");
+      } else {
+        router.back();
+      }
+    });
   }
 
-  const swipeGesture = useSwipeForward(handleContinue);
-
   return (
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
     <SafeAreaView className="flex-1 bg-bg">
-      <GestureDetector gesture={swipeGesture}>
       <View className="flex-1 px-8">
-        <View className="flex-row justify-between items-center pt-2">
-          <CrisisAffordance />
-        </View>
+        <ScreenHeader
+          paddingX={0}
+          bottom={fromOnboarding ? <OnboardingBreadcrumb step="psychoed" /> : undefined}
+        />
 
         <ScrollView
           contentContainerStyle={{ paddingTop: 24, paddingBottom: 8 }}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true}
         >
           <Text
             style={{
@@ -121,7 +123,7 @@ export default function PsychoEducation() {
           </Pressable>
         </View>
       </View>
-      </GestureDetector>
     </SafeAreaView>
+    </Animated.View>
   );
 }

@@ -1,17 +1,18 @@
 import { useCallback, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { I18nManager, Pressable, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { GestureDetector } from "react-native-gesture-handler";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
+import Svg, { Path } from "react-native-svg";
 
-import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
+import { ScreenHeader } from "@/components/common/ScreenHeader";
 import { Icon } from "@/components/common/Icon";
-import { useSwipeForward } from "@/hooks/useSwipeForward";
 import { getDailyAffirmation } from "@/lib/content/content";
 import { useDisplayName } from "@/lib/ui/displayName";
 import { useSettingsSheetStore } from "@/lib/storage/settings-sheet-store";
 import { getSessionsCompleted, setOnboardedAt } from "@/lib/storage/storage";
+import { usePageFade } from "@/lib/ui/fadeTransition";
 import { getTimeOfDay } from "@/lib/ui/timeOfDay";
 import { fonts, tokens, type as typeScale } from "@/lib/ui/tokens";
 
@@ -28,6 +29,7 @@ export default function Home() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { name } = useDisplayName();
+  const { animatedStyle, transition } = usePageFade();
   const band = getTimeOfDay();
 
   const [sessionsCount, setSessionsCount] = useState(0);
@@ -57,8 +59,7 @@ export default function Home() {
   // the user explicitly chooses what they're practicing on this run. Setup's
   // "Ready" pushes /ready (the preview with scene image), which then goes to
   // /preparing → /session.
-  const handleBegin = () => router.push("/setup");
-  const swipeGesture = useSwipeForward(handleBegin);
+  const handleBegin = () => transition(() => router.push("/setup"));
 
   // Pluralization is i18next's job; we still need a small helper for the
   // "0 sessions" / "1 session" / "N sessions" English forms. i18next handles
@@ -69,19 +70,21 @@ export default function Home() {
   });
 
   return (
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
     <SafeAreaView className="flex-1 bg-bg">
-      <GestureDetector gesture={swipeGesture}>
         <View className="flex-1 px-8">
-          <View className="flex-row justify-between items-center pt-2">
-            <Pressable
-              hitSlop={16}
-              onPress={() => useSettingsSheetStore.getState().open()}
-              accessibilityLabel={t("settings.open")}
-            >
-              <Icon name="settings" size={28} color={tokens.text} />
-            </Pressable>
-            <CrisisAffordance />
-          </View>
+          <ScreenHeader
+            paddingX={0}
+            left={
+              <Pressable
+                hitSlop={16}
+                onPress={() => useSettingsSheetStore.getState().open()}
+                accessibilityLabel={t("settings.open")}
+              >
+                <Icon name="settings" size={28} color={tokens.text} />
+              </Pressable>
+            }
+          />
 
           <View className="pt-10">
             <View style={{ width: 28, height: 1, backgroundColor: tokens.accent }} />
@@ -92,6 +95,8 @@ export default function Home() {
               color: tokens.text,
               fontFamily: fonts.display,
               ...typeScale.hero,
+              fontSize: 44,
+              lineHeight: 54,
               marginTop: 24,
             }}
           >
@@ -108,8 +113,8 @@ export default function Home() {
               style={{
                 color: tokens.textMute,
                 fontFamily: fonts.body,
-                fontSize: 13,
-                letterSpacing: 1.6,
+                fontSize: 15,
+                letterSpacing: 1.2,
                 textTransform: "uppercase",
                 marginBottom: 10,
                 textAlign: "left",
@@ -122,6 +127,8 @@ export default function Home() {
                 color: tokens.text,
                 fontFamily: fonts.body,
                 ...typeScale.body,
+                fontSize: 21,
+                lineHeight: 29,
                 opacity: 0.85,
               }}
             >
@@ -131,13 +138,13 @@ export default function Home() {
 
           {/* Sessions-completed counter — the only progress surface we ship
               in v1.1.0. Trend/streak/minutes are backlog. */}
-          <View style={{ marginTop: 32 }}>
+          <View style={{ marginTop: 56 }}>
             <Text
               style={{
                 color: tokens.textMute,
                 fontFamily: fonts.body,
-                fontSize: 13,
-                letterSpacing: 1.6,
+                fontSize: 15,
+                letterSpacing: 1.2,
                 textTransform: "uppercase",
                 marginBottom: 8,
                 textAlign: "left",
@@ -150,7 +157,7 @@ export default function Home() {
                 color: tokens.text,
                 fontFamily: fonts.display,
                 fontSize: 44,
-                lineHeight: 50,
+                lineHeight: 54,
                 textAlign: "left",
               }}
             >
@@ -165,107 +172,158 @@ export default function Home() {
               with a BETA tag while clinical review is pending). Cards stack
               vertically rather than side-by-side so labels stay readable in
               Hebrew and don't get truncated on small phones. */}
-          <View className="pb-2" style={{ gap: 12 }}>
+          <View className="pb-10" style={{ gap: 20 }}>
             <Pressable
               onPress={handleBegin}
               accessibilityRole="button"
-              accessibilityHint="Tap or swipe to begin a practice session"
+              accessibilityHint={t("companion.practiceCtaHint")}
               hitSlop={8}
               style={{
-                borderWidth: 1,
-                borderColor: tokens.accent,
                 borderRadius: 20,
                 paddingVertical: 20,
                 paddingHorizontal: 24,
-                backgroundColor: tokens.accent + "12",
+                backgroundColor: tokens.accent,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                shadowColor: tokens.accent,
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.45,
+                shadowRadius: 18,
+                elevation: 6,
               }}
             >
-              <Text
-                style={{
-                  color: tokens.accent,
-                  fontFamily: fonts.display,
-                  fontSize: 22,
-                  lineHeight: 28,
-                  textAlign: "left",
-                }}
-              >
-                {t("companion.practiceCta")}
-              </Text>
-              <Text
-                style={{
-                  color: tokens.textMute,
-                  fontFamily: fonts.body,
-                  fontSize: 13,
-                  marginTop: 4,
-                  textAlign: "left",
-                }}
-              >
-                {t("companion.practiceHint")}
-              </Text>
-            </Pressable>
-
-            <Pressable
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              onPress={() => router.push("/companion" as any)}
-              accessibilityRole="button"
-              accessibilityLabel={t("companion.companionCta")}
-              hitSlop={8}
-              style={{
-                borderWidth: 1,
-                borderColor: tokens.sage,
-                borderRadius: 20,
-                paddingVertical: 20,
-                paddingHorizontal: 24,
-                backgroundColor: tokens.sage + "12",
-              }}
-            >
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <View>
                 <Text
                   style={{
-                    color: tokens.sage,
-                    fontFamily: fonts.display,
-                    fontSize: 22,
+                    color: tokens.sceneText,
+                    fontFamily: fonts.displayMedium,
+                    fontSize: 26,
                     lineHeight: 28,
                     textAlign: "left",
                   }}
                 >
-                  {t("companion.companionCta")}
+                  {t("companion.practiceCta")}
                 </Text>
-                <View
+                <Text
                   style={{
-                    backgroundColor: tokens.sage,
-                    borderRadius: 4,
-                    paddingHorizontal: 6,
-                    paddingVertical: 2,
+                    color: tokens.sceneTextMute,
+                    fontFamily: fonts.body,
+                    fontSize: 13,
+                    marginTop: 4,
+                    textAlign: "left",
                   }}
                 >
+                  {t("companion.practiceHint")}
+                </Text>
+              </View>
+              <ArrowChip />
+            </Pressable>
+
+            <Pressable
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              onPress={() => transition(() => router.push("/companion" as any))}
+              accessibilityRole="button"
+              accessibilityLabel={t("companion.companionCta")}
+              hitSlop={8}
+              style={{
+                borderRadius: 20,
+                paddingVertical: 20,
+                paddingHorizontal: 24,
+                backgroundColor: tokens.sage,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                shadowColor: tokens.sage,
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.45,
+                shadowRadius: 18,
+                elevation: 6,
+              }}
+            >
+              <View>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                   <Text
                     style={{
-                      color: tokens.bg,
-                      fontFamily: fonts.bodyMedium,
-                      fontSize: 10,
-                      letterSpacing: 1,
+                      color: tokens.sceneText,
+                      fontFamily: fonts.displayMedium,
+                      fontSize: 26,
+                      lineHeight: 28,
+                      textAlign: "left",
                     }}
                   >
-                    {t("companion.beta")}
+                    {t("companion.companionCta")}
                   </Text>
+                  <View
+                    style={{
+                      backgroundColor: "rgba(244,238,227,0.24)",
+                      borderRadius: 4,
+                      paddingHorizontal: 6,
+                      paddingVertical: 2,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: tokens.sceneText,
+                        fontFamily: fonts.bodyMedium,
+                        fontSize: 10,
+                        letterSpacing: 1,
+                      }}
+                    >
+                      {t("companion.beta")}
+                    </Text>
+                  </View>
                 </View>
+                <Text
+                  style={{
+                    color: tokens.sceneTextMute,
+                    fontFamily: fonts.body,
+                    fontSize: 13,
+                    marginTop: 4,
+                    textAlign: "left",
+                  }}
+                >
+                  {t("companion.companionHint")}
+                </Text>
               </View>
-              <Text
-                style={{
-                  color: tokens.textMute,
-                  fontFamily: fonts.body,
-                  fontSize: 13,
-                  marginTop: 4,
-                  textAlign: "left",
-                }}
-              >
-                {t("companion.companionHint")}
-              </Text>
+              <ArrowChip />
             </Pressable>
           </View>
         </View>
-      </GestureDetector>
     </SafeAreaView>
+    </Animated.View>
+  );
+}
+
+// Bolder stroke than the shared arrow-right asset (Icon.tsx), scoped to this
+// chip only. Reuses that asset's own path/flip logic rather than a new file.
+function ArrowChip() {
+  const flip = I18nManager.isRTL;
+  return (
+    <View
+      style={{
+        width: 32,
+        height: 32,
+        borderRadius: 999,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "rgba(244,238,227,0.18)",
+      }}
+    >
+      <View style={flip ? { transform: [{ scaleX: -1 }] } : undefined}>
+        <Svg width={16} height={16} viewBox="0 0 24 24">
+          <Path
+            fill="none"
+            stroke={tokens.sceneText}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={3.5}
+            d="M.75 12h22.5m-10.5 10.5L23.25 12L12.75 1.5"
+          />
+        </Svg>
+      </View>
+    </View>
   );
 }

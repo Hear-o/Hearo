@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { Text, View } from "react-native";
+import { I18nManager, Pressable, Text, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useTranslation } from "react-i18next";
 
 import { BoxBreathingTimer } from "./BoxBreathingTimer";
 import { SensoryGroundingStep } from "./SensoryGroundingStep";
+import { Icon } from "@/components/common/Icon";
 import {
   CalmingProtocolStep,
   getCalmingProtocol,
@@ -43,14 +44,25 @@ export function CalmingProtocol({ onProtocolEnd, steps }: Props) {
     }
   }
 
-  // Swipe-to-advance: a horizontal pan past SWIPE_THRESHOLD_PX skips ahead
-  // to the next step, same effect as the per-step timer firing. Direction-
-  // agnostic for LTR/RTL parity.
+  function goBack() {
+    if (index > 0) setIndex(index - 1);
+  }
+
+  // Swipe: a horizontal pan past SWIPE_THRESHOLD_PX moves a step, same effect
+  // as pressing the matching arrow. Direction is resolved by *intent*, not by
+  // raw sign: in LTR a leftward drag means "forward", in RTL it means "back",
+  // so the gesture matches the reading direction the arrows are laid out in.
   const swipeGesture = Gesture.Pan()
     .minDistance(SWIPE_THRESHOLD_PX)
     .onEnd((event) => {
-      if (Math.abs(event.translationX) >= SWIPE_THRESHOLD_PX) {
+      if (Math.abs(event.translationX) < SWIPE_THRESHOLD_PX) return;
+      const draggedTowardStart = I18nManager.isRTL
+        ? event.translationX > 0
+        : event.translationX < 0;
+      if (draggedTowardStart) {
         advance();
+      } else {
+        goBack();
       }
     })
     .runOnJS(true);
@@ -61,11 +73,18 @@ export function CalmingProtocol({ onProtocolEnd, steps }: Props) {
   return (
     <GestureDetector gesture={swipeGesture}>
       <View className="flex-1">
-        <ProgressDots total={protocol.length} index={index} />
+        <StepNav
+          total={protocol.length}
+          index={index}
+          onBack={goBack}
+          onForward={advance}
+        />
         <View className="flex-1 px-8 pb-8">
           {/* `key` forces unmount + remount when the step changes — without
               it, two consecutive prose steps with identical `durationMs`
-              would reuse the same React instance and not reset the timer. */}
+              would reuse the same React instance and not reset the timer.
+              It also gives arrow/swipe navigation its timer reset for free:
+              every manual move remounts the step and restarts its clock. */}
           <StepBody key={index} step={step} onComplete={advance} />
         </View>
       </View>
@@ -131,10 +150,56 @@ function ProseStep({
   );
 }
 
+/** Footer band: back arrow, progress dots, forward arrow. The arrows let the
+ *  user pace the protocol manually instead of waiting out each step's timer.
+ *  The back arrow stays rendered-but-disabled on the first step so the row
+ *  never reflows mid-protocol. */
+function StepNav({
+  total,
+  index,
+  onBack,
+  onForward,
+}: {
+  total: number;
+  index: number;
+  onBack: () => void;
+  onForward: () => void;
+}) {
+  const { t } = useTranslation();
+  const atStart = index === 0;
+
+  return (
+    <View className="flex-row items-center justify-between px-8 pt-6 pb-2">
+      <Pressable
+        hitSlop={12}
+        disabled={atStart}
+        onPress={onBack}
+        accessibilityRole="button"
+        accessibilityLabel={t("calming.previousStep")}
+        accessibilityState={{ disabled: atStart }}
+        style={{ opacity: atStart ? 0.3 : 1 }}
+      >
+        <Icon name="arrow-left" size={22} color={tokens.text} />
+      </Pressable>
+
+      <ProgressDots total={total} index={index} />
+
+      <Pressable
+        hitSlop={12}
+        onPress={onForward}
+        accessibilityRole="button"
+        accessibilityLabel={t("calming.nextStep")}
+      >
+        <Icon name="arrow-right" size={22} color={tokens.text} />
+      </Pressable>
+    </View>
+  );
+}
+
 /** Step-progress indicator: one dot per step, current one filled. */
 function ProgressDots({ total, index }: { total: number; index: number }) {
   return (
-    <View className="flex-row justify-center pt-6 pb-2" style={{ gap: 8 }}>
+    <View className="flex-row justify-center" style={{ gap: 8 }}>
       {Array.from({ length: total }).map((_, i) => (
         <View
           key={i}

@@ -884,60 +884,60 @@ export function getVoiceClips(scene: SceneKey, lang: string): VoiceClip[] {
 
 const DAILY_AFFIRMATIONS: LocalizedText[] = [
   {
-    he: "הזיכרון של הגוף לא הופך אותך לשבור.\nהוא הופך אותך לאנושי.",
-    en: "Your body's memory doesn't make you broken.\nIt makes you human.",
+  he: "הזיכרון של הגוף לא אומר שמשהו בך נשבר.",
+  en: "Your body's memory doesn't mean something is broken in you.",
   },
   {
-    he: "להתעורר היום\nכבר היה משהו.",
-    en: "Waking up today\nwas already something.",
+    he: "עצם זה שהתעוררת היום זה כבר משהו.",
+    en: "The fact that you woke up today is already something.",
   },
   {
-    he: "ההתאוששות לא קווית.\nאי אפשר לאחר בה.",
-    en: "Healing isn't linear.\nYou're not behind.",
+    he: "ההתאוששות לא מתקדמת בקו ישר.\nזה לא אומר שנשארת מאחור.",
+    en: "Healing isn't linear.\nIt doesn't mean you're behind.",
   },
   {
-    he: "אין צורך להבין הכל עכשיו.\nרק להיות כאן.",
+    he: "לא חייבים להבין הכול עכשיו.\nמספיק להיות כאן.",
     en: "You don't need to understand everything now.\nJust be here.",
   },
   {
-    he: "מה שעבר עליך אמיתי.\nומה שמרגישים עכשיו זה לא חולשה.",
-    en: "What you went through is real.\nWhat you feel now isn't weakness.",
+    he: "מה שעברת היה אמיתי.\nגם מה שמרגישים עכשיו.",
+    en: "What you went through is real.\nSo is what you're feeling now.",
   },
   {
-    he: "הנשימה הזאת היא שלך.\nשום דבר לא ייקח אותה ממך.",
-    en: "This breath is yours.\nNothing takes it from you.",
+    he: "הנשימה הזאת היא שלך.\nאפשר תמיד לחזור אליה.",
+    en: "This breath is yours.\nYou can always come back to it.",
   },
   {
-    he: "אינך לבד בזה.\nגם כשזה מרגיש ככה.",
-    en: "You're not alone in this.\nEven when it feels that way.",
+    he: "לא חייבים לעבור את זה לבד.",
+    en: "You don't have to go through this alone.",
   },
   {
-    he: "השקט אחרי הסערה הוא רגע.\nרגעים מצטברים.",
-    en: "The quiet after a storm is a moment.\nMoments add up.",
+    he: "גם רגע קטן של שקט הוא התחלה.",
+    en: "Even a small moment of quiet is a beginning.",
   },
   {
-    he: "להיות כאן היום\nזאת בחירה.",
-    en: "Being here today\nis a choice.",
+    he: "עצם זה שהגעת עד לכאן\nזה מספיק להיום.",
+    en: "Making it this far today\nis enough.",
   },
   {
-    he: "אין דרך נכונה\nלהרגיש בריא.",
-    en: "There's no right way\nto feel well.",
+    he: "אין דרך אחת להרגיש טוב יותר.",
+    en: "There's no single right way to heal.",
   },
   {
-    he: "מגיע לך הזמן\nשנחוץ לך.",
-    en: "You're entitled to the time\nyou need.",
+    he: "מותר לקחת את הזמן שנחוץ.",
+    en: "You're allowed to take the time you need.",
   },
   {
-    he: "פעולה קטנה ביום\nהיא לא קטנה.",
-    en: "A small daily action\nisn't small.",
+    he: "גם צעד קטן הוא עדיין צעד.",
+    en: "Even a small step is still a step.",
   },
   {
-    he: "המערכת שלך הייתה בכוננות.\nעכשיו היא לומדת לסמוך מחדש.",
-    en: "Your system was on alert.\nNow you're teaching it to trust again.",
+    he: "הגוף למד להיות דרוך.\nהוא יכול ללמוד גם להרגיש בטוח.",
+    en: "Your body learned to stay alert.\nIt can learn to feel safe again.",
   },
   {
-    he: "אינך הסיפור שסיפרת לעצמך\nברגעים הקשים.",
-    en: "You are not the story you tell yourself\nin the hardest moments.",
+    he: "יש בך הרבה יותר\nמהרגעים הכי קשים.",
+    en: "There is more to you\nthan your hardest moments.",
   },
 ];
 
@@ -985,16 +985,16 @@ const PSYCHO_EDUCATION: PsychoEducationContent = {
   },
   heading: {
     en: "Your body is not\nbroken. It's on\nemergency settings.",
-    he: "הגוף שלך לא\nמקולקל. הוא על\nהגדרות חירום.",
+    he: "הגוף שלך לא מקולקל,\nהוא על הגדרות חירום.",
   },
   body: [
     {
       en: "Your body has a built-in alarm. Racing heart, shallow breath, tense muscles — that's the amygdala doing its job. It kept you alive.",
-      he: "לגוף שלך יש אזעקה מובנית. דופק מהיר, נשימה שטחית, שרירים דרוכים — זה המוח עושה את עבודתו. הוא שמר עליך.",
+      he: "לגוף שלך יש אזעקה מובנית. דופק מהיר, נשימה שטחית, שרירים דרוכים. זה המוח עושה את עבודתו. הוא שמר עליך.",
     },
     {
       en: "After the danger passes, the alarm stays sensitive. A sound, a smell, a place can still set it off. That's not broken — it's a protection system that adapted.",
-      he: "אחרי שהסכנה חולפת, האזעקה נשארת רגישה. צליל, ריח או מקום עוד יכולים להפעיל אותה. זה לא קלקול — זאת מערכת הגנה שהתאימה את עצמה.",
+      he: "אחרי שהסכנה חולפת, הגוף נשאר דרוך. צליל ,ריח או מקום יכולים להפעיל מחדש את המנגנון, זה תפקוד תקין לחלוטין של מערכת ההגנה שלנו.",
     },
     {
       en: "Here, gradually and in a safe space, we'll teach the system that the danger has passed.",
@@ -1192,19 +1192,19 @@ const CLINICAL_SCREENING: Pcl4Content = {
   cutoff: 8,
   intro: {
     eyebrow: {
-      en: "A quick check-in",
+      en: "A moment before we begin",
       // TODO(hirschman-review): HE draft pending clinical review.
-      he: "כמה שאלות לפני שמתחילים",
+      he: "רגע לפני שמתחילים",
     },
     heading: {
-      en: "Four short questions\nbefore we begin.",
+      en: "Four short questions",
       // TODO(hirschman-review)
-      he: "ארבע שאלות קצרות\nלפני שמתחילים.",
+      he: "ארבע שאלות קצרות",
     },
     body: {
-      en: "Four quick questions. We use them to suggest whether to pair the app with talking to someone. Your answers stay on this device.",
+      en: "This takes less than a minute. Your answers help us tailor the experience for you, and recommend extra support if needed. Your information stays on your device.",
       // TODO(hirschman-review)
-      he: "ארבע שאלות קצרות. עוזרות לנו להציע אם כדאי לשלב את האפליקציה עם שיחה עם מישהו. התשובות נשארות במכשיר.",
+      he: "זה ייקח פחות מדקה. התשובות יעזרו לנו להתאים את החוויה עבורך, ובמידת הצורך להמליץ על ליווי נוסף. המידע נשמר רק במכשיר שלך.",
     },
   },
   traumaExposure: {
@@ -1296,9 +1296,9 @@ const CLINICAL_SCREENING: Pcl4Content = {
         he: "האפליקציה שלנו יכולה לנסות לתמוך ולעזור בהתמודדות. אפשר להשתמש בה גם לצד טיפול, או בנפרד. האפליקציה נבנתה בשיתוף מרכז מטיב ונוכל לחבר אותך למרכז אם תצטרך.",
       },
       continueLabel: {
-        en: "Continue to the app",
+        en: "Continue",
         // TODO(hirschman-review)
-        he: "המשך לאפליקציה",
+        he: "המשך",
       },
     },
   },

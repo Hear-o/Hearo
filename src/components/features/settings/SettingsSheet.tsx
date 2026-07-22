@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import {
   Dimensions,
   I18nManager,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
   Switch,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import Animated, {
@@ -20,6 +20,8 @@ import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/dat
 import * as Updates from "expo-updates";
 import { useTranslation } from "react-i18next";
 
+import { NameTextInput } from "@/components/common/NameTextInput";
+import * as healthKit from "@/lib/integrations/healthKit";
 import {
   clearSchedule,
   getSchedule,
@@ -27,13 +29,14 @@ import {
 } from "@/lib/integrations/reminders";
 import { useSettingsSheetStore } from "@/lib/storage/settings-sheet-store";
 import {
+  getDisplayName,
   getReminderTime,
   LanguagePreference,
   ReminderSchedule,
   setLanguagePreference,
   setReminderTime,
 } from "@/lib/storage/storage";
-import { persistDisplayName, useDisplayName } from "@/lib/ui/displayName";
+import { useNameDraft } from "@/lib/ui/displayName";
 import { fonts, tokens } from "@/lib/ui/tokens";
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
@@ -94,19 +97,7 @@ export function SettingsSheet() {
   const translateY = useSharedValue(SHEET_HEIGHT);
   const backdropOpacity = useSharedValue(0);
 
-  // Name input — persisted on blur. Mirrors the previous Setup logic.
-  const { name: storedName } = useDisplayName();
-  const [nameDraft, setNameDraft] = useState<string>(storedName ?? "");
-  useEffect(() => {
-    if (storedName !== null && storedName !== undefined && nameDraft === "") {
-      setNameDraft(storedName);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storedName]);
-
-  function handleNameBlur() {
-    void persistDisplayName(nameDraft);
-  }
+  const nameDraft = useNameDraft();
 
   // Reminder state — read on open, refreshed when picker saves or turns off.
   // v1.1.6: redesigned as a Switch + always-visible iOS spinner. Previous
@@ -120,12 +111,42 @@ export function SettingsSheet() {
   // Android-only: the legacy modal flow is preserved behind a press handler
   // since RN's DateTimePicker on Android has no inline display mode.
   const [androidPickerOpen, setAndroidPickerOpen] = useState(false);
+  // iOS spinner is now gated (was always-visible): opens when the reminder is
+  // switched on or via "change time", dismissed by Done or an outside tap.
+  const [iosPickerOpen, setIosPickerOpen] = useState(false);
+
+  // Pulse / Apple Watch connection — same "idle|granted|denied" machine and
+  // HealthKit calls as the Permissions screen (permissions.tsx). Settings is
+  // the fallback for users who skipped connecting during onboarding.
+  const [pulseStatus, setPulseStatus] = useState<"idle" | "granted" | "denied">("idle");
+
   useEffect(() => {
     if (isOpen) {
       void getSchedule().then(setReminder);
       void getReminderTime().then(setLastTime);
+      void healthKit.getAuthorizationStatus().then((status) => {
+        if (status === "granted" || status === "requested") setPulseStatus("granted");
+      });
+      // The sheet is an always-mounted overlay, not a routed screen, so
+      // useNameDraft's own useFocusEffect (route-focus-based) never fires
+      // just from opening it — re-sync from storage directly on open,
+      // same reasoning as the reminder/pulse re-fetches above.
+      void getDisplayName().then((stored) => {
+        if (stored !== undefined) nameDraft.onChangeText(stored ?? "");
+      });
+    } else {
+      setIosPickerOpen(false);
     }
+    // nameDraft is a fresh object every render (its onChangeText is the
+    // stable setState it wraps) — adding it here would refire this effect
+    // on every render instead of just on isOpen changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
+
+  async function onConnectWatch() {
+    const status = await healthKit.requestAuthorization();
+    setPulseStatus(status === "granted" || status === "requested" ? "granted" : "denied");
+  }
 
   async function commitTime(date: Date) {
     const next: ReminderSchedule = { hour: date.getHours(), minute: date.getMinutes() };
@@ -151,10 +172,12 @@ export function SettingsSheet() {
       await setReminderTime(initial);
       setReminder(initial);
       setLastTime(initial);
+      if (Platform.OS === "ios") setIosPickerOpen(true);
     } else {
       // Turn the reminder off but keep the remembered time (lastTime/storage).
       await clearSchedule();
       setReminder(null);
+      setIosPickerOpen(false);
     }
   }
 
@@ -268,7 +291,7 @@ export function SettingsSheet() {
 
         <ScrollView
           contentContainerStyle={{ paddingBottom: 12 }}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true}
           keyboardShouldPersistTaps="handled"
         >
           <Text
@@ -298,24 +321,10 @@ export function SettingsSheet() {
           >
             {t("settings.nameLabel")}
           </Text>
-          <TextInput
-            value={nameDraft}
-            onChangeText={setNameDraft}
-            onBlur={handleNameBlur}
-            placeholder={t("setup.namePlaceholder")}
-            placeholderTextColor={tokens.textMute + "88"}
-            autoCapitalize="words"
-            autoCorrect={false}
-            returnKeyType="done"
-            onSubmitEditing={handleNameBlur}
-            style={{
-              color: tokens.text,
-              fontFamily: fonts.body,
-              fontSize: 18,
-              borderBottomWidth: 1,
-              borderBottomColor: tokens.textMute + "55",
-              paddingVertical: 8,
-            }}
+          <NameTextInput
+            value={nameDraft.value}
+            onChangeText={nameDraft.onChangeText}
+            onBlur={nameDraft.onBlur}
           />
           <Text
             style={{
@@ -354,7 +363,11 @@ export function SettingsSheet() {
           >
             {t("settings.languageLabel")}
           </Text>
-          <View style={{ flexDirection: "row", gap: 10 }}>
+          {/* Pinned, not RTL-mirrored: עברית stays on the right and English
+              on the left in both language modes. Yoga already RTL-flips
+              "row" when I18nManager.isRTL is true (see plugins/withRtl.js),
+              so this counter-flips per direction to hold the pin. */}
+          <View style={{ flexDirection: I18nManager.isRTL ? "row" : "row-reverse", gap: 10 }}>
             {(["he", "en"] as const).map((lng) => {
               const selected = i18n.language === lng;
               const label =
@@ -400,10 +413,96 @@ export function SettingsSheet() {
               fontSize: 13,
               lineHeight: 18,
               marginTop: 8,
+              textAlign: "left",
             }}
           >
             {t("settings.languageRestartNote")}
           </Text>
+
+          {/* Apple Watch / pulse — fallback connect for users who skipped it
+              during onboarding. Reuses the Permissions HealthKit flow + copy. */}
+          <View
+            style={{
+              width: 28,
+              height: 1,
+              backgroundColor: tokens.textMute,
+              opacity: 0.4,
+              marginTop: 28,
+              marginBottom: 20,
+            }}
+          />
+          <Text
+            style={{
+              color: tokens.textMute,
+              fontFamily: fonts.body,
+              fontSize: 13,
+              letterSpacing: 1.4,
+              textTransform: "uppercase",
+              marginBottom: 10,
+              textAlign: "left",
+            }}
+          >
+            {t("permissions.pulseTitle")}
+          </Text>
+          <Text
+            style={{
+              color: tokens.textMute,
+              fontFamily: fonts.body,
+              fontSize: 15,
+              lineHeight: 22,
+              marginBottom: 14,
+              textAlign: "left",
+            }}
+          >
+            {t("permissions.pulseWhy")}
+          </Text>
+          <Pressable
+            onPress={pulseStatus === "granted" ? undefined : onConnectWatch}
+            hitSlop={8}
+          >
+            <View
+              style={{
+                borderWidth: 1,
+                borderColor: pulseStatus === "granted" ? tokens.accentSoft : tokens.accent,
+                borderRadius: 999,
+                paddingVertical: 12,
+                paddingHorizontal: 20,
+                alignSelf: "flex-start",
+                opacity: pulseStatus === "granted" ? 0.55 : 1,
+              }}
+            >
+              <Text
+                style={{
+                  color: pulseStatus === "granted" ? tokens.accentSoft : tokens.accent,
+                  fontFamily: fonts.body,
+                  fontSize: 15,
+                }}
+              >
+                {pulseStatus === "granted"
+                  ? "✓  " + t("permissions.pulseAllow")
+                  : t("permissions.pulseAllow")}
+              </Text>
+            </View>
+          </Pressable>
+          {pulseStatus === "denied" ? (
+            <Pressable
+              onPress={() => Linking.openSettings().catch(() => {})}
+              hitSlop={6}
+              style={{ marginTop: 10 }}
+            >
+              <Text
+                style={{
+                  color: tokens.accentSoft,
+                  fontFamily: fonts.body,
+                  fontSize: 13,
+                  textDecorationLine: "underline",
+                  textAlign: "left",
+                }}
+              >
+                {t("permissions.pulseDeniedHint")}
+              </Text>
+            </Pressable>
+          ) : null}
 
           {/* Reminder */}
           <View
@@ -424,6 +523,7 @@ export function SettingsSheet() {
               letterSpacing: 1.4,
               textTransform: "uppercase",
               marginBottom: 10,
+              textAlign: "left",
             }}
           >
             {t("reminders.sectionLabel")}
@@ -439,7 +539,9 @@ export function SettingsSheet() {
               marginBottom: 4,
             }}
           >
-            <Text style={{ color: tokens.text, fontFamily: fonts.body, fontSize: 17 }}>
+            <Text
+              style={{ color: tokens.text, fontFamily: fonts.body, fontSize: 17, textAlign: "left" }}
+            >
               {reminder
                 ? t("reminders.currentlySet", { time: formatTime(reminder) })
                 : t("reminders.notSet")}
@@ -454,14 +556,15 @@ export function SettingsSheet() {
 
           {reminder ? (
             Platform.OS === "ios" ? (
-              <View style={{ marginTop: 8, alignItems: "center" }}>
-                <DateTimePicker
-                  value={pickerValue()}
-                  mode="time"
-                  display="spinner"
-                  onChange={handleInlinePickerChange}
-                />
-              </View>
+              <Pressable
+                onPress={() => setIosPickerOpen(true)}
+                hitSlop={8}
+                style={{ marginTop: 12 }}
+              >
+                <Text style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 15 }}>
+                  {t("reminders.change")}
+                </Text>
+              </Pressable>
             ) : (
               <View style={{ marginTop: 12 }}>
                 <Pressable onPress={() => setAndroidPickerOpen(true)} hitSlop={8}>
@@ -482,6 +585,60 @@ export function SettingsSheet() {
           ) : null}
         </ScrollView>
       </Animated.View>
+
+      {/* iOS time-picker popover. The spinner commits live on every scroll
+          tick (handleInlinePickerChange), so both Done and an outside tap only
+          need to dismiss — the selected time is already saved. */}
+      {isOpen && Platform.OS === "ios" && iosPickerOpen && reminder ? (
+        <View
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: 0,
+            zIndex: 2000,
+            elevation: 2000,
+            justifyContent: "flex-end",
+          }}
+        >
+          <Pressable
+            style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
+            onPress={() => setIosPickerOpen(false)}
+            accessibilityLabel={t("reminders.done")}
+          />
+          <View
+            style={{
+              backgroundColor: tokens.bgElev,
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              paddingHorizontal: 24,
+              paddingTop: 8,
+              paddingBottom: 28,
+            }}
+          >
+            <Pressable
+              onPress={() => setIosPickerOpen(false)}
+              hitSlop={8}
+              accessibilityRole="button"
+              style={{ alignSelf: "flex-end", paddingVertical: 8, paddingHorizontal: 4 }}
+            >
+              <Text style={{ color: tokens.accent, fontFamily: fonts.body, fontSize: 17 }}>
+                {t("reminders.done")}
+              </Text>
+            </Pressable>
+            <View style={{ alignItems: "center" }}>
+              <DateTimePicker
+                value={pickerValue()}
+                mode="time"
+                display="spinner"
+                onChange={handleInlinePickerChange}
+                themeVariant="light"
+              />
+            </View>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }

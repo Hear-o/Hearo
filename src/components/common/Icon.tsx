@@ -2,7 +2,7 @@ import { I18nManager, View } from "react-native";
 
 import ArrowRightSvg from "@/assets/icons/arrow-right.svg";
 import CloseSvg from "@/assets/icons/close.svg";
-import InfoSvg from "@/assets/icons/info.svg";
+import LifebuoySvg from "@/assets/icons/lifebuoy.svg";
 import MenuSvg from "@/assets/icons/menu.svg";
 import SettingsSvg from "@/assets/icons/settings.svg";
 
@@ -12,7 +12,7 @@ import SettingsSvg from "@/assets/icons/settings.svg";
 export type IconName =
   | "close"
   | "menu"
-  | "info"
+  | "lifebuoy"
   | "settings"
   | "arrow-right"
   | "arrow-left";
@@ -26,7 +26,7 @@ type Props = {
 const COMPONENTS = {
   close: CloseSvg,
   menu: MenuSvg,
-  info: InfoSvg,
+  lifebuoy: LifebuoySvg,
   settings: SettingsSvg,
   "arrow-right": ArrowRightSvg,
   "arrow-left": ArrowRightSvg,

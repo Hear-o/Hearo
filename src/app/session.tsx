@@ -7,9 +7,9 @@ import {
   useState,
 } from "react";
 import { Pressable, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  Stack,
   useFocusEffect,
   useLocalSearchParams,
   useRouter,
@@ -17,7 +17,6 @@ import {
 import { useTranslation } from "react-i18next";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 
-import { FadeScreen } from "@/components/common/FadeScreen";
 import { BreathingCircle } from "@/components/features/session/BreathingCircle";
 import { ExitSessionConfirm } from "@/components/features/session/ExitSessionConfirm";
 import { CrisisAffordance } from "@/components/features/crisis/CrisisAffordance";
@@ -39,6 +38,7 @@ import {
 import { dBToGain } from "@/lib/audio/audio-engine";
 import { audioTrace, audioWarn } from "@/lib/audio/audio-log";
 import { useCrisisStore } from "@/lib/storage/crisis-store";
+import { usePageFade } from "@/lib/ui/fadeTransition";
 import { fonts, tokens } from "@/lib/ui/tokens";
 import { useAudioEngine } from "@/hooks/useAudioEngine";
 import { usePulseMonitor, SessionState } from "@/hooks/usePulseMonitor";
@@ -250,6 +250,9 @@ export default function Session() {
   // ── Audio engine ───────────────────────────────────────────────────────
 
   const engine = useAudioEngine();
+  // One page fade for the whole screen — both the LOADING branch and the
+  // main session branch below render through this same shared value.
+  const { animatedStyle, transition } = usePageFade();
 
   // ── Pulse monitor ──────────────────────────────────────────────────────
 
@@ -371,9 +374,7 @@ export default function Session() {
         }
         dispatch({ type: "ASSETS_READY" });
       } catch (e) {
-        setLoadError(
-          "Failed to download audio files. Check your connection and try again.",
-        );
+        setLoadError(t("session.loadError"));
       }
     })();
   }, [machineState]);
@@ -502,13 +503,13 @@ export default function Session() {
           peakGain: dBToGain(TRIGGER_PEAK_DB),
           leadInMs: TRIGGER_LEAD_IN_MS,
           onBurstApproaching: () => {
-            setLastBurstApproachingAt(Date.now());
+            setLastBurstApproachingAt(Date.now() - startedAt.current);
           },
           onBurstEnd: () => {
             if (postTriggerDelayRef.current)
               clearTimeout(postTriggerDelayRef.current);
             postTriggerDelayRef.current = setTimeout(() => {
-              setLastBurstEndedAt(Date.now());
+              setLastBurstEndedAt(Date.now() - startedAt.current);
             }, 3000);
             setLastBurstApproachingAt(null);
           },
@@ -591,8 +592,10 @@ export default function Session() {
     engine.stopVoice();
     engine.stopTriggerScheduler();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    router.replace({ pathname: "/winding-down" as any, params: { scene } });
-  }, [machineState, router, scene, engine]);
+    transition(() =>
+      router.replace({ pathname: "/winding-down" as any, params: { scene } }),
+    );
+  }, [machineState, router, scene, engine, transition]);
 
   // ── Suspend session audio when it isn't the active foreground ──────────
   //
@@ -650,6 +653,16 @@ export default function Session() {
 
   // ── Manual distress (no watch / watch disconnected) ───────────────────
 
+  // Exiting mid-countdown (e.g. the "End Session" pill) would otherwise leave
+  // this interval/timeout running against an unmounted screen.
+  useEffect(() => {
+    return () => {
+      if (manualReturnTimer.current) clearTimeout(manualReturnTimer.current);
+      if (manualCountdownInterval.current)
+        clearInterval(manualCountdownInterval.current);
+    };
+  }, []);
+
   const handleManualDistress = useCallback(() => {
     // For chronic high-baseline users, also notify the pulse monitor.
     reportManualDistress();
@@ -702,8 +715,8 @@ export default function Session() {
     setExitConfirmOpen(false);
     engine.fadeOutAll(0.3);
     setLastEndedBy("manual-exit");
-    router.replace("/after");
-  }, [engine, router, setLastEndedBy]);
+    transition(() => router.replace("/after"));
+  }, [engine, router, setLastEndedBy, transition]);
 
   // ── Derived display ───────────────────────────────────────────────────
 
@@ -711,9 +724,12 @@ export default function Session() {
   // caption swap. Recomputed against `elapsed` so the 250ms timer that
   // already runs for the progress bar also drives this flip (no extra
   // setInterval needed).
+  // Compared against `elapsed` (session-relative, frozen while paused) rather
+  // than a fresh Date.now() read — otherwise time spent paused (e.g. crisis
+  // sheet open) would silently eat into this window and the caption could
+  // expire before the session actually resumed.
   const isPostTrigger =
-    lastBurstEndedAt !== null &&
-    Date.now() - lastBurstEndedAt < POST_TRIGGER_CAPTION_MS;
+    lastBurstEndedAt !== null && elapsed - lastBurstEndedAt < POST_TRIGGER_CAPTION_MS;
   // v1.1.3 → v1.1.5: the lead-in window auto-expires after the maximum time
   // a burst's lifecycle could take — leadIn + burst + fade-out. Earlier we
   // relied on onBurstEnd to clear the flag, but when a mid-session voice clip
@@ -726,9 +742,10 @@ export default function Session() {
     TRIGGER_FADE_IN_MS +
     TRIGGER_BURST_DURATION_MS +
     TRIGGER_FADE_OUT_MS;
+  // Same pause-safety reasoning as isPostTrigger above.
   const isApproachingTrigger =
     lastBurstApproachingAt !== null &&
-    Date.now() - lastBurstApproachingAt < LEAD_IN_WINDOW_MS;
+    elapsed - lastBurstApproachingAt < LEAD_IN_WINDOW_MS;
 
   const voiceText = useMemo(() => {
     if (
@@ -772,7 +789,7 @@ export default function Session() {
 
   if (machineState === "LOADING") {
     return (
-      <FadeScreen>
+      <Animated.View style={[{ flex: 1 }, animatedStyle]}>
       <View className="flex-1 bg-bg items-center justify-center">
         {loadError ? (
           <>
@@ -785,7 +802,7 @@ export default function Session() {
             >
               {loadError}
             </Text>
-            <Pressable onPress={() => router.back()} style={{ marginTop: 24 }}>
+            <Pressable onPress={() => transition(() => router.back())} style={{ marginTop: 24 }}>
               <Text
                 style={{
                   color: tokens.accent,
@@ -811,21 +828,15 @@ export default function Session() {
           </Text>
         )}
       </View>
-      </FadeScreen>
+      </Animated.View>
     );
   }
 
   // ── Main session screen ───────────────────────────────────────────────
 
   return (
-    <FadeScreen>
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
     <View className="flex-1 bg-bg">
-      {/* Lock the iOS back-swipe + Android back-gesture while mid-session.
-          The only ways out are the close X, the End-session pill, or the
-          natural session-end timer. Prevents an accidental swipe-back from
-          dumping the user into /preparing mid-flow. */}
-      <Stack.Screen options={{ gestureEnabled: false }} />
-
       <SceneBackground scene={scene} intensity={slow ? 0.86 : 0.78} />
       <SafeAreaView className="flex-1">
         <View className="flex-1 px-7">
@@ -985,16 +996,18 @@ export default function Session() {
             {formatElapsed(elapsed)}
           </Text>
 
-          {/* "I need a moment" — calming-protocol entry, always visible
-              during a session. Per UI QA pass 2: shown throughout, not
-              just after the trigger has played. The original gating was
-              based on an exposure-first clinical claim; the product
-              direction now prioritizes user control + visible escape
-              hatch from the start. LOADING/DISCLAIMER already return
-              their own screens earlier so we don't render here in those. */}
-          <View style={{ alignItems: "center", paddingBottom: 4 }}>
+          {/* Bottom actions — the break button (calming-protocol entry) is
+              the prominent primary: warm sceneAccent fill so it clearly reads
+              as the "I need to pause" affordance, above a quieter, faded
+              End-session pill. Both full-width and stacked.
+
+              Per UI QA pass 2 the break entry is shown throughout the
+              session, not just after the trigger has played: the product
+              direction prioritizes user control + a visible escape hatch
+              from the start. LOADING/DISCLAIMER already return their own
+              screens earlier so we don't render here in those. */}
+          <View style={{ paddingTop: 4, paddingBottom: 24, gap: 12 }}>
             <Pressable
-              hitSlop={12}
               onPress={() => {
                 // v1.1.0: pause-and-return instead of teardown-and-route.
                 // Cut any in-flight voice clip immediately (otherwise the
@@ -1003,47 +1016,39 @@ export default function Session() {
                 // underneath. The blur effect below suspends the audio
                 // graph; on return, focus resumes it at the same point.
                 engine.stopVoice();
-                router.push("/calming");
+                transition(() => router.push("/calming"));
+              }}
+              accessibilityRole="button"
+              style={{
+                backgroundColor: tokens.sceneAccent,
+                borderRadius: 999,
+                paddingVertical: 15,
+                alignItems: "center",
+                shadowColor: tokens.sceneAccent,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.35,
+                shadowRadius: 12,
+                elevation: 6,
               }}
             >
-              <Text
-                style={{
-                  color: tokens.sceneText,
-                  fontFamily: fonts.body,
-                  fontSize: 14,
-                  opacity: 0.75,
-                }}
-              >
-                {t("home.needAMoment")}
+              <Text style={{ color: tokens.text, fontFamily: fonts.bodyMedium, fontSize: 17 }}>
+                {t("session.needABreak")}
               </Text>
             </Pressable>
-          </View>
 
-          {/* Bottom row — pulse metric removed per UI QA. Pulse is still
-              read internally to drive auto-attenuate behavior, but no
-              longer displayed to the user. */}
-          {/* End session — was a barely-visible bracketed text. Now a
-              bordered pill on sceneText color so it reads cleanly on
-              both light and dark scene overlays. */}
-          <View className="flex-row justify-end items-center pt-4 pb-6">
+            {/* End session — enlarged, faded light pill (sceneText @ 70%) so
+                it reads as a real button but stays secondary to the break CTA. */}
             <Pressable
-              hitSlop={12}
               onPress={handleEndSessionPress}
+              accessibilityRole="button"
               style={{
-                borderWidth: 1,
-                borderColor: tokens.sceneText,
+                backgroundColor: "rgba(244,238,227,0.70)",
                 borderRadius: 999,
-                paddingHorizontal: 18,
-                paddingVertical: 8,
+                paddingVertical: 14,
+                alignItems: "center",
               }}
             >
-              <Text
-                style={{
-                  color: tokens.sceneText,
-                  fontFamily: fonts.body,
-                  fontSize: 15,
-                }}
-              >
+              <Text style={{ color: tokens.text, fontFamily: fonts.bodyMedium, fontSize: 16 }}>
                 {t("session.end")}
               </Text>
             </Pressable>
@@ -1057,6 +1062,6 @@ export default function Session() {
         onConfirm={handleExitConfirm}
       />
     </View>
-    </FadeScreen>
+    </Animated.View>
   );
 }

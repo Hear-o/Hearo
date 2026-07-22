@@ -118,6 +118,8 @@ const resources = {
       },
       calming: {
         exit: "Exit calming",
+        previousStep: "Previous step",
+        nextStep: "Next step",
         breatheIn: "Breathe in",
         breatheOut: "Breathe out",
         hold: "Hold",
@@ -161,6 +163,7 @@ const resources = {
         exitConfirmTitle: "Are you sure you want to leave early?",
         exitConfirmYes: "Yes, end now",
         exitConfirmCancel: "Keep going",
+        loadError: "Failed to download audio files. Check your connection and try again.",
       },
       postSession: {
         difficultyQuestion: "How difficult was this session?",
@@ -322,6 +325,8 @@ const resources = {
 
       calming: {
         exit: "יציאה מהרגעה",
+        previousStep: "הצעד הקודם",
+        nextStep: "הצעד הבא",
         breatheIn: "שאיפה",
         breatheOut: "נשיפה",
         hold: "החזקה",
@@ -363,6 +368,7 @@ const resources = {
         exitConfirmTitle: "בטוחים שרוצים\nלעזוב מוקדם?",
         exitConfirmYes: "כן, לסיים עכשיו",
         exitConfirmCancel: "להמשיך",
+        loadError: "הורדת קובצי השמע נכשלה. יש לבדוק את החיבור ולנסות שוב.",
       },
       postSession: {
         difficultyQuestion: "עד כמה הסשן הזה היה קשה עבורך?",

@@ -528,10 +528,11 @@ export const SCENE_ORDER: SceneKey[] = [
   "supermarket",
 ];
 
-// The scenes that have recorded intro/mid/end voice narration. Kept distinct
-// from SCENE_ORDER so tests can assert full voice coverage for these without
-// requiring it of the not-yet-voiced scenes (TODO(roy): record voice, then
-// fold these back into a single list).
+// The scenes that have on-screen narration scripts (captions). Every scene in
+// SCENE_ORDER now has recorded intro/mid/end audio in VOICE_TRACKS; these four
+// additionally have written voice text, so tests assert getVoiceScript coverage
+// against this narrower list (the 5 newer scenes play audio without captions
+// until their scripts are written).
 export const VOICED_SCENES: SceneKey[] = ["beach", "park", "cafe", "road"];
 
 // TEMP(roy): the 5 v1.2.0 scene stills ship with an English title baked into
@@ -823,6 +824,71 @@ const VOICE_TRACKS: Partial<Record<SceneKey, Record<VoiceLang, { intro: AudioMod
       intro: require("@/assets/sounds/voice/road/intro-en.mp3"),
       mid: require("@/assets/sounds/voice/road/mid-en.mp3"),
       end: require("@/assets/sounds/voice/road/end-en.mp3"),
+    },
+  },
+  // v1.3.0 — Roy's voice drop for the 5 newer scenes (male narrator). Recorded
+  // in Hebrew only; the `en` entries point at the same Hebrew audio so English
+  // sessions aren't silent until English narration is recorded. On-screen
+  // caption scripts for these scenes aren't written yet (see SCENES.*.voice) —
+  // captions are hidden during clip playback, so audio still carries them.
+  train: {
+    he: {
+      intro: require("@/assets/sounds/voice/train/intro-he.mp3"),
+      mid: require("@/assets/sounds/voice/train/mid-he.mp3"),
+      end: require("@/assets/sounds/voice/train/end-he.mp3"),
+    },
+    en: {
+      intro: require("@/assets/sounds/voice/train/intro-en.mp3"),
+      mid: require("@/assets/sounds/voice/train/mid-en.mp3"),
+      end: require("@/assets/sounds/voice/train/end-en.mp3"),
+    },
+  },
+  bus: {
+    he: {
+      intro: require("@/assets/sounds/voice/bus/intro-he.mp3"),
+      mid: require("@/assets/sounds/voice/bus/mid-he.mp3"),
+      end: require("@/assets/sounds/voice/bus/end-he.mp3"),
+    },
+    en: {
+      intro: require("@/assets/sounds/voice/bus/intro-en.mp3"),
+      mid: require("@/assets/sounds/voice/bus/mid-en.mp3"),
+      end: require("@/assets/sounds/voice/bus/end-en.mp3"),
+    },
+  },
+  "quiet-bar": {
+    he: {
+      intro: require("@/assets/sounds/voice/quiet-bar/intro-he.mp3"),
+      mid: require("@/assets/sounds/voice/quiet-bar/mid-he.mp3"),
+      end: require("@/assets/sounds/voice/quiet-bar/end-he.mp3"),
+    },
+    en: {
+      intro: require("@/assets/sounds/voice/quiet-bar/intro-en.mp3"),
+      mid: require("@/assets/sounds/voice/quiet-bar/mid-en.mp3"),
+      end: require("@/assets/sounds/voice/quiet-bar/end-en.mp3"),
+    },
+  },
+  "house-party": {
+    he: {
+      intro: require("@/assets/sounds/voice/house-party/intro-he.mp3"),
+      mid: require("@/assets/sounds/voice/house-party/mid-he.mp3"),
+      end: require("@/assets/sounds/voice/house-party/end-he.mp3"),
+    },
+    en: {
+      intro: require("@/assets/sounds/voice/house-party/intro-en.mp3"),
+      mid: require("@/assets/sounds/voice/house-party/mid-en.mp3"),
+      end: require("@/assets/sounds/voice/house-party/end-en.mp3"),
+    },
+  },
+  supermarket: {
+    he: {
+      intro: require("@/assets/sounds/voice/supermarket/intro-he.mp3"),
+      mid: require("@/assets/sounds/voice/supermarket/mid-he.mp3"),
+      end: require("@/assets/sounds/voice/supermarket/end-he.mp3"),
+    },
+    en: {
+      intro: require("@/assets/sounds/voice/supermarket/intro-en.mp3"),
+      mid: require("@/assets/sounds/voice/supermarket/mid-en.mp3"),
+      end: require("@/assets/sounds/voice/supermarket/end-en.mp3"),
     },
   },
 };

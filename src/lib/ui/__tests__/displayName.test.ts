@@ -109,6 +109,13 @@ describe("resolveDisplayName", () => {
     expect(await resolveDisplayName()).toBeNull();
     expect(mockSet).toHaveBeenCalledWith(null);
   });
+
+  it("caches null when the OS reports no device name at all", async () => {
+    mockGet.mockResolvedValue(undefined);
+    mockDeviceName = null;
+    expect(await resolveDisplayName()).toBeNull();
+    expect(mockSet).toHaveBeenCalledWith(null);
+  });
 });
 
 describe("useDisplayName", () => {
@@ -156,6 +163,55 @@ describe("useDisplayName", () => {
     expect(result.current.name).toBe("Set");
   });
 
+  it("falls back to null and clears loading when the initial resolve rejects", async () => {
+    // A storage/device-read failure must not leave `loading` stuck true forever.
+    mockGet.mockRejectedValue(new Error("storage unavailable"));
+    const { result } = renderHook(() => useDisplayName());
+    expect(result.current).toEqual({ name: null, loading: true });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.name).toBeNull();
+  });
+
+  it("keeps the existing name when the focus-refresh read rejects", async () => {
+    // Mount resolves "Set"; the focus-effect's own getDisplayName call then
+    // rejects — that failure must be swallowed, not clear the stored name.
+    mockGet
+      .mockResolvedValueOnce("Set")
+      .mockRejectedValueOnce(new Error("storage unavailable"));
+    const { result } = renderHook(() => useDisplayName());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.name).toBe("Set");
+  });
+
+  it("ignores a resolve that lands after unmount", async () => {
+    // Covers the `if (!active) return` guards in the mount effect's .then
+    // and the focus effect's .then — an unmount before either promise
+    // settles must not touch the (now-gone) store update path.
+    let resolveGet!: (v: string | undefined) => void;
+    mockGet.mockReturnValue(new Promise((r) => (resolveGet = r)));
+    const { unmount } = renderHook(() => useDisplayName());
+    unmount();
+    await act(async () => {
+      resolveGet("Late");
+      await Promise.resolve();
+    });
+    // No assertion beyond "didn't throw" — the point is the guarded no-op.
+  });
+
+  it("ignores a rejection that lands after unmount", async () => {
+    // Covers the `if (active)` guards in the mount effect's .catch/.finally
+    // being false — an unmount before the resolve rejects must not touch
+    // the store either.
+    let rejectGet!: (e: Error) => void;
+    mockGet.mockReturnValue(new Promise((_, r) => (rejectGet = r)));
+    const { unmount } = renderHook(() => useDisplayName());
+    unmount();
+    await act(async () => {
+      rejectGet(new Error("storage unavailable"));
+      await Promise.resolve().then(() => Promise.resolve());
+    });
+  });
+
   it("reflects a save from an unrelated hook instance live, with no focus event", async () => {
     // Reproduces the reported bug: Settings is an always-mounted overlay,
     // not a routed screen, so closing it never fires a focus event on
@@ -200,6 +256,21 @@ describe("useNameDraft", () => {
 
     act(() => result.current.onBlur());
     await waitFor(() => expect(mockSet).toHaveBeenCalledWith("Dana"));
+  });
+
+  it("swallows a rejected save on blur instead of throwing", async () => {
+    mockGet.mockResolvedValue(null);
+    mockSet.mockRejectedValue(new Error("storage unavailable"));
+    const { result } = renderHook(() => useNameDraft());
+    await waitFor(() => expect(mockGet).toHaveBeenCalled());
+
+    act(() => result.current.onChangeText("Dana"));
+    await waitFor(() => expect(result.current.value).toBe("Dana"));
+
+    expect(() => result.current.onBlur()).not.toThrow();
+    await waitFor(() => expect(mockSet).toHaveBeenCalledWith("Dana"));
+    // The typed value survives locally even though the write failed.
+    expect(result.current.value).toBe("Dana");
   });
 });
 

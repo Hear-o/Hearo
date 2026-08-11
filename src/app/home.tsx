@@ -167,6 +167,44 @@ export default function Home() {
               Hebrew and don't get truncated on small phones. */}
           <View className="pb-2" style={{ gap: 12 }}>
             <Pressable
+              onPress={() => router.push("/chat" as any)}
+              accessibilityRole="button"
+              accessibilityLabel={t("chat.title", { defaultValue: "A quiet conversation" })}
+              hitSlop={8}
+              style={{
+                borderWidth: 1,
+                borderColor: tokens.accentSoft,
+                borderRadius: 20,
+                paddingVertical: 16,
+                paddingHorizontal: 24,
+                backgroundColor: tokens.accent + "0D",
+              }}
+            >
+              <Text
+                style={{
+                  color: tokens.accentSoft,
+                  fontFamily: fonts.display,
+                  fontSize: 20,
+                  lineHeight: 26,
+                  textAlign: "left",
+                }}
+              >
+                {t("chat.title", { defaultValue: "A quiet conversation" })}
+              </Text>
+              <Text
+                style={{
+                  color: tokens.textMute,
+                  fontFamily: fonts.body,
+                  fontSize: 13,
+                  marginTop: 4,
+                  textAlign: "left",
+                }}
+              >
+                {t("chat.homeHint", { defaultValue: "Talk with an on-device assistant" })}
+              </Text>
+            </Pressable>
+
+            <Pressable
               onPress={handleBegin}
               accessibilityRole="button"
               accessibilityHint="Tap or swipe to begin a practice session"

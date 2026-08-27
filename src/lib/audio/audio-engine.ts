@@ -91,6 +91,11 @@ export interface TriggerSchedulerConfig {
   fadeOutMs: number;
   /** Peak linear gain for the trigger during a burst. Use dBToGain() from content. */
   peakGain: number;
+  /** Optional first-burst peak. When paired with maximumPeakGain and
+   * maxBursts, the scheduler progresses linearly across the session. */
+  minimumPeakGain?: number;
+  /** Optional last-burst peak. Falls back to peakGain for legacy callers. */
+  maximumPeakGain?: number;
   /** How long before each burst starts the lead-in heads-up should fire (ms).
    *  v1.1.3: gives the screen layer a window to switch its caption from the
    *  in-session "during" text to a grounding heads-up like "a moment is
@@ -156,6 +161,14 @@ export class AudioEngine {
   // overlapping/chained voice clips share the same captured value so a
   // back-to-back voice sequence doesn't accumulate duck-on-ducked-on-ducked.
   private _ambientGainPreVoiceDuck: number | null = null;
+
+  // One-shot settings preview. It deliberately does not use scheduler state,
+  // and the settings screen owns a separate AudioEngine instance so preview
+  // playback cannot disturb a prepared session engine.
+  private _previewSource: AudioBufferSourceNode | null = null;
+  private _previewFadeTimer: ReturnType<typeof setTimeout> | null = null;
+  private _previewStopTimer: ReturnType<typeof setTimeout> | null = null;
+  private _previewResolve: (() => void) | null = null;
 
   constructor() {
     this.ctx = new AudioContext();
@@ -376,6 +389,7 @@ export class AudioEngine {
     this._lastBurstStartedAt = Date.now();
     const now = this.ctx.currentTime;
     const fadeInSec = cfg.fadeInMs / 1000;
+    const peakGain = this._peakGainForBurst(cfg, this._burstsFired);
 
     // v1.1.0: pick a random buffer from the loaded set so a session rotates
     // between the user's selected triggers (and their variations).
@@ -392,7 +406,7 @@ export class AudioEngine {
     // Ramp gain from silence → peak over fadeIn window.
     freezeGain(this.triggerGain.gain, this.ctx);
     this.triggerGain.gain.setValueAtTime(SILENCE_GAIN, now);
-    this.triggerGain.gain.linearRampToValueAtTime(cfg.peakGain, now + fadeInSec);
+    this.triggerGain.gain.linearRampToValueAtTime(peakGain, now + fadeInSec);
 
     // Duck the ambient bed in parallel with the trigger ramp so the scene
     // recedes (but stays audible) while the practice-moment plays. Restored
@@ -414,6 +428,27 @@ export class AudioEngine {
       () => this._endBurst(),
       cfg.fadeInMs + cfg.burstDurationMs
     );
+  }
+
+  private _peakGainForBurst(
+    config: TriggerSchedulerConfig,
+    burstOrdinal: number,
+  ): number {
+    const minimum = Math.max(
+      SILENCE_GAIN,
+      config.minimumPeakGain ?? config.peakGain,
+    );
+    const maximum = Math.max(
+      minimum,
+      config.maximumPeakGain ?? config.peakGain,
+    );
+    const total = config.maxBursts;
+
+    if (total === undefined) return Math.max(SILENCE_GAIN, config.peakGain);
+    if (total <= 1) return minimum;
+
+    const progress = Math.min(1, Math.max(0, (burstOrdinal - 1) / (total - 1)));
+    return minimum + (maximum - minimum) * progress;
   }
 
   private _endBurst(): void {
@@ -489,12 +524,92 @@ export class AudioEngine {
 
   setTriggerPeakGain(gain: number): void {
     if (!this._config) return;
-    this._config.peakGain = Math.max(SILENCE_GAIN, gain);
+    const clamped = Math.max(SILENCE_GAIN, gain);
+    this._config.peakGain = clamped;
+    this._config.minimumPeakGain = clamped;
+    this._config.maximumPeakGain = clamped;
     // If a burst is currently at full gain, update it live.
     if (this._burstActive) {
       const now = this.ctx.currentTime;
       freezeGain(this.triggerGain.gain, this.ctx);
-      this.triggerGain.gain.linearRampToValueAtTime(this._config.peakGain, now + 0.1);
+      this.triggerGain.gain.linearRampToValueAtTime(clamped, now + 0.1);
+    }
+  }
+
+  /** Play one loaded trigger variation without starting the scheduler. */
+  async playTriggerPreview(peakGain: number, durationMs = 1_500): Promise<void> {
+    const buffer = this.triggerBuffers[0];
+    if (!buffer) throw new Error("trigger buffer not loaded");
+
+    this.stopTriggerPreview();
+
+    // Preview engines do not start an ambient loop, so they do not otherwise
+    // pass through startAmbient's iOS context-resume path. Resume explicitly
+    // before starting this source or a native context can remain silent.
+    if (this.ctx.state === "suspended") {
+      await this.resumeAll();
+    }
+
+    const now = this.ctx.currentTime;
+    const src = this.ctx.createBufferSource();
+    src.buffer = buffer;
+    src.loop = false;
+    src.connect(this.triggerGain);
+
+    freezeGain(this.triggerGain.gain, this.ctx);
+    this.triggerGain.gain.setValueAtTime(SILENCE_GAIN, now);
+    this.triggerGain.gain.linearRampToValueAtTime(
+      Math.max(SILENCE_GAIN, peakGain),
+      now + 0.12,
+    );
+
+    src.start(now);
+    this._previewSource = src;
+
+    const totalMs = Math.max(
+      250,
+      Math.min(durationMs, Math.round(buffer.duration * 1_000)),
+    );
+    this._previewFadeTimer = setTimeout(() => {
+      this._previewFadeTimer = null;
+      const fadeNow = this.ctx.currentTime;
+      freezeGain(this.triggerGain.gain, this.ctx);
+      this.triggerGain.gain.linearRampToValueAtTime(
+        SILENCE_GAIN,
+        fadeNow + 0.15,
+      );
+    }, Math.max(0, totalMs - 150));
+
+    return new Promise<void>((resolve) => {
+      this._previewResolve = resolve;
+      this._previewStopTimer = setTimeout(() => {
+        this._previewStopTimer = null;
+        this.stopTriggerPreview();
+      }, totalMs);
+    });
+  }
+
+  stopTriggerPreview(): void {
+    if (this._previewFadeTimer) {
+      clearTimeout(this._previewFadeTimer);
+      this._previewFadeTimer = null;
+    }
+    if (this._previewStopTimer) {
+      clearTimeout(this._previewStopTimer);
+      this._previewStopTimer = null;
+    }
+    if (this._previewSource) {
+      try {
+        this._previewSource.stop();
+      } catch {
+        // The one-shot may already have ended naturally.
+      }
+      this._previewSource = null;
+    }
+    if (this._previewResolve) {
+      const resolve = this._previewResolve;
+      this._previewResolve = null;
+      resolve();
     }
   }
 
@@ -526,6 +641,10 @@ export class AudioEngine {
     this._clearSchedulerTimers();
     // Fade out any active burst immediately.
     if (this._burstActive) {
+      // The active burst was interrupted rather than completed, so keep its
+      // ordinal available for the retry after normalization. This preserves
+      // the configured progression and avoids raising intensity after a spike.
+      this._burstsFired = Math.max(0, this._burstsFired - 1);
       const now = this.ctx.currentTime;
       freezeGain(this.triggerGain.gain, this.ctx);
       this.triggerGain.gain.linearRampToValueAtTime(SILENCE_GAIN, now + 2.5);
@@ -671,6 +790,7 @@ export class AudioEngine {
   // ── Wind-down ────────────────────────────────────────────────────────────
 
   fadeOutAll(durationSeconds = 3): void {
+    this.stopTriggerPreview();
     this._clearSchedulerTimers();
     this._schedulerPaused = true;
     this._stopBurstNow(); // stop the active source node immediately
@@ -692,6 +812,7 @@ export class AudioEngine {
   destroy(): void {
     this._clearSchedulerTimers();
     if (this._graceTimer) { clearTimeout(this._graceTimer); this._graceTimer = null; }
+    this.stopTriggerPreview();
     this._stopBurstNow();
     try { this.ambientSource?.stop(); } catch { /* already stopped */ }
     this.ctx.close();

@@ -27,6 +27,17 @@ jest.mock("@/lib/integrations/healthKit", () => ({
 
 import * as healthKit from "@/lib/integrations/healthKit";
 
+const mockRouterPush = jest.fn();
+
+jest.mock("expo-router", () => ({
+  useRouter: () => ({ push: mockRouterPush }),
+  useFocusEffect: (_callback: unknown) => {},
+}));
+
+jest.mock("@/components/common/Icon", () => ({
+  Icon: () => null,
+}));
+
 const mockGetSchedule = getSchedule as jest.Mock;
 const mockSetSchedule = setSchedule as jest.Mock;
 const mockClearSchedule = clearSchedule as jest.Mock;
@@ -35,6 +46,7 @@ const mockRequestAuth = healthKit.requestAuthorization as jest.Mock;
 
 describe("SettingsSheet", () => {
   beforeEach(() => {
+    mockRouterPush.mockReset();
     useSettingsSheetStore.setState({ isOpen: false });
     mockGetSchedule.mockResolvedValue(null);
     mockSetSchedule.mockResolvedValue(undefined);
@@ -49,6 +61,17 @@ describe("SettingsSheet", () => {
     expect(screen.getByText("Settings")).toBeTruthy();
     expect(screen.getByText("Your name")).toBeTruthy();
     expect(screen.getByText("Daily reminder")).toBeTruthy();
+    expect(screen.getByText("Practice sound")).toBeTruthy();
+  });
+
+  it("closes the sheet and opens practice-sound settings", () => {
+    useSettingsSheetStore.setState({ isOpen: true });
+    render(<SettingsSheet />);
+
+    fireEvent.press(screen.getByLabelText("Practice sound"));
+
+    expect(useSettingsSheetStore.getState().isOpen).toBe(false);
+    expect(mockRouterPush).toHaveBeenCalledWith("/trigger-sound");
   });
 
   it("re-syncs the name field from storage each time the sheet re-opens", async () => {

@@ -18,8 +18,10 @@ import Animated, {
 } from "react-native-reanimated";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import * as Updates from "expo-updates";
+import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
+import { Icon } from "@/components/common/Icon";
 import { NameTextInput } from "@/components/common/NameTextInput";
 import * as healthKit from "@/lib/integrations/healthKit";
 import {
@@ -60,6 +62,7 @@ function formatTime(schedule: ReminderSchedule): string {
  *  useCrisisStore). The sheet is rendered globally from _layout.tsx so any
  *  screen can pop it open via the store's `open()` action. */
 export function SettingsSheet() {
+  const router = useRouter();
   const { t, i18n } = useTranslation();
   const isOpen = useSettingsSheetStore((s) => s.isOpen);
   const close = useSettingsSheetStore((s) => s.close);
@@ -203,6 +206,11 @@ export function SettingsSheet() {
       d.setHours(9, 0, 0, 0);
     }
     return d;
+  }
+
+  function openTriggerSoundSettings() {
+    close();
+    router.push("/trigger-sound");
   }
 
   // Slide-up + backdrop-fade animation, paired with the store's isOpen flag.
@@ -418,6 +426,60 @@ export function SettingsSheet() {
           >
             {t("settings.languageRestartNote")}
           </Text>
+
+          {/* Practice-sound tuning lives on a full routed page so the range,
+              pace, preview, and save state have enough room and a predictable
+              screen-reader order. */}
+          <View
+            style={{
+              width: 28,
+              height: 1,
+              backgroundColor: tokens.textMute,
+              opacity: 0.4,
+              marginTop: 28,
+              marginBottom: 14,
+            }}
+          />
+          <Pressable
+            onPress={openTriggerSoundSettings}
+            accessibilityRole="button"
+            accessibilityLabel={t("triggerSound.settingsLink")}
+            accessibilityHint={t("triggerSound.settingsLinkHint")}
+            style={{
+              minHeight: 56,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 16,
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  color: tokens.text,
+                  fontFamily: fonts.bodyMedium,
+                  fontSize: 17,
+                  lineHeight: 24,
+                  textAlign: "left",
+                }}
+              >
+                {t("triggerSound.settingsLink")}
+              </Text>
+              <Text
+                style={{
+                  color: tokens.textMute,
+                  fontFamily: fonts.body,
+                  fontSize: 13,
+                  lineHeight: 18,
+                  marginTop: 2,
+                  textAlign: "left",
+                }}
+              >
+                {t("triggerSound.settingsLinkHint")}
+              </Text>
+            </View>
+            <Icon name="arrow-right" size={18} color={tokens.accentSoft} />
+          </Pressable>
 
           {/* Apple Watch / pulse — fallback connect for users who skipped it
               during onboarding. Reuses the Permissions HealthKit flow + copy. */}

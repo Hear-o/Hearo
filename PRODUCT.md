@@ -1,14 +1,10 @@
 # Product
 
-## Register
-
-product
-
 ## Users
 
-HearO is designed first for Israeli combat veterans, including people who are
-currently serving and people who have been discharged, who live with
-combat-related sound sensitivity. They know their own triggers, value privacy,
+HearO is designed first for Israeli service members and veterans with
+combat-related sound sensitivity, including people currently serving and
+people who have been discharged. They know their own triggers, value privacy,
 and want a practical tool rather than therapy marketing. The primary workflow
 is choosing a familiar scene and consented sounds, completing a short guided
 practice session, and retaining control over intensity throughout.

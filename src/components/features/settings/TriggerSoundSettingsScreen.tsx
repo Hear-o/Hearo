@@ -104,11 +104,14 @@ export function TriggerSoundSettingsScreen() {
         previewEngineRef.current = previewEngine;
       }
       previewEngine.stopTriggerPreview();
-      await activateAudioSession();
+      const activated = await activateAudioSession();
+      if (run !== previewRunRef.current) return;
+      if (!activated) throw new Error("audio session activation failed");
       const soundKey = selectedSounds[0] ?? "motorcycle";
       const source = getSound(soundKey).audioVariations[0];
       if (source === undefined) throw new Error("preview source unavailable");
       await previewEngine.loadTrigger(source);
+      if (run !== previewRunRef.current) return;
       await previewEngine.playTriggerPreview(dBToGain(draft.maximumPeakDb));
     } catch {
       if (run === previewRunRef.current) {
@@ -128,6 +131,7 @@ export function TriggerSoundSettingsScreen() {
         ...draft,
         schemaVersion: TRIGGER_SOUND_PREFERENCE_VERSION,
       });
+      previewRunRef.current += 1;
       previewEngineRef.current?.stopTriggerPreview();
       transition(() => router.back());
     } catch {
@@ -137,6 +141,7 @@ export function TriggerSoundSettingsScreen() {
   }
 
   function handleBack() {
+    previewRunRef.current += 1;
     previewEngineRef.current?.stopTriggerPreview();
     transition(() => router.back());
   }

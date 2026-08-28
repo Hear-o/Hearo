@@ -13,7 +13,7 @@ const mockLoadTrigger = jest.fn().mockResolvedValue(undefined);
 const mockPlayTriggerPreview = jest.fn().mockResolvedValue(undefined);
 const mockStopTriggerPreview = jest.fn();
 const mockDestroy = jest.fn();
-const mockActivateAudioSession = jest.fn().mockResolvedValue(undefined);
+const mockActivateAudioSession = jest.fn().mockResolvedValue(true);
 
 jest.mock("expo-router", () => ({
   useRouter: () => ({ back: mockRouterBack }),
@@ -114,6 +114,37 @@ describe("TriggerSoundSettingsScreen", () => {
     expect(mockPlayTriggerPreview).toHaveBeenCalledWith(
       Math.pow(10, -21 / 20),
     );
+  });
+
+  it("shows an error instead of attempting a preview when audio activation fails", async () => {
+    mockActivateAudioSession.mockResolvedValueOnce(false);
+    render(<TriggerSoundSettingsScreen />);
+    await screen.findByText("Test sound");
+
+    await act(async () => {
+      fireEvent.press(screen.getByText("Test sound"));
+    });
+
+    expect(await screen.findByText("Couldn't play the test sound. Please try again.")).toBeTruthy();
+    expect(mockLoadTrigger).not.toHaveBeenCalled();
+    expect(mockPlayTriggerPreview).not.toHaveBeenCalled();
+  });
+
+  it("does not start a preview after navigating back during activation", async () => {
+    let resolveActivation: (value: boolean) => void = () => {};
+    mockActivateAudioSession.mockImplementationOnce(
+      () => new Promise<boolean>((resolve) => { resolveActivation = resolve; }),
+    );
+    render(<TriggerSoundSettingsScreen />);
+    await screen.findByText("Test sound");
+
+    fireEvent.press(screen.getByText("Test sound"));
+    fireEvent.press(screen.getByLabelText("Back to settings"));
+    await act(async () => { resolveActivation(true); });
+
+    expect(mockRouterBack).toHaveBeenCalledTimes(1);
+    expect(mockLoadTrigger).not.toHaveBeenCalled();
+    expect(mockPlayTriggerPreview).not.toHaveBeenCalled();
   });
 
   it("resets a saved preference back to the legacy defaults", async () => {

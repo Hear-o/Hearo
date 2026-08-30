@@ -42,6 +42,8 @@ export function TriggerSoundSettingsScreen() {
   const [error, setError] = useState<string | null>(null);
   const previewEngineRef = useRef<AudioEngine | null>(null);
   const previewRunRef = useRef(0);
+  const translateRef = useRef(t);
+  translateRef.current = t;
 
   useEffect(() => {
     let cancelled = false;
@@ -50,7 +52,7 @@ export function TriggerSoundSettingsScreen() {
         if (!cancelled) setDraft(preference);
       })
       .catch(() => {
-        if (!cancelled) setError(t("triggerSound.loadError"));
+        if (!cancelled) setError(translateRef.current("triggerSound.loadError"));
       })
       .finally(() => {
         if (!cancelled) setLoaded(true);
@@ -62,7 +64,7 @@ export function TriggerSoundSettingsScreen() {
       previewEngineRef.current?.destroy();
       previewEngineRef.current = null;
     };
-  }, [t]);
+  }, []);
 
   const minimumPercent = triggerVolumeDbToPercent(draft.minimumPeakDb);
   const maximumPercent = triggerVolumeDbToPercent(draft.maximumPeakDb);
@@ -126,17 +128,18 @@ export function TriggerSoundSettingsScreen() {
     if (!loaded || saving) return;
     setSaving(true);
     setError(null);
+    previewRunRef.current += 1;
+    previewEngineRef.current?.stopTriggerPreview();
     try {
       await setTriggerSoundPreference({
         ...draft,
         schemaVersion: TRIGGER_SOUND_PREFERENCE_VERSION,
       });
-      previewRunRef.current += 1;
-      previewEngineRef.current?.stopTriggerPreview();
       transition(() => router.back());
     } catch {
       setError(t("triggerSound.saveError"));
       setSaving(false);
+      setPreviewing(false);
     }
   }
 

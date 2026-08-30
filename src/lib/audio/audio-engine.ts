@@ -153,6 +153,10 @@ export class AudioEngine {
   // Fixed-count scheduling: how many bursts have fired this run, and when
   // the most recent burst started (for computing evenly-spaced next delays).
   private _burstsFired = 0;
+  // A spike can interrupt an active burst. Keep its progression ordinal
+  // separate from the fired-burst quota so retrying it neither consumes nor
+  // creates an extra scheduled burst.
+  private _interruptedBurstOrdinal: number | null = null;
   private _lastBurstStartedAt = 0;
   // The ambient gain we duck DOWN from at burst start, restored at burst end.
   // Captured per-burst so a user adjustment mid-session (rare) isn't clobbered.
@@ -324,6 +328,7 @@ export class AudioEngine {
     this._config = { ...config };
     this._schedulerPaused = false;
     this._burstsFired = 0;
+    this._interruptedBurstOrdinal = null;
     this._lastBurstStartedAt = 0;
     this._scheduleNextBurst();
   }
@@ -338,7 +343,11 @@ export class AudioEngine {
     if (this._schedulerPaused || !this._config) return;
 
     // Stop if the configured burst quota has been reached.
-    if (this._config.maxBursts !== undefined && this._burstsFired >= this._config.maxBursts) return;
+    if (
+      this._config.maxBursts !== undefined &&
+      this._burstsFired >= this._config.maxBursts &&
+      this._interruptedBurstOrdinal === null
+    ) return;
 
     let delay: number;
     if (this._config.fixedIntervalMs !== undefined) {
@@ -385,11 +394,14 @@ export class AudioEngine {
     }
 
     const cfg = this._config;
-    this._burstsFired++;
+    const burstOrdinal =
+      this._interruptedBurstOrdinal ?? this._burstsFired + 1;
+    if (this._interruptedBurstOrdinal === null) this._burstsFired++;
+    this._interruptedBurstOrdinal = null;
     this._lastBurstStartedAt = Date.now();
     const now = this.ctx.currentTime;
     const fadeInSec = cfg.fadeInMs / 1000;
-    const peakGain = this._peakGainForBurst(cfg, this._burstsFired);
+    const peakGain = this._peakGainForBurst(cfg, burstOrdinal);
 
     // v1.1.0: pick a random buffer from the loaded set so a session rotates
     // between the user's selected triggers (and their variations).
@@ -445,7 +457,7 @@ export class AudioEngine {
     const total = config.maxBursts;
 
     if (total === undefined) return Math.max(SILENCE_GAIN, config.peakGain);
-    if (total <= 1) return minimum;
+    if (total <= 1) return maximum;
 
     const progress = Math.min(1, Math.max(0, (burstOrdinal - 1) / (total - 1)));
     return minimum + (maximum - minimum) * progress;
@@ -641,10 +653,9 @@ export class AudioEngine {
     this._clearSchedulerTimers();
     // Fade out any active burst immediately.
     if (this._burstActive) {
-      // The active burst was interrupted rather than completed, so keep its
-      // ordinal available for the retry after normalization. This preserves
-      // the configured progression and avoids raising intensity after a spike.
-      this._burstsFired = Math.max(0, this._burstsFired - 1);
+      // The active burst was interrupted rather than completed, so retry its
+      // intensity ordinal after normalization without changing the quota.
+      this._interruptedBurstOrdinal = this._burstsFired;
       const now = this.ctx.currentTime;
       freezeGain(this.triggerGain.gain, this.ctx);
       this.triggerGain.gain.linearRampToValueAtTime(SILENCE_GAIN, now + 2.5);

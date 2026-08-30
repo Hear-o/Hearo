@@ -88,9 +88,10 @@ export function normalizeTriggerSoundPreference(
 export function triggerVolumeDbToPercent(db: number): number {
   const clamped = clamp(db, TRIGGER_VOLUME_MIN_DB, TRIGGER_VOLUME_MAX_DB);
   return Math.round(
-    ((clamped - TRIGGER_VOLUME_MIN_DB) /
-      (TRIGGER_VOLUME_MAX_DB - TRIGGER_VOLUME_MIN_DB)) *
-      100,
+    1 +
+      ((clamped - TRIGGER_VOLUME_MIN_DB) /
+        (TRIGGER_VOLUME_MAX_DB - TRIGGER_VOLUME_MIN_DB)) *
+        99,
   );
 }
 

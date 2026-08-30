@@ -72,18 +72,23 @@ describe("TriggerSoundSettingsScreen", () => {
   it("updates linked ranges and persists the draft", async () => {
     render(<TriggerSoundSettingsScreen />);
     await screen.findByText("Steady");
-
-    fireEvent(screen.getByTestId("minimum-volume-slider"), "accessibilityAction", {
-      nativeEvent: { actionName: "decrement" },
-    });
-    fireEvent(screen.getByTestId("maximum-volume-slider"), "accessibilityAction", {
-      nativeEvent: { actionName: "decrement" },
-    });
-    fireEvent(screen.getByTestId("pace-slider"), "accessibilityAction", {
-      nativeEvent: { actionName: "increment" },
+    await waitFor(() => {
+      expect(screen.getByTestId("minimum-volume-slider").props.accessibilityState.disabled).toBe(false);
     });
 
-    expect(screen.getAllByText("83%")).toHaveLength(2);
+    await act(async () => {
+      screen.getByTestId("minimum-volume-slider").props.onAccessibilityAction({
+        nativeEvent: { actionName: "decrement" },
+      });
+      screen.getByTestId("maximum-volume-slider").props.onAccessibilityAction({
+        nativeEvent: { actionName: "decrement" },
+      });
+      screen.getByTestId("pace-slider").props.onAccessibilityAction({
+        nativeEvent: { actionName: "increment" },
+      });
+    });
+
+    expect(screen.getAllByText("84%")).toHaveLength(2);
     expect(screen.getByText("Frequent")).toBeTruthy();
     expect(screen.getByText(/every 40 seconds/)).toBeTruthy();
 
@@ -101,8 +106,13 @@ describe("TriggerSoundSettingsScreen", () => {
   it("previews the selected sound at the draft maximum", async () => {
     render(<TriggerSoundSettingsScreen />);
     await screen.findByText("Test sound");
-    fireEvent(screen.getByTestId("maximum-volume-slider"), "accessibilityAction", {
-      nativeEvent: { actionName: "decrement" },
+    await waitFor(() => {
+      expect(screen.getByTestId("maximum-volume-slider").props.accessibilityState.disabled).toBe(false);
+    });
+    await act(async () => {
+      screen.getByTestId("maximum-volume-slider").props.onAccessibilityAction({
+        nativeEvent: { actionName: "decrement" },
+      });
     });
 
     await act(async () => {
@@ -145,6 +155,25 @@ describe("TriggerSoundSettingsScreen", () => {
     expect(mockRouterBack).toHaveBeenCalledTimes(1);
     expect(mockLoadTrigger).not.toHaveBeenCalled();
     expect(mockPlayTriggerPreview).not.toHaveBeenCalled();
+  });
+
+  it("restores the preview control when saving fails during a preview", async () => {
+    const pendingPreview = new Promise<void>(() => {});
+    mockPlayTriggerPreview.mockImplementationOnce(() => pendingPreview);
+    (AsyncStorage.setItem as jest.Mock).mockRejectedValueOnce(
+      new Error("storage unavailable"),
+    );
+    render(<TriggerSoundSettingsScreen />);
+    await screen.findByText("Test sound");
+
+    fireEvent.press(screen.getByText("Test sound"));
+    await waitFor(() => expect(mockPlayTriggerPreview).toHaveBeenCalledTimes(1));
+    expect(screen.getByText("Playing…")).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId("save-trigger-sound"));
+
+    expect(await screen.findByText("Couldn't save the changes. Please try again.")).toBeTruthy();
+    expect(screen.getByText("Test sound")).toBeTruthy();
   });
 
   it("resets a saved preference back to the legacy defaults", async () => {

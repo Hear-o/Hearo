@@ -479,20 +479,19 @@ export default function Session() {
       .then(([, , triggerPreference]) => {
         if (cancelled) return;
 
-        const { triggerCount, triggerIntervalMs } = deriveTriggerSchedule(
-          TRIGGER_ZONE_MS,
-          triggerPreference.triggersPerMinute,
-        );
-
         // Both narration and loading are done. Compute how much zone time has
         // elapsed so the first burst and zone-end timer are positioned correctly.
         const elapsed = Date.now() - zoneStartedAt;
         const remainingZoneMs = Math.max(0, TRIGGER_ZONE_MS - elapsed);
+        const { triggerCount, triggerIntervalMs } = deriveTriggerSchedule(
+          remainingZoneMs,
+          triggerPreference.triggersPerMinute,
+        );
 
-        // First burst: target the midpoint of the first time slot from zone
-        // start, but clamp to at least 2 s after narration to give a breath.
-        const targetFirstBurst = triggerIntervalMs / 2;
-        const initialDelay = Math.max(2_000, targetFirstBurst - elapsed);
+        // Start in the midpoint of the first remaining slot, with at least a
+        // short breath after narration. This leaves room for the final fade
+        // before the zone transitions to OUTRO.
+        const initialDelay = Math.max(2_000, triggerIntervalMs / 2);
 
         engine.startTriggerScheduler({
           intervalMinMs: 0,

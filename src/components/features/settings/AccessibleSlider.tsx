@@ -33,6 +33,7 @@ export function AccessibleSlider({
   testID,
 }: Props) {
   const widthRef = useRef(1);
+  const touchStartRef = useRef<{ pageX: number; pageY: number } | null>(null);
   const selectedIndex = Math.max(
     0,
     values.reduce((closest, candidate, index) =>
@@ -61,6 +62,20 @@ export function AccessibleSlider({
     if (event.nativeEvent.actionName === "decrement") {
       onChange(values[Math.max(0, selectedIndex - 1)]);
     }
+  }
+
+  function rememberTouchStart(event: GestureResponderEvent) {
+    touchStartRef.current = {
+      pageX: event.nativeEvent.pageX,
+      pageY: event.nativeEvent.pageY,
+    };
+  }
+
+  function shouldClaimMove(event: GestureResponderEvent): boolean {
+    if (disabled || !touchStartRef.current) return false;
+    const dx = Math.abs(event.nativeEvent.pageX - touchStartRef.current.pageX);
+    const dy = Math.abs(event.nativeEvent.pageY - touchStartRef.current.pageY);
+    return dx > 3 && dx > dy;
   }
 
   return (
@@ -111,8 +126,9 @@ export function AccessibleSlider({
         onLayout={(event) => {
           widthRef.current = Math.max(1, event.nativeEvent.layout.width);
         }}
-        onStartShouldSetResponder={() => !disabled}
-        onMoveShouldSetResponder={() => !disabled}
+        onTouchStart={rememberTouchStart}
+        onStartShouldSetResponder={() => false}
+        onMoveShouldSetResponder={shouldClaimMove}
         onResponderGrant={updateFromTouch}
         onResponderMove={updateFromTouch}
         style={{

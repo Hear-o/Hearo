@@ -304,6 +304,30 @@ describe("AudioEngine / spike + normalize", () => {
     expect(retriesAtMinimum).toHaveLength(2);
   });
 
+  it("retries an interrupted final burst without exceeding the configured quota", async () => {
+    const engine = await loadedEngine();
+    engine.startTriggerScheduler({
+      ...CFG,
+      fixedIntervalMs: 1_000,
+      initialDelayMs: 200,
+      maxBursts: 1,
+    });
+
+    jest.advanceTimersByTime(200);
+    engine.onSpike();
+    jest.advanceTimersByTime(2_600);
+    engine.onNormalized();
+    jest.advanceTimersByTime(30_000 + 99);
+    expect(engine.isBurstActive).toBe(false);
+
+    jest.advanceTimersByTime(1);
+    expect(engine.isBurstActive).toBe(true);
+    jest.advanceTimersByTime(CFG.fadeInMs + CFG.burstDurationMs + CFG.fadeOutMs + 50 + 5_000);
+
+    expect(engine.isBurstActive).toBe(false);
+    expect(ctx().sources).toHaveLength(2);
+  });
+
   it("onNormalized resumes the scheduler after the grace period", async () => {
     const engine = await loadedEngine();
     engine.startTriggerScheduler(CFG);
@@ -599,7 +623,7 @@ describe("AudioEngine / fixed-interval scheduler", () => {
     );
   });
 
-  it("uses the minimum peak for a one-burst session", async () => {
+  it("uses the maximum peak for a one-burst session", async () => {
     const engine = await loadedEngine();
     const triggerGain = ctx().gains[1];
     engine.startTriggerScheduler({
@@ -613,7 +637,7 @@ describe("AudioEngine / fixed-interval scheduler", () => {
 
     jest.advanceTimersByTime(100);
     expect(triggerGain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
-      0.2,
+      0.8,
       expect.any(Number),
     );
   });

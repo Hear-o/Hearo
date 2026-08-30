@@ -38,8 +38,8 @@ describe("trigger sound preferences", () => {
   });
 
   it("maps the approved dB envelope to friendly percentages", () => {
-    expect(triggerVolumeDbToPercent(-36)).toBe(0);
-    expect(triggerVolumeDbToPercent(-27)).toBe(50);
+    expect(triggerVolumeDbToPercent(-36)).toBe(1);
+    expect(triggerVolumeDbToPercent(-27)).toBe(51);
     expect(triggerVolumeDbToPercent(-18)).toBe(100);
   });
 

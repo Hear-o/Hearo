@@ -50,6 +50,12 @@ describe("TriggerSoundSettingsScreen", () => {
     useSessionStore.setState({ sounds: ["motorcycle"] });
   });
 
+  async function waitForPreviewButtonEnabled() {
+    await waitFor(() => {
+      expect(screen.getByTestId("preview-trigger-sound").props.accessibilityState.disabled).toBe(false);
+    });
+  }
+
   it("loads the legacy defaults with accessible controls", async () => {
     render(<TriggerSoundSettingsScreen />);
 
@@ -106,6 +112,7 @@ describe("TriggerSoundSettingsScreen", () => {
   it("previews the selected sound at the draft maximum", async () => {
     render(<TriggerSoundSettingsScreen />);
     await screen.findByText("Test sound");
+    await waitForPreviewButtonEnabled();
     await waitFor(() => {
       expect(screen.getByTestId("maximum-volume-slider").props.accessibilityState.disabled).toBe(false);
     });
@@ -116,7 +123,7 @@ describe("TriggerSoundSettingsScreen", () => {
     });
 
     await act(async () => {
-      fireEvent.press(screen.getByText("Test sound"));
+      fireEvent.press(screen.getByTestId("preview-trigger-sound"));
     });
 
     expect(mockActivateAudioSession).toHaveBeenCalledTimes(1);
@@ -130,9 +137,10 @@ describe("TriggerSoundSettingsScreen", () => {
     mockActivateAudioSession.mockResolvedValueOnce(false);
     render(<TriggerSoundSettingsScreen />);
     await screen.findByText("Test sound");
+    await waitForPreviewButtonEnabled();
 
     await act(async () => {
-      fireEvent.press(screen.getByText("Test sound"));
+      fireEvent.press(screen.getByTestId("preview-trigger-sound"));
     });
 
     expect(await screen.findByText("Couldn't play the test sound. Please try again.")).toBeTruthy();
@@ -147,12 +155,14 @@ describe("TriggerSoundSettingsScreen", () => {
     );
     render(<TriggerSoundSettingsScreen />);
     await screen.findByText("Test sound");
+    await waitForPreviewButtonEnabled();
 
-    fireEvent.press(screen.getByText("Test sound"));
+    fireEvent.press(screen.getByTestId("preview-trigger-sound"));
     fireEvent.press(screen.getByLabelText("Back to settings"));
     await act(async () => { resolveActivation(true); });
 
     expect(mockRouterBack).toHaveBeenCalledTimes(1);
+    expect(mockActivateAudioSession).toHaveBeenCalledTimes(1);
     expect(mockLoadTrigger).not.toHaveBeenCalled();
     expect(mockPlayTriggerPreview).not.toHaveBeenCalled();
   });
@@ -165,8 +175,9 @@ describe("TriggerSoundSettingsScreen", () => {
     );
     render(<TriggerSoundSettingsScreen />);
     await screen.findByText("Test sound");
+    await waitForPreviewButtonEnabled();
 
-    fireEvent.press(screen.getByText("Test sound"));
+    fireEvent.press(screen.getByTestId("preview-trigger-sound"));
     await waitFor(() => expect(mockPlayTriggerPreview).toHaveBeenCalledTimes(1));
     expect(screen.getByText("Playing…")).toBeTruthy();
 
@@ -174,6 +185,21 @@ describe("TriggerSoundSettingsScreen", () => {
 
     expect(await screen.findByText("Couldn't save the changes. Please try again.")).toBeTruthy();
     expect(screen.getByText("Test sound")).toBeTruthy();
+  });
+
+  it("does not navigate twice when Back is pressed during a pending save", async () => {
+    let resolveSave: () => void = () => {};
+    (AsyncStorage.setItem as jest.Mock).mockImplementationOnce(
+      () => new Promise<void>((resolve) => { resolveSave = resolve; }),
+    );
+    render(<TriggerSoundSettingsScreen />);
+    await waitForPreviewButtonEnabled();
+
+    fireEvent.press(screen.getByTestId("save-trigger-sound"));
+    fireEvent.press(screen.getByLabelText("Back to settings"));
+    await act(async () => { resolveSave(); });
+
+    expect(mockRouterBack).toHaveBeenCalledTimes(1);
   });
 
   it("resets a saved preference back to the legacy defaults", async () => {

@@ -126,17 +126,19 @@ export function TriggerSoundSettingsScreen() {
 
   async function handleSave() {
     if (!loaded || saving) return;
+    const saveRun = ++previewRunRef.current;
+    previewEngineRef.current?.stopTriggerPreview();
     setSaving(true);
     setError(null);
-    previewRunRef.current += 1;
-    previewEngineRef.current?.stopTriggerPreview();
     try {
       await setTriggerSoundPreference({
         ...draft,
         schemaVersion: TRIGGER_SOUND_PREFERENCE_VERSION,
       });
+      if (saveRun !== previewRunRef.current) return;
       transition(() => router.back());
     } catch {
+      if (saveRun !== previewRunRef.current) return;
       setError(t("triggerSound.saveError"));
       setSaving(false);
       setPreviewing(false);
@@ -233,6 +235,7 @@ export function TriggerSoundSettingsScreen() {
               </Text>
             </View>
             <Pressable
+              testID="preview-trigger-sound"
               onPress={() => void handlePreview()}
               disabled={!loaded || previewing}
               accessibilityRole="button"

@@ -43,6 +43,11 @@ import { fonts, tokens } from "@/lib/ui/tokens";
 import { useAudioEngine } from "@/hooks/useAudioEngine";
 import { usePulseMonitor, SessionState } from "@/hooks/usePulseMonitor";
 import { ensureAssets, AssetManifest } from "@/lib/audio/asset-cache";
+import {
+  DEFAULT_TRIGGER_SOUND_PREFERENCE,
+  deriveTriggerSchedule,
+} from "@/lib/audio/trigger-preferences";
+import { getTriggerSoundPreference } from "@/lib/storage/storage";
 
 // ── Constants ────────────────────────────────────────────────────────────
 
@@ -59,30 +64,16 @@ const VALID_SCENES: readonly SceneKey[] = SCENE_ORDER;
 const INTRO_DURATION_MS = 30_000;
 const OUTRO_DURATION_MS = 30_000;
 
-// One trigger per minute of trigger zone (2 / 4 / 6 for 3 / 5 / 7-min sessions).
-const TRIGGERS_PER_MINUTE = 1;
-
-// Fixed moderate/low trigger volume. Previously per-sound at -12 dB; reduced
-// to -18 dB after on-device review found bursts too prominent at the old level.
-const TRIGGER_PEAK_DB = -18;
-
 function deriveSessionTiming(durationMinutes: number) {
   const totalMs = durationMinutes * 60 * 1000;
   const introMs = INTRO_DURATION_MS;
   const outroMs = OUTRO_DURATION_MS;
   const triggerZoneMs = totalMs - introMs - outroMs;
-  const triggerCount = Math.max(
-    1,
-    Math.floor((triggerZoneMs / 60_000) * TRIGGERS_PER_MINUTE),
-  );
-  const triggerIntervalMs = triggerZoneMs / triggerCount;
   return {
     totalMs,
     introMs,
     triggerZoneMs,
     outroMs,
-    triggerCount,
-    triggerIntervalMs,
   };
 }
 
@@ -173,6 +164,15 @@ export default function Session() {
   const setLastEndedBy = useSessionStore((s) => s.setLastEndedBy);
   const isCrisisOpen = useCrisisStore((s) => s.isOpen);
 
+  // Start one read at mount and keep the Promise stable. The trigger-zone
+  // effect awaits this exact snapshot later, so a Settings write after the
+  // session opens cannot change an active session halfway through.
+  const [triggerPreferenceSnapshot] = useState(() =>
+    getTriggerSoundPreference().catch(() => ({
+      ...DEFAULT_TRIGGER_SOUND_PREFERENCE,
+    })),
+  );
+
   // Lock the duration once at mount — a Setup change mid-session must not
   // retroactively shorten/lengthen the timers. Lazy useState initializer
   // captures the live store value at mount and never re-reads, without the
@@ -183,8 +183,6 @@ export default function Session() {
   const INTRO_MS = sessionTiming.introMs;
   const TRIGGER_ZONE_MS = sessionTiming.triggerZoneMs;
   const OUTRO_MS = sessionTiming.outroMs;
-  const TRIGGER_COUNT = sessionTiming.triggerCount;
-  const TRIGGER_INTERVAL_MS = sessionTiming.triggerIntervalMs;
   const TOTAL_SESSION_MS = sessionTiming.totalMs;
 
   // Keep the screen on for the duration of the session.
@@ -477,30 +475,36 @@ export default function Session() {
 
     const loadPromise = engine.loadTriggers(allTriggerSources);
 
-    Promise.all([voicePromise, loadPromise])
-      .then(() => {
+    Promise.all([voicePromise, loadPromise, triggerPreferenceSnapshot])
+      .then(([, , triggerPreference]) => {
         if (cancelled) return;
 
         // Both narration and loading are done. Compute how much zone time has
         // elapsed so the first burst and zone-end timer are positioned correctly.
         const elapsed = Date.now() - zoneStartedAt;
         const remainingZoneMs = Math.max(0, TRIGGER_ZONE_MS - elapsed);
+        const { triggerCount, triggerIntervalMs } = deriveTriggerSchedule(
+          remainingZoneMs,
+          triggerPreference.triggersPerMinute,
+        );
 
-        // First burst: target the midpoint of the first time slot from zone
-        // start, but clamp to at least 2 s after narration to give a breath.
-        const targetFirstBurst = TRIGGER_INTERVAL_MS / 2;
-        const initialDelay = Math.max(2_000, targetFirstBurst - elapsed);
+        // Start in the midpoint of the first remaining slot, with at least a
+        // short breath after narration. This leaves room for the final fade
+        // before the zone transitions to OUTRO.
+        const initialDelay = Math.max(2_000, triggerIntervalMs / 2);
 
         engine.startTriggerScheduler({
           intervalMinMs: 0,
           intervalMaxMs: 0,
-          fixedIntervalMs: TRIGGER_INTERVAL_MS,
+          fixedIntervalMs: triggerIntervalMs,
           initialDelayMs: initialDelay,
-          maxBursts: TRIGGER_COUNT,
+          maxBursts: triggerCount,
           burstDurationMs: TRIGGER_BURST_DURATION_MS,
           fadeInMs: TRIGGER_FADE_IN_MS,
           fadeOutMs: TRIGGER_FADE_OUT_MS,
-          peakGain: dBToGain(TRIGGER_PEAK_DB),
+          peakGain: dBToGain(triggerPreference.maximumPeakDb),
+          minimumPeakGain: dBToGain(triggerPreference.minimumPeakDb),
+          maximumPeakGain: dBToGain(triggerPreference.maximumPeakDb),
           leadInMs: TRIGGER_LEAD_IN_MS,
           onBurstApproaching: () => {
             setLastBurstApproachingAt(Date.now() - startedAt.current);
@@ -545,7 +549,7 @@ export default function Session() {
       if (postTriggerDelayRef.current)
         clearTimeout(postTriggerDelayRef.current);
     };
-  }, [machineState, consentedSounds, engine]);
+  }, [machineState, consentedSounds, engine, triggerPreferenceSnapshot]);
 
   // ── OUTRO: stop triggers, play outro narration, then end session ──────
 

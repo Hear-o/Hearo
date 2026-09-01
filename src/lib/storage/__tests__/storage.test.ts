@@ -2,6 +2,10 @@ jest.mock("@react-native-async-storage/async-storage", () =>
   require("@react-native-async-storage/async-storage/jest/async-storage-mock"));
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
+import {
+  DEFAULT_TRIGGER_SOUND_PREFERENCE,
+} from "@/lib/audio/trigger-preferences";
 import {
   getDisplayName,
   setDisplayName,
@@ -23,6 +27,8 @@ import {
   incrementSessionsCompleted,
   getLanguagePreference,
   setLanguagePreference,
+  getTriggerSoundPreference,
+  setTriggerSoundPreference,
   getCompanionTaskMedia,
   setCompanionTaskMedia,
   removeCompanionTaskMedia,
@@ -374,6 +380,54 @@ describe("storage / language preference", () => {
   it("defends against a corrupt stored value (returns null)", async () => {
     await AsyncStorage.setItem("hearo:languagePreference", "fr");
     expect(await getLanguagePreference()).toBeNull();
+  });
+});
+
+describe("storage / trigger sound preference", () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it("defaults to the legacy volume and cadence", async () => {
+    expect(await getTriggerSoundPreference()).toEqual(
+      DEFAULT_TRIGGER_SOUND_PREFERENCE,
+    );
+  });
+
+  it("round-trips a valid preference", async () => {
+    const preference = {
+      schemaVersion: 1 as const,
+      minimumPeakDb: -30,
+      maximumPeakDb: -21,
+      triggersPerMinute: 1.5,
+    };
+    await setTriggerSoundPreference(preference);
+    expect(await getTriggerSoundPreference()).toEqual(preference);
+  });
+
+  it("clamps out-of-range persisted values", async () => {
+    await AsyncStorage.setItem(
+      "hearo:triggerSoundPreference",
+      JSON.stringify({
+        schemaVersion: 1,
+        minimumPeakDb: -60,
+        maximumPeakDb: -4,
+        triggersPerMinute: 8,
+      }),
+    );
+    expect(await getTriggerSoundPreference()).toEqual({
+      schemaVersion: 1,
+      minimumPeakDb: -36,
+      maximumPeakDb: -18,
+      triggersPerMinute: 2,
+    });
+  });
+
+  it("falls back when the record is malformed", async () => {
+    await AsyncStorage.setItem("hearo:triggerSoundPreference", "not-json");
+    expect(await getTriggerSoundPreference()).toEqual(
+      DEFAULT_TRIGGER_SOUND_PREFERENCE,
+    );
   });
 });
 

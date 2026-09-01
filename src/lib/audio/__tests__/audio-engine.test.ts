@@ -281,6 +281,53 @@ describe("AudioEngine / spike + normalize", () => {
     expect(engine.isBurstActive).toBe(false);
   });
 
+  it("retries the interrupted progression level after normalization", async () => {
+    const engine = await loadedEngine();
+    const triggerGain = ctx().gains[1];
+    engine.startTriggerScheduler({
+      ...CFG,
+      fixedIntervalMs: 1_000,
+      initialDelayMs: 100,
+      maxBursts: 3,
+      minimumPeakGain: 0.2,
+      maximumPeakGain: 0.8,
+    });
+
+    jest.advanceTimersByTime(100);
+    engine.onSpike();
+    jest.advanceTimersByTime(2_600);
+    engine.onNormalized();
+    jest.advanceTimersByTime(30_000 + 100);
+
+    const retriesAtMinimum = triggerGain.gain.linearRampToValueAtTime.mock.calls
+      .filter(([gain]) => gain === 0.2);
+    expect(retriesAtMinimum).toHaveLength(2);
+  });
+
+  it("retries an interrupted final burst without exceeding the configured quota", async () => {
+    const engine = await loadedEngine();
+    engine.startTriggerScheduler({
+      ...CFG,
+      fixedIntervalMs: 1_000,
+      initialDelayMs: 200,
+      maxBursts: 1,
+    });
+
+    jest.advanceTimersByTime(200);
+    engine.onSpike();
+    jest.advanceTimersByTime(2_600);
+    engine.onNormalized();
+    jest.advanceTimersByTime(30_000 + 99);
+    expect(engine.isBurstActive).toBe(false);
+
+    jest.advanceTimersByTime(1);
+    expect(engine.isBurstActive).toBe(true);
+    jest.advanceTimersByTime(CFG.fadeInMs + CFG.burstDurationMs + CFG.fadeOutMs + 50 + 5_000);
+
+    expect(engine.isBurstActive).toBe(false);
+    expect(ctx().sources).toHaveLength(2);
+  });
+
   it("onNormalized resumes the scheduler after the grace period", async () => {
     const engine = await loadedEngine();
     engine.startTriggerScheduler(CFG);
@@ -539,6 +586,103 @@ describe("AudioEngine / fixed-interval scheduler", () => {
     // No third burst.
     jest.advanceTimersByTime(5000);
     expect(engine.isBurstActive).toBe(false);
+  });
+
+  it("progresses deterministically from the minimum to maximum peak", async () => {
+    const engine = await loadedEngine();
+    const triggerGain = ctx().gains[1];
+    engine.startTriggerScheduler({
+      ...CFG,
+      fixedIntervalMs: 1000,
+      initialDelayMs: 100,
+      maxBursts: 3,
+      minimumPeakGain: 0.2,
+      maximumPeakGain: 0.8,
+    });
+
+    jest.advanceTimersByTime(100);
+    expect(triggerGain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      0.2,
+      expect.any(Number),
+    );
+
+    jest.advanceTimersByTime(
+      CFG.fadeInMs + CFG.burstDurationMs + CFG.fadeOutMs + 50 + 250,
+    );
+    expect(triggerGain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      0.5,
+      expect.any(Number),
+    );
+
+    jest.advanceTimersByTime(
+      CFG.fadeInMs + CFG.burstDurationMs + CFG.fadeOutMs + 50 + 250,
+    );
+    expect(triggerGain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      0.8,
+      expect.any(Number),
+    );
+  });
+
+  it("uses the maximum peak for a one-burst session", async () => {
+    const engine = await loadedEngine();
+    const triggerGain = ctx().gains[1];
+    engine.startTriggerScheduler({
+      ...CFG,
+      fixedIntervalMs: 1000,
+      initialDelayMs: 100,
+      maxBursts: 1,
+      minimumPeakGain: 0.2,
+      maximumPeakGain: 0.8,
+    });
+
+    jest.advanceTimersByTime(100);
+    expect(triggerGain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      0.8,
+      expect.any(Number),
+    );
+  });
+});
+
+describe("AudioEngine / trigger preview", () => {
+  it("plays one loaded sound without starting the scheduler", async () => {
+    const engine = await loadedEngine();
+    const triggerGain = ctx().gains[1];
+
+    const preview = engine.playTriggerPreview(0.25, 500);
+    expect(engine.isBurstActive).toBe(false);
+    expect(triggerGain.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      0.25,
+      expect.any(Number),
+    );
+
+    jest.advanceTimersByTime(500);
+    await expect(preview).resolves.toBeUndefined();
+    expect(ctx().sources.at(-1)?.stop).toHaveBeenCalledTimes(1);
+  });
+
+  it("resumes a suspended context before preview playback", async () => {
+    const engine = await loadedEngine();
+    ctx().state = "suspended";
+
+    const preview = engine.playTriggerPreview(0.25, 500);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(ctx().resume).toHaveBeenCalledTimes(1);
+    expect(ctx().sources.at(-1)?.start).toHaveBeenCalledTimes(1);
+
+    jest.advanceTimersByTime(500);
+    await expect(preview).resolves.toBeUndefined();
+  });
+
+  it("stops an active preview during cleanup", async () => {
+    const engine = await loadedEngine();
+    const preview = engine.playTriggerPreview(0.25, 500);
+
+    engine.destroy();
+
+    await expect(preview).resolves.toBeUndefined();
+    expect(ctx().sources.at(-1)?.stop).toHaveBeenCalledTimes(1);
   });
 });
 

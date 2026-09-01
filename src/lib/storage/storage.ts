@@ -6,6 +6,11 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import {
+  normalizeTriggerSoundPreference,
+  TriggerSoundPreference,
+} from "@/lib/audio/trigger-preferences";
+
 const PREFIX = "hearo:";
 
 const KEYS = {
@@ -21,7 +26,10 @@ const KEYS = {
   sessionsCompleted: `${PREFIX}sessionsCompleted`,
   languagePreference: `${PREFIX}languagePreference`,
   companionTaskMedia: `${PREFIX}companionTaskMedia`,
+  triggerSoundPreference: `${PREFIX}triggerSoundPreference`,
 } as const;
+
+export type { TriggerSoundPreference } from "@/lib/audio/trigger-preferences";
 
 /** Persisted language preference. `null` means the user has never explicitly
  *  chosen one — the app defaults to Hebrew regardless of device locale (this
@@ -37,6 +45,29 @@ export async function getLanguagePreference(): Promise<LanguagePreference | null
 
 export async function setLanguagePreference(value: LanguagePreference): Promise<void> {
   await AsyncStorage.setItem(KEYS.languagePreference, value);
+}
+
+/** Global, device-local trigger intensity and cadence preference. The parser
+ * is deliberately strict about schema shape and forgiving about numeric
+ * bounds so stale/corrupt data never reaches the native audio graph. */
+export async function getTriggerSoundPreference(): Promise<TriggerSoundPreference> {
+  const raw = await AsyncStorage.getItem(KEYS.triggerSoundPreference);
+  if (!raw) return normalizeTriggerSoundPreference(undefined);
+  try {
+    return normalizeTriggerSoundPreference(JSON.parse(raw));
+  } catch {
+    return normalizeTriggerSoundPreference(undefined);
+  }
+}
+
+export async function setTriggerSoundPreference(
+  preference: TriggerSoundPreference,
+): Promise<void> {
+  const normalized = normalizeTriggerSoundPreference(preference);
+  await AsyncStorage.setItem(
+    KEYS.triggerSoundPreference,
+    JSON.stringify(normalized),
+  );
 }
 
 /** A name we've resolved (or explicitly determined we can't resolve) for the

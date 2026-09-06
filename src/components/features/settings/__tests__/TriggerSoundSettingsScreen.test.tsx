@@ -1,12 +1,13 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 
-import { TriggerSoundSettingsScreen } from "../TriggerSoundSettingsScreen";
+import { getSound } from "@/lib/content/content";
 import { useSessionStore } from "@/lib/storage/session-store";
 import {
   getTriggerSoundPreference,
   setTriggerSoundPreference,
 } from "@/lib/storage/storage";
+import { TriggerSoundSettingsScreen } from "../TriggerSoundSettingsScreen";
 
 const mockRouterBack = jest.fn();
 const mockLoadTrigger = jest.fn().mockResolvedValue(undefined);
@@ -47,7 +48,7 @@ describe("TriggerSoundSettingsScreen", () => {
     mockStopTriggerPreview.mockClear();
     mockDestroy.mockClear();
     mockActivateAudioSession.mockClear();
-    useSessionStore.setState({ sounds: ["motorcycle"] });
+    useSessionStore.setState({ sounds: ["siren"] });
   });
 
   async function waitForPreviewButtonEnabled() {
@@ -109,7 +110,7 @@ describe("TriggerSoundSettingsScreen", () => {
     });
   });
 
-  it("previews the selected sound at the draft maximum", async () => {
+  it("always previews the motorcycle sound at the draft maximum", async () => {
     render(<TriggerSoundSettingsScreen />);
     await screen.findByText("Test sound");
     await waitForPreviewButtonEnabled();
@@ -128,6 +129,9 @@ describe("TriggerSoundSettingsScreen", () => {
 
     expect(mockActivateAudioSession).toHaveBeenCalledTimes(1);
     expect(mockLoadTrigger).toHaveBeenCalledTimes(1);
+    expect(mockLoadTrigger).toHaveBeenCalledWith(
+      getSound("motorcycle").audioVariations[0],
+    );
     expect(mockPlayTriggerPreview).toHaveBeenCalledWith(
       Math.pow(10, -21 / 20),
     );

@@ -20,7 +20,6 @@ import {
   triggerVolumeDbToPercent,
 } from "@/lib/audio/trigger-preferences";
 import { getSound } from "@/lib/content/content";
-import { useSessionStore } from "@/lib/storage/session-store";
 import {
   getTriggerSoundPreference,
   setTriggerSoundPreference,
@@ -28,11 +27,12 @@ import {
 import { usePageFade } from "@/lib/ui/fadeTransition";
 import { fonts, tokens, type } from "@/lib/ui/tokens";
 
+const MOTORCYCLE_PREVIEW_SOURCE = getSound("motorcycle").audioVariations[0];
+
 export function TriggerSoundSettingsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { animatedStyle, transition } = usePageFade();
-  const selectedSounds = useSessionStore((state) => state.sounds);
   const [draft, setDraft] = useState<TriggerSoundPreference>({
     ...DEFAULT_TRIGGER_SOUND_PREFERENCE,
   });
@@ -109,10 +109,7 @@ export function TriggerSoundSettingsScreen() {
       const activated = await activateAudioSession();
       if (run !== previewRunRef.current) return;
       if (!activated) throw new Error("audio session activation failed");
-      const soundKey = selectedSounds[0] ?? "motorcycle";
-      const source = getSound(soundKey).audioVariations[0];
-      if (source === undefined) throw new Error("preview source unavailable");
-      await previewEngine.loadTrigger(source);
+      await previewEngine.loadTrigger(MOTORCYCLE_PREVIEW_SOURCE);
       if (run !== previewRunRef.current) return;
       await previewEngine.playTriggerPreview(dBToGain(draft.maximumPeakDb));
     } catch {

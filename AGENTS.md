@@ -6,6 +6,8 @@ This project targets Expo SDK 56 (`expo ~56.0.23` in `package.json`). Read the S
 
 ## Dev build required (iOS + Android)
 
+`package.json` configures iOS autolinking to build `expo-contacts` from source. The SDK 56 `expo-contacts@56.0.14` precompiled framework links `Testing.framework`, which crashes the app at launch because that test framework is not bundled. Keep this override until a corrected upstream binary is verified by the iOS audio CI job.
+
 This app uses native modules that can't run in any sandboxed runner — `react-native-audio-api` (audio engine), `@kingstinct/react-native-healthkit` (iOS pulse), and others. All on-device work happens against a native build:
 
 - **Local iOS:** `npx expo run:ios`

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { I18nManager, Pressable, Text, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useTranslation } from "react-i18next";
@@ -18,6 +18,8 @@ import { fonts, tokens } from "@/lib/ui/tokens";
 const SWIPE_THRESHOLD_PX = 60;
 
 type Props = {
+  /** Hide guidance and unmount its timers while retaining the current step. */
+  active?: boolean;
   /** Called when the protocol's final step completes. */
   onProtocolEnd: () => void;
   /** Optional override — defaults to `getCalmingProtocol()`. Used in tests
@@ -30,19 +32,26 @@ type Props = {
  *  fade for the prose-only steps (validation/body/close). When the current
  *  step's onComplete fires (timer OR swipe), advance to the next; when
  *  there's no next, call `onProtocolEnd`. */
-export function CalmingProtocol({ onProtocolEnd, steps }: Props) {
+export function CalmingProtocol({ onProtocolEnd, steps, active = true }: Props) {
   const protocol = steps ?? getCalmingProtocol();
   const [index, setIndex] = useState(0);
+  const [finished, setFinished] = useState(false);
   const completedRef = useRef(false);
 
-  function advance() {
-    if (index + 1 < protocol.length) {
-      setIndex(index + 1);
-    } else if (!completedRef.current) {
+  useEffect(() => {
+    if (finished && !completedRef.current) {
       completedRef.current = true;
       onProtocolEnd();
     }
-  }
+  }, [finished, onProtocolEnd]);
+
+  const advance = useCallback(() => {
+    if (index + 1 < protocol.length) {
+      setIndex(index + 1);
+    } else {
+      setFinished(true);
+    }
+  }, [index, protocol.length]);
 
   function goBack() {
     if (index > 0) setIndex(index - 1);
@@ -68,7 +77,7 @@ export function CalmingProtocol({ onProtocolEnd, steps }: Props) {
     .runOnJS(true);
 
   const step = protocol[index];
-  if (!step) return null;
+  if (!active || !step) return null;
 
   return (
     <GestureDetector gesture={swipeGesture}>
@@ -124,7 +133,7 @@ function ProseStep({
 }) {
   const { i18n } = useTranslation();
   const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
+  useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

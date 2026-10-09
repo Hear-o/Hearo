@@ -1,3 +1,5 @@
+> Historical change: the navigation and recording/visual-guidance behavior below is superseded by [harden-relaxation-recordings](../../../harden-relaxation-recordings/specs/calming-protocol/spec.md). The reviewed five-step content remains available in that implementation.
+
 ## ADDED Requirements
 
 ### Requirement: User-initiated calming protocol

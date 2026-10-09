@@ -1,18 +1,17 @@
-import { render, screen, waitFor, fireEvent } from "@testing-library/react-native";
+import { act, render, screen, waitFor, fireEvent } from "@testing-library/react-native";
+import { CalmingProtocol } from "@/components/features/calming/CalmingProtocol";
+import type { CalmingProtocolStep } from "@/lib/content/content";
 
 // Mirrors Icon.test.tsx / ForwardCta.test.tsx — the step-nav arrows render
 // through Icon, whose svg imports collapse onto the shared asset stub. Forward
 // them as a plain View so the arrows mount.
 jest.mock("../../../../../test/assetMock.js", () => {
-  const { View } = require("react-native");
+  const { View } = jest.requireActual<typeof import("react-native")>("react-native");
   function MockIcon(props: object) {
     return <View testID="icon-svg" {...props} />;
   }
   return MockIcon;
 });
-
-import { CalmingProtocol } from "@/components/features/calming/CalmingProtocol";
-import type { CalmingProtocolStep } from "@/lib/content/content";
 
 // Each step is a few-ms duration so the protocol completes in ~50ms total —
 // fast enough to use real timers. Fake-timer chaining across React re-renders
@@ -40,6 +39,25 @@ const SHORT_STEPS: CalmingProtocolStep[] = [
 ];
 
 describe("CalmingProtocol", () => {
+  it("stops hidden step timers and restores the saved step when active again", () => {
+    jest.useFakeTimers();
+    try {
+      const onProtocolEnd = jest.fn();
+      const { rerender } = render(<CalmingProtocol onProtocolEnd={onProtocolEnd} steps={SHORT_STEPS} />);
+      fireEvent.press(screen.getByLabelText("Next step"));
+      rerender(<CalmingProtocol active={false} onProtocolEnd={onProtocolEnd} steps={SHORT_STEPS} />);
+      act(() => jest.advanceTimersByTime(10000));
+      expect(screen.queryByText("Step two.")).toBeNull();
+      expect(onProtocolEnd).not.toHaveBeenCalled();
+      rerender(<CalmingProtocol active onProtocolEnd={onProtocolEnd} steps={SHORT_STEPS} />);
+      expect(screen.getByText("Step two.")).toBeTruthy();
+      act(() => jest.advanceTimersByTime(150));
+      expect(screen.getByText("Step three.")).toBeTruthy();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it("renders the first step on mount", () => {
     render(<CalmingProtocol onProtocolEnd={() => {}} steps={SHORT_STEPS} />);
     expect(screen.getByText("Step one.")).toBeTruthy();

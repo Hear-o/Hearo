@@ -175,10 +175,12 @@ class FakeAudioContext {
 
   suspend = jest.fn(async () => {
     this.state = "suspended";
+    return true;
   });
 
   resume = jest.fn(async () => {
     this.state = "running";
+    return true;
   });
 
   close = jest.fn(() => {
@@ -203,10 +205,20 @@ export function __setSilent(value: boolean): void {
 // audio-session.ts (imported transitively by useAudioEngine + _layout) calls
 // these at module load. They have to exist on the mock or the entire engine
 // test suite fails at import time.
+type InterruptionEvent = { type: "began" | "ended"; shouldResume: boolean };
+const interruptionListeners = new Set<(event: InterruptionEvent) => void>();
+export function __emitInterruption(event: InterruptionEvent): void {
+  interruptionListeners.forEach((listener) => listener(event));
+}
+
 export const AudioManager = {
   setAudioSessionOptions: jest.fn(),
   observeAudioInterruptions: jest.fn(),
   setAudioSessionActivity: jest.fn(async () => {}),
+  addSystemEventListener: jest.fn((_name: string, callback: (event: InterruptionEvent) => void) => {
+    interruptionListeners.add(callback);
+    return { remove: jest.fn(() => interruptionListeners.delete(callback)) };
+  }),
 };
 
 /** The most recently constructed AudioContext (i.e. the one inside the engine
@@ -219,4 +231,5 @@ export function __lastContext(): FakeAudioContext {
 export function __reset(): void {
   FakeAudioContext.last = null;
   silentRender = false;
+  interruptionListeners.clear();
 }

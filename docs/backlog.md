@@ -66,6 +66,8 @@ Show this **once, on first session**. Should be skippable but present by default
 
 #### B-03 — Self-tap calming protocol (panic-attack assist)
 
+Current recording/visual behavior is specified in [harden-relaxation-recordings](../openspec/changes/harden-relaxation-recordings/specs/calming-protocol/spec.md). Supplied recordings play by default; the reviewed visual sequence below remains available at any time and automatically on audio failure. Content-parity review and native playback/memory measurements are tracked in [recording validation](relaxation-recordings-validation.md).
+
 Source: [docs/research/calming-protocol.md](#) (Hebrew Hirschman doc). A button — accessible during a session AND from the home screen — that runs a 60–90s guided calming sequence when the user feels overwhelmed:
 
 1. Validation: "you're safe now; anxiety is a wave that peaks and falls; the body can't hold this tension long."

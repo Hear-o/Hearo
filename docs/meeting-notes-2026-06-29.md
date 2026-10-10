@@ -21,6 +21,8 @@ The current app addresses only the practice loop. The crisis affordance (one-tap
 
 ## Existing infrastructure that supports the second half
 
+Historical snapshot: the music-only `useCalmingOverlay` below has since been replaced by localized recordings and independently available visual guidance. See [recording validation](relaxation-recordings-validation.md) for the current implementation and remaining native/content checks.
+
 - `useCalmingOverlay` (`src/hooks/useCalmingOverlay.ts`) — neo-classical bed + grounding voice, already standalone, triggered from `/calming`.
 - `CalmingProtocol` + `SensoryGroundingStep` (`src/components/features/calming/`) — 5-4-3-2-1 sensory grounding step component.
 - "Need a moment" pause inside a session (`/session` → `/calming` → back).

@@ -2,9 +2,9 @@
 
 Source: Dr. Michal Hirschman, 2026-06-09 meeting. Hebrew is the source; English is the translation reviewed against the clinical intent.
 
-The protocol runs five steps in order. No skip. The script ends every session it runs in — distinct from the calming voice script *inside* an active session (which lives in [`src/lib/content/content.ts`](../../src/lib/content/content.ts) under each scene's `voice.calming`).
+This document is the source reference for the five-step visual protocol. The current route plays a supplied localized recording by default and offers this visual protocol at any time, including automatically on audio failure. Its existing arrows/swipes let users control the visual pacing. Completion stays on the calming screen with a message; only an explicit Return or close action returns to the caller. A practice session underneath remains paused until that user action, including after background completion or unlock. See the [current behavior contract](../../openspec/changes/harden-relaxation-recordings/specs/calming-protocol/spec.md). The calming voice script *inside* an active session is separate and lives in [`src/lib/content/content.ts`](../../src/lib/content/content.ts) under each scene's `voice.calming`.
 
-Audio note: v1 ships text-only. When recordings exist, the narrator should pace breath cues with a soft inhale/exhale sound before each count.
+Audio note: the supplied `relax-en.mp3` and `relax-he.mp3` are not verified transcripts of this reference. Their durations differ, and no clinical/content equivalence is asserted. The reviewed visual guidance remains independently available. See [recording validation and remaining device/content checks](../relaxation-recordings-validation.md). When producing a recording of this reference, the narrator should pace breath cues with a soft inhale/exhale sound before each count.
 
 ---
 
